@@ -14,31 +14,17 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
   onPodcastScheduleClick,
   onContinueClick,
 }) => {
-  const [isRendered, setIsRendered] = React.useState(isOpen);
   const [isClosing, setIsClosing] = React.useState(false);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true);
-      setIsClosing(false);
-    } else if (isRendered) {
-      setIsClosing(true);
-      const timer = setTimeout(() => {
-        setIsRendered(false);
-        setIsClosing(false);
-      }, 280);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, isRendered]);
 
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => {
+      setIsClosing(false);
       onClose();
     }, 280);
   };
 
-  if (!isRendered && !isOpen) return null;
+  if (!isOpen && !isClosing) return null;
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col justify-end overflow-hidden">
