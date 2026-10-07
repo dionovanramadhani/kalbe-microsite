@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+/* Kalbe Geometric Font Family */
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KalbeGeometric';
+  src: url('./assets/fonts/KalbeGeometric-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-kalbe,
+.font-kalbe * {
+  font-family: 'KalbeGeometric', Arial, Helvetica, sans-serif !important;
+}
+
+@keyframes scan-laser {
+  0% {
+    top: 6%;
+    opacity: 0.2;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0.2;
+  }
+}
+
+.animate-scan-laser {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FF0018 20%, #FFFFFF 50%, #FF0018 80%, transparent);
+  box-shadow: 0 0 12px 2px rgba(255, 0, 24, 0.7);
+  animation: scan-laser 2.2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@layer base {
+  :root {
+    font-family: Arial, Helvetica, sans-serif;
+    --bg-gradient-desktop: radial-gradient(circle at 50% 30%, #251619 0%, #0b0a0e 100%);
+    --kalbe-red-start: #C70412;
+    --kalbe-red-end: #8E000A;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #0d0c10;
+    color: #1f2937;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Base Wrapper for Desktop Preview (matching nestle architecture) */
+.app-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #5a0b12 0%, #34040a 55%, #180205 100%);
+  padding: 24px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Device Shell for Desktop Preview */
+.mobile-frame {
+  height: min(844px, 92vh);
+  max-height: 92vh;
+  width: 100%;
+  max-width: 393px;
+  background: #ffffff;
+  border-radius: 40px;
+  box-shadow:
+    0 25px 60px -12px rgba(0, 0, 0, 0.8),
+    0 0 0 10px #250408,
+    0 0 0 12px rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Screen Main Content */
+.main-content {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  background-color: #ffffff;
+}
+
+/* Hide scrollbars for clean native mobile look */
+.main-content::-webkit-scrollbar {
+  display: none;
+}
+.main-content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile Breakpoint: Fullscreen responsive view (screens <= 640px) */
+@media (max-width: 640px) {
+  .app-viewport {
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+  }
+
+  .mobile-frame {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    aspect-ratio: auto !important;
+  }
+}
