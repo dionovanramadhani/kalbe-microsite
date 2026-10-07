@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { saveRegisteredUser, type User } from "../data/dummyUser";
 
 const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
 
@@ -41,9 +42,20 @@ export const RegisterPage: React.FC = () => {
 
     setIsLoading(true);
     setTimeout(() => {
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        speciality,
+        practicePlace: practicePlace.trim(),
+        avatar: "/assets/docter-avatar.png",
+      };
+      saveRegisteredUser(newUser);
+
       setIsLoading(false);
       alert(
-        `Pendaftaran Berhasil!\nNama: ${fullName}\nSpeciality: ${speciality}\nEmail: ${email}`,
+        `Pendaftaran Berhasil!\nNama: ${fullName}\nSpeciality: ${speciality}\nEmail: ${email}\nSilakan login menggunakan nomor telepon dan email Anda.`,
       );
       navigate("/login");
     }, 600);

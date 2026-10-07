@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authenticateUser, DUMMY_USERS } from '../data/dummyUser';
 
 // Solid / filled icons matching the design mockup precisely
 const PhoneFilledIcon = () => (
@@ -29,9 +30,25 @@ export const LoginPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleQuickFill = () => {
+    const dummy = DUMMY_USERS[0];
+    setPhone(dummy.phone);
+    setEmail(dummy.email);
+    setErrorMessage(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    const result = authenticateUser(phone, email);
+    if (!result.success) {
+      setErrorMessage(result.error || 'Nomor telepon atau email salah.');
+      return;
+    }
+
     navigate('/home');
   };
 
@@ -67,6 +84,28 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Dummy User Hint & Auto-Fill helper */}
+          <div className="mb-3.5 p-2.5 rounded-lg bg-red-50/70 border border-red-100 flex items-center justify-between text-[11px] text-gray-600">
+            <div>
+              <span className="font-semibold text-[#8E000A] block">Akun Dummy Demo:</span>
+              <span className="text-gray-500 font-mono">081234567890 / ridwan@kalbe.co.id</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickFill}
+              className="px-2 py-1 bg-white hover:bg-red-50 text-[#C70412] font-semibold border border-[#C70412]/30 rounded text-[10px] active:scale-95 transition cursor-pointer shrink-0 ml-2"
+            >
+              Isi Otomatis
+            </button>
+          </div>
+
+          {/* Error Message Alert */}
+          {errorMessage && (
+            <div className="mb-3.5 p-2.5 rounded-lg bg-red-100/90 border border-red-300 text-[12px] text-red-800 font-medium">
+              {errorMessage}
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Input 1: Nomor Telepon */}
@@ -75,7 +114,10 @@ export const LoginPage: React.FC = () => {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
                 placeholder="Masukan nomor telepon"
                 className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
               />
@@ -87,7 +129,10 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
                 placeholder="Masukan email"
                 className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
               />
@@ -147,3 +192,5 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+
+

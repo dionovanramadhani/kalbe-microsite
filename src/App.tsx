@@ -6,6 +6,8 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 
 import { HomePage } from './pages/HomePage';
 import { SymposiumPage } from './pages/SymposiumPage';
+import { PostTestPage } from './pages/PostTestPage';
+import { ClaimRewardPage } from './pages/ClaimRewardPage';
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/symposium" element={<SymposiumPage />} />
+          <Route path="/post-test" element={<PostTestPage />} />
+          <Route path="/claim-reward" element={<ClaimRewardPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </MobileFrame>
