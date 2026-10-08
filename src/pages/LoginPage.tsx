@@ -46,7 +46,7 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const result = authenticateUser(phone, email);
+    const result = authenticateUser(phone, email, rememberMe);
     if (!result.success) {
       setErrorMessage(result.error || "Nomor telepon atau email salah.");
       return;
@@ -156,7 +156,7 @@ export const LoginPage: React.FC = () => {
 
               <Link
                 to="/forgot-password"
-                className="text-[#C70412] hover:text-[#8E000A] font-semibold transition-colors"
+                className="text-[#C70412] hover:text-[#8E000A] font-semibold transition-colors hidden"
               >
                 Lupa Password?
               </Link>

@@ -1,9 +1,9 @@
 [
   {
     "id": "user-1",
-    "fullName": "dr. Ridwan Setiawan",
-    "phone": "081234567890",
-    "email": "ridwan@kalbe.co.id",
+    "fullName": "User Test",
+    "phone": "00000000",
+    "email": "user@test.com",
     "speciality": "DSA",
     "practicePlace": "RSIA Bunda Jakarta",
     "avatar": "/assets/docter-avatar.png"

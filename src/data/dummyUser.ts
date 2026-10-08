@@ -16,6 +16,18 @@ export const DUMMY_USERS: User[] = initialDummyUsers;
 
 const STORAGE_KEY_AUTH = 'kalbe_auth_user';
 const STORAGE_KEY_REGISTERED_USERS = 'kalbe_registered_users';
+const STORAGE_KEY_REMEMBER_ME = 'kalbe_remember_me';
+
+export const isRememberMeActive = (): boolean => {
+  try {
+    const isRemembered = localStorage.getItem(STORAGE_KEY_REMEMBER_ME);
+    const authUser = localStorage.getItem(STORAGE_KEY_AUTH);
+    return isRemembered === 'true' && Boolean(authUser);
+  } catch (err) {
+    console.error('Failed to check remember me status:', err);
+    return false;
+  }
+};
 
 export const getRegisteredUsers = (): User[] => {
   try {
@@ -109,7 +121,8 @@ const normalizePhone = (phone: string): string => {
 
 export const authenticateUser = (
   phoneInput: string,
-  emailInput: string
+  emailInput: string,
+  rememberMe: boolean = false
 ): { success: boolean; user?: User; error?: string } => {
   const cleanPhone = normalizePhone(phoneInput.trim());
   const cleanEmail = emailInput.trim().toLowerCase();
@@ -137,6 +150,11 @@ export const authenticateUser = (
 
   try {
     localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(matchedUser));
+    if (rememberMe) {
+      localStorage.setItem(STORAGE_KEY_REMEMBER_ME, 'true');
+    } else {
+      localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
+    }
   } catch (err) {
     console.error('Failed to save current user session:', err);
   }
@@ -163,6 +181,7 @@ export const getCurrentUser = (): User | null => {
 export const logoutUser = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY_AUTH);
+    localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
   } catch (err) {
     console.error('Failed to remove auth user:', err);
   }
