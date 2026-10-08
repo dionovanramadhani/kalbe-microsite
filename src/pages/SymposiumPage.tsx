@@ -11,6 +11,7 @@ import {
   unlockReward,
 } from "../data/rewardStore";
 import { setSymposiumJoined } from "../data/symposiumStore";
+import { Toast, type ToastType } from "../components/Toast";
 
 export interface SymposiumPageProps {
   scanType?: "symposium" | "booth" | "early-life";
@@ -124,8 +125,44 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
     }
   }, []);
 
-  // Play loud, crisp, and piercing scanner "beep" tone using dual-harmonic synthesis
-  const playBeepSound = useCallback(() => {
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: ToastType;
+    message: string;
+  }>({
+    show: false,
+    type: "error",
+    message: "",
+  });
+
+  const showToast = useCallback((type: ToastType, message: string) => {
+    setToast({
+      show: true,
+      type,
+      message,
+    });
+  }, []);
+
+  // Play sound effect (/assets/sound-effect/beep.mp3) with Web Audio API synthesizer fallback
+  const playScanSound = useCallback((isSuccess: boolean = true) => {
+    // 1. Try playing audio file first
+    try {
+      const audio = new Audio("/assets/sound-effect/beep.mp3");
+      audio.volume = 0.85;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Fallback to Web Audio synthesizer if audio file autoplay is restricted
+          playSynthesizedTone(isSuccess);
+        });
+      }
+    } catch {
+      playSynthesizedTone(isSuccess);
+    }
+  }, []);
+
+  // Web Audio synthesizer tone fallback
+  const playSynthesizedTone = (isSuccess: boolean) => {
     try {
       const AudioCtx =
         window.AudioContext ||
@@ -136,39 +173,39 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
 
-      // Primary high-pitch oscillator (2400Hz - high piercing scanner beep)
-      const osc1 = ctx.createOscillator();
-      osc1.type = "sine";
-      osc1.frequency.setValueAtTime(2400, now);
+      if (isSuccess) {
+        // High bright chime for success
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(2400, now);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else {
+        // Low double-buzz for failure
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(220, now);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
 
-      // Secondary harmonic oscillator (3200Hz - adds sharpness/bite to the sound)
-      const osc2 = ctx.createOscillator();
-      osc2.type = "sine";
-      osc2.frequency.setValueAtTime(3200, now);
-
-      // Master Gain for maximum clear output
-      const gainNode = ctx.createGain();
-      gainNode.gain.setValueAtTime(0.65, now);
-      // Quick exponential decay over 180ms
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 0.18);
-      osc2.stop(now + 0.18);
-
-      // Auto close audio context
       setTimeout(() => {
         ctx.close().catch(() => {});
       }, 350);
     } catch (e) {
-      console.warn("Audio playback not allowed or failed:", e);
+      console.warn("Audio synthesizer error:", e);
     }
-  }, []);
+  };
 
   const onScanSuccess = useCallback(
     (decodedText: string): boolean => {
@@ -179,15 +216,20 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       const isValid = isQrCodeValid(decodedText, activeScanType);
 
       if (!isValid) {
+        // Play failed scan audio feedback
+        playScanSound(false);
+
         const errorMsg =
           activeScanType === "early-life"
             ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Kalbe Early Life Solutions."
             : activeScanType === "booth"
               ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Morinaga Booth."
               : "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Symposium Morinaga.";
-        alert(errorMsg);
+        
+        // Show floating toaster instead of native browser alert
+        showToast("error", errorMsg);
 
-        // Setelah alert ditutup oleh user, langsung hidupkan kembali scanning loop
+        // Resume scanning loop after short delay
         setTimeout(() => {
           isProcessingScanRef.current = false;
           if (!isNavigatingRef.current && scanFrameRef.current) {
@@ -196,14 +238,14 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
             }
             animFrameIdRef.current = requestAnimationFrame(scanFrameRef.current);
           }
-        }, 400);
+        }, 1200);
         return false;
       }
 
       isNavigatingRef.current = true;
 
-      // Play scanner beep audio feedback
-      playBeepSound();
+      // Play successful scanner beep audio feedback
+      playScanSound(true);
 
       // Trigger shutter flash
       setIsScanned(true);
@@ -235,7 +277,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
 
       return true;
     },
-    [navigate, stopCameraHardware, playBeepSound, activeScanType],
+    [navigate, stopCameraHardware, playScanSound, showToast, activeScanType],
   );
 
   const handleBackToHome = () => {
@@ -595,6 +637,15 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           </div>
         </div>
       )}
+
+      {/* Floating Toast Notification for Scan Failures */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+        duration={3500}
+      />
     </div>
   );
 };

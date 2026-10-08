@@ -161,7 +161,7 @@ export const ClaimRewardPage: React.FC = () => {
           <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
-              backgroundImage: `url('/assets/scanner-frame-camera.png')`,
+              backgroundImage: `url('/assets/red-and-white-curve-bg-long.png')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}

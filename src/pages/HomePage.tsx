@@ -264,26 +264,77 @@ export const HomePage: React.FC = () => {
 
       {/* Main Mission Card ("Misi Utama") */}
       <div className="relative px-3 flex-1 flex flex-col z-10">
-        <div
-          className="relative w-full px-3.5 pt-4 pb-5"
-          style={{
-            backgroundImage: `url('/assets/mission-bg.png')`,
-            backgroundSize: "100% 100%",
-            backgroundRepeat: "no-repeat",
-          }}
-        >
+        <div className="relative w-full px-4 pt-5 pb-6 drop-shadow-sm">
+          {/* Sliced SVG Futuristic 8-Sided (Octagon) Background with Thicker Accent Corners */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox="0 0 380 430"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            {/* Background Fill (#FEF9F7) */}
+            <polygon
+              points="24,2 356,2 378,24 378,406 356,428 24,428 2,406 2,24"
+              fill="#FEF9F7"
+            />
+
+            {/* Base Red Outline (#F4233E) - Standard 2px */}
+            <polygon
+              points="24,2 356,2 378,24 378,406 356,428 24,428 2,406 2,24"
+              stroke="#F4233E"
+              strokeWidth="2"
+              strokeLinejoin="miter"
+            />
+
+            {/* Top-Left Corner Thick Accent (7.5px) */}
+            <polyline
+              points="50,2 24,2 2,24 2,50"
+              stroke="#F4233E"
+              strokeWidth="7.5"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+
+            {/* Top-Right Corner Thick Accent (7.5px) */}
+            <polyline
+              points="330,2 356,2 378,24 378,50"
+              stroke="#F4233E"
+              strokeWidth="7.5"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+
+            {/* Bottom-Right Corner Thick Accent (7.5px) */}
+            <polyline
+              points="378,380 378,406 356,428 330,428"
+              stroke="#F4233E"
+              strokeWidth="7.5"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+
+            {/* Bottom-Left Corner Thick Accent (7.5px) */}
+            <polyline
+              points="50,428 24,428 2,406 2,380"
+              stroke="#F4233E"
+              strokeWidth="7.5"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+          </svg>
+
           {/* Card Header */}
-          <div className="text-center mb-3.5">
+          <div className="relative z-10 text-center mb-4">
             <h2 className="text-[22px] font-bold text-[#940B0A] tracking-tight leading-tight">
               Misi Utama
             </h2>
-            <p className="text-[12px] text-[#5A5A5A] mt-2 font-normal">
+            <p className="text-[12px] text-[#5A5A5A] mt-1.5 font-normal">
               Ikuti aktivitas berikut untuk mendapatkan reward.
             </p>
           </div>
 
           {/* Mission Items List */}
-          <div className="space-y-3 flex flex-col gap-3">
+          <div className="relative z-10 space-y-3 flex flex-col gap-3">
             {missions.map((mission) => (
               <div key={mission.id} className="flex items-start gap-2.5 py-0.5">
                 {/* Left: Hexagonal Futuristic Icon */}
