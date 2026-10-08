@@ -18,19 +18,19 @@
     "icon": "/assets/morinaga-booth-icon.png",
     "obtained": false,
     "claimed": false,
-    "rewardName": "Merchandise Eksklusif Morinaga",
-    "rewardImage": "/assets/reward-dummy-symposium.png"
+    "rewardName": "DOCTOR’S ACTIVE KIT Morinaga",
+    "rewardImage": "/assets/morinaga-booth-reward.png"
   },
   {
     "id": "early-life",
-    "title": "Early Life Solutions",
-    "subtitle": "Mengikuti Kalbe 60th Booth",
+    "title": "Kalbe Early Life Solutions",
+    "subtitle": "Mengikuti Kalbe Early Life Solutions",
     "date": "12 Okt 2026 • 10:30",
     "icon": "/assets/kalbe-60th-icon.png",
     "obtained": false,
     "claimed": false,
-    "rewardName": "Paket Nutrisi Kalbe Universe",
-    "rewardImage": "/assets/reward-dummy-symposium.png"
+    "rewardName": "DOCTOR’S ACTIVE KIT Morinaga",
+    "rewardImage": "/assets/morinaga-booth-reward.png"
   },
   {
     "id": "mistery-box",
@@ -40,7 +40,7 @@
     "icon": "/assets/mistery-box.png",
     "obtained": false,
     "claimed": false,
-    "rewardName": "Grand Prize Mistery Box",
-    "rewardImage": "/assets/reward-box.png"
+    "rewardName": "MYSTERY BOX Morinaga",
+    "rewardImage": "/assets/mystery-box-reward.png"
   }
 ]

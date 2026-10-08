@@ -6,6 +6,7 @@ import {
   setPostTestCompleted,
   isPostTestCompleted,
 } from "../data/rewardStore";
+import { setSymposiumJoined } from "../data/symposiumStore";
 
 const QUESTIONS_PER_SECTION = 3;
 
@@ -49,12 +50,12 @@ export const PostTestPage: React.FC = () => {
 
   // Check if all questions in the current section have been answered
   const isCurrentSectionComplete = currentQuestions.every(
-    (q) => answers[q.id] !== undefined
+    (q) => answers[q.id] !== undefined,
   );
 
   // Check if all questions overall (all 9 questions) have been answered
   const isAllQuestionsAnswered = POST_TEST_QUESTIONS.every(
-    (q) => answers[q.id] !== undefined
+    (q) => answers[q.id] !== undefined,
   );
 
   const isLastSection = currentSection === totalSections - 1;
@@ -81,6 +82,7 @@ export const PostTestPage: React.FC = () => {
       // Last section -> Unlock reward, mark post test completed & redirect to /home with pop-up modal state
       unlockReward("morinaga-sympo");
       setPostTestCompleted(true);
+      setSymposiumJoined(true);
       navigate("/home", {
         state: {
           showPostTestSuccessModal: true,
@@ -170,7 +172,7 @@ export const PostTestPage: React.FC = () => {
                     </div>
 
                     {/* Radio Options List */}
-                    <div className="pl-7 space-y-2">
+                    <div className="pl-7 space-y-2.5">
                       {q.options.map((opt, optIdx) => {
                         const isChecked = selectedOpt === optIdx;
 
@@ -178,10 +180,10 @@ export const PostTestPage: React.FC = () => {
                           <label
                             key={optIdx}
                             onClick={() => handleSelectOption(q.id, optIdx)}
-                            className="flex items-center gap-2.5 cursor-pointer group select-none"
+                            className="flex items-start gap-2.5 cursor-pointer group select-none py-0.5"
                           >
                             <div
-                              className={`w-[17px] h-[17px] rounded-full border-2 flex items-center justify-center transition-all ${
+                              className={`w-[17px] h-[17px] shrink-0 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
                                 isChecked
                                   ? "border-[#C70412] bg-[#C70412]"
                                   : "border-gray-400 bg-white group-hover:border-gray-600"
@@ -191,7 +193,7 @@ export const PostTestPage: React.FC = () => {
                                 <div className="w-[6px] h-[6px] rounded-full bg-white" />
                               )}
                             </div>
-                            <span className="text-[12px] text-[#374151] font-normal leading-tight group-hover:text-black">
+                            <span className="text-[12px] text-[#374151] font-normal leading-snug group-hover:text-black flex-1">
                               {opt}
                             </span>
                           </label>
@@ -221,7 +223,7 @@ export const PostTestPage: React.FC = () => {
         <button
           onClick={handleNextOrSubmit}
           disabled={isActionDisabled}
-          className={`relative w-[280px] sm:w-[300px] h-[52px] flex items-center justify-center transition-all duration-200 ${
+          className={`relative w-[250px] h-[52px] flex items-center justify-center transition-all duration-200 ${
             isActionDisabled
               ? "opacity-45 cursor-not-allowed filter grayscale"
               : "cursor-pointer active:scale-95 hover:brightness-105"

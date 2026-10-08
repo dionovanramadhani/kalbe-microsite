@@ -12,9 +12,7 @@ const DUMMY_CREW_PIN = "88";
 
 export const ClaimRewardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [rewards, setRewards] = useState<RewardItem[]>(() =>
-    getObtainedRewards(),
-  );
+  const [rewards, setRewards] = useState<RewardItem[]>(() => getObtainedRewards());
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
 
   // Modal States
@@ -128,15 +126,15 @@ export const ClaimRewardPage: React.FC = () => {
                     </div>
 
                     {/* Center: Info text */}
-                    <div className="flex-1 min-w-0 pr-1">
-                      <h3 className="text-[13px] font-bold text-[#1E1E1E] leading-tight truncate">
+                    <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
+                      <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight">
                         {item.title}
                       </h3>
-                      <p className="text-[11.5px] font-medium text-[#4B5563] leading-tight truncate mt-0.5">
+                      <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5">
                         {item.subtitle}
                       </p>
-                      <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
-                        <Calendar className="w-3 h-3 text-gray-400" />
+                      <div className="flex items-center gap-1 text-[8px] text-[#83939A] mt-1">
+                        <Calendar className="w-2.5 h-2.5 text-gray-400" />
                         <span>{item.date}</span>
                       </div>
                     </div>
@@ -176,11 +174,10 @@ export const ClaimRewardPage: React.FC = () => {
         isOpen={showPinModal}
         onClose={() => setShowPinModal(false)}
         title="MASUKAN PIN"
-        buttonText="OKE"
-        onButtonClick={handleConfirmPin}
+        hideDefaultButton={true}
       >
         <div className="w-full flex flex-col items-center text-center px-2 my-auto">
-          <h2 className="text-[20px] sm:text-[22px] font-bold text-[#C70412] tracking-wider uppercase mb-7 leading-tight">
+          <h2 className="text-[18px] sm:text-[19px] font-bold text-[#C70412] tracking-wider uppercase mb-7 leading-tight">
             MASUKAN PIN
           </h2>
 
@@ -224,14 +221,27 @@ export const ClaimRewardPage: React.FC = () => {
           </div>
 
           {pinError && (
-            <p className="text-[11.5px] font-semibold text-red-600 mb-2">
-              {pinError}
-            </p>
+            <p className="text-[11.5px] font-semibold text-red-600 mb-2">{pinError}</p>
           )}
 
-          <p className="text-[12.5px] sm:text-[13px] font-medium text-[#4B5563] leading-snug max-w-[240px] mb-2">
+          <p className="text-[15px] sm:text-[16px] font-medium text-[#555555] leading-snug max-w-[240px] mb-6">
             Masukan PIN dari crew untuk mengambil hadiah
           </p>
+
+          {/* OKE Button grouped in center */}
+          <button
+            onClick={handleConfirmPin}
+            className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
+            style={{
+              backgroundImage: `url('/assets/red-button.png')`,
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
+            }}
+          >
+            <span className="text-white font-extrabold text-[13px] sm:text-[14px] tracking-wider uppercase drop-shadow">
+              OKE
+            </span>
+          </button>
         </div>
       </RewardModal>
 
@@ -246,7 +256,11 @@ export const ClaimRewardPage: React.FC = () => {
           subtitle={
             <span>
               Anda mendapatkan <br />
-              {selectedReward.rewardName}
+              {selectedReward.id === "mistery-box" ? (
+                <span className="font-bold">{selectedReward.rewardName}</span>
+              ) : (
+                selectedReward.rewardName
+              )}
             </span>
           }
           buttonText="OKE"

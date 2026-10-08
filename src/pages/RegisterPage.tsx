@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { saveRegisteredUser, type User } from "../data/dummyUser";
+import { registerNewUser } from "../data/dummyUser";
+import { Toast, type ToastType } from "../components/Toast";
 
 const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
 
@@ -10,54 +11,93 @@ export const RegisterPage: React.FC = () => {
   const [practicePlace, setPracticePlace] = useState("");
   const [practiceAddress, setPracticeAddress] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("+62");
+  const [phone, setPhone] = useState("");
   const [speciality, setSpeciality] = useState<string>("");
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Toast State
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: ToastType;
+    message: string;
+  }>({
+    show: false,
+    type: "error",
+    message: "",
+  });
+
+  const showToast = (type: ToastType, message: string) => {
+    setToast({
+      show: true,
+      type,
+      message,
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+
+    const cleanDigits = phone.trim().replace(/\D/g, "");
 
     if (
       !fullName.trim() ||
       !practicePlace.trim() ||
       !practiceAddress.trim() ||
-      !email.trim()
+      !email.trim() ||
+      !cleanDigits
     ) {
-      setErrorMessage("Silakan lengkapi semua data formulir pendaftaran.");
+      showToast("error", "Silakan lengkapi semua data formulir pendaftaran.");
+      return;
+    }
+
+    if (cleanDigits.length < 8) {
+      showToast("error", "Nomor handphone minimal 8 digit setelah +62.");
       return;
     }
 
     if (!speciality) {
-      setErrorMessage("Silakan pilih salah satu Speciality.");
+      showToast("error", "Silakan pilih salah satu Speciality.");
       return;
     }
 
     if (!agreed) {
-      setErrorMessage("Anda harus menyetujui Syarat Ketentuan dan Kebijakan Privasi.");
+      showToast("error", "Anda harus menyetujui Syarat Ketentuan dan Kebijakan Privasi.");
       return;
     }
 
     setIsLoading(true);
+
+    const fullPhoneNumber = `0${cleanDigits}`;
+
     setTimeout(() => {
-      const newUser: User = {
-        id: `user-${Date.now()}`,
+      const result = registerNewUser({
         fullName: fullName.trim(),
-        phone: phone.trim(),
+        phone: fullPhoneNumber,
         email: email.trim(),
         speciality,
         practicePlace: practicePlace.trim(),
+        practiceAddress: practiceAddress.trim(),
         avatar: "/assets/docter-avatar.png",
-      };
-      saveRegisteredUser(newUser);
+      });
 
       setIsLoading(false);
-      alert(
-        `Pendaftaran Berhasil!\nNama: ${fullName}\nSpeciality: ${speciality}\nEmail: ${email}\nSilakan login menggunakan nomor telepon dan email Anda.`,
+
+      if (!result.success) {
+        showToast("error", result.error || "Pendaftaran gagal. Silakan coba lagi.");
+        return;
+      }
+
+      // Success Registration Toast
+      showToast(
+        "success",
+        `Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.`,
       );
-      navigate("/login");
+
+      // Redirect to login after brief delay so user sees toast
+      setTimeout(() => {
+        navigate("/login");
+      }, 1600);
     }, 600);
   };
 
@@ -66,6 +106,14 @@ export const RegisterPage: React.FC = () => {
       className="relative min-h-full w-full flex flex-col justify-between bg-cover bg-top select-none"
       style={{ backgroundImage: `url('/assets/red-and-white-curve-bg.png')` }}
     >
+      {/* Top Floating Toast Notification */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+      />
+
       {/* Top Banner Section with Centered Kalbe Universe Logo */}
       <div className="relative h-[180px] w-full shrink-0 flex items-center justify-center pt-2">
         <div className="w-[175px] sm:w-[190px]">
@@ -92,12 +140,6 @@ export const RegisterPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs font-medium">
-                {errorMessage}
-              </div>
-            )}
-
             {/* Nama lengkap */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
@@ -157,15 +199,34 @@ export const RegisterPage: React.FC = () => {
             {/* Nomor hanphone (Whatsapp) */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
-                Nomor hanphone (Whatsapp)
+                Nomor handphone (Whatsapp)
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] text-[14px] text-gray-800 bg-white transition-all focus:border-[#C70412] focus:ring-1 focus:ring-[#C70412]/30 outline-none font-normal"
-                required
-              />
+              <div className="relative flex items-center h-[48px] border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30 overflow-hidden px-3.5">
+                {/* Immutable Country Code Prefix */}
+                <div className="h-full flex items-center justify-center select-none shrink-0 pointer-events-none pr-1">
+                  <span className="text-[14px] text-gray-700 tracking-wide">+62</span>
+                </div>
+
+                {/* Number Input (User only inputs digits after +62) */}
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => {
+                    // Only accept digits, and if user types leading 0 or 62, normalize it
+                    let raw = e.target.value.replace(/\D/g, "");
+                    if (raw.startsWith("62")) {
+                      raw = raw.slice(2);
+                    }
+                    if (raw.startsWith("0")) {
+                      raw = raw.slice(1);
+                    }
+                    setPhone(raw);
+                  }}
+                  className="w-full h-full pl-1 pr-1 text-[14px] text-gray-800 bg-transparent outline-none font-normal placeholder:text-gray-400"
+                  required
+                />
+              </div>
             </div>
 
             {/* Speciality */}

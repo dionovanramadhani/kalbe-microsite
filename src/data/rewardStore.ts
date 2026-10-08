@@ -19,6 +19,10 @@ let inMemoryRewards: RewardItem[] = JSON.parse(
 
 // Flag apakah user telah menyelesaikan post-test
 let hasCompletedPostTest: boolean = false;
+// Flag apakah user telah menyelesaikan detailing booth
+let hasCompletedBoothDetailing: boolean = false;
+// Flag apakah user telah menyelesaikan detailing Kalbe Early Life Solutions
+let hasCompletedEarlyLifeDetailing: boolean = false;
 
 export const isPostTestCompleted = (): boolean => {
   return hasCompletedPostTest;
@@ -26,6 +30,22 @@ export const isPostTestCompleted = (): boolean => {
 
 export const setPostTestCompleted = (completed = true): void => {
   hasCompletedPostTest = completed;
+};
+
+export const isBoothDetailingCompleted = (): boolean => {
+  return hasCompletedBoothDetailing;
+};
+
+export const setBoothDetailingCompleted = (completed = true): void => {
+  hasCompletedBoothDetailing = completed;
+};
+
+export const isEarlyLifeDetailingCompleted = (): boolean => {
+  return hasCompletedEarlyLifeDetailing;
+};
+
+export const setEarlyLifeDetailingCompleted = (completed = true): void => {
+  hasCompletedEarlyLifeDetailing = completed;
 };
 
 /**
@@ -50,15 +70,64 @@ export const getRewardById = (id: string): RewardItem | undefined => {
 };
 
 /**
- * Menandai reward sebagai diperoleh (misal setelah menyelesaikan post-test).
+ * Format tanggal sekarang sesuai format: "08 Okt 2026 • 15:15"
+ */
+const formatRewardTimestamp = (dateObj: Date = new Date()): string => {
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  const month = monthNames[dateObj.getMonth()];
+  const year = dateObj.getFullYear();
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+
+  return `${day} ${month} ${year} • ${hours}:${minutes}`;
+};
+
+/**
+ * Menandai reward sebagai diperoleh (misal setelah menyelesaikan post-test atau scan booth).
+ * Tanggal reward akan di-update ke waktu user menyelesaikan aktivitas tersebut.
+ * Jika semua 3 misi utama selesai, otomatis unlock mistery-box dengan timestamp sekarang juga.
  */
 export const unlockReward = (id: string): RewardItem | null => {
   const item = inMemoryRewards.find((r) => r.id === id);
   if (item) {
-    item.obtained = true;
-    return { ...item };
+    if (!item.obtained) {
+      item.obtained = true;
+      item.date = formatRewardTimestamp();
+    }
   }
-  return null;
+
+  // Cek apakah 3 misi utama telah diperoleh/diselesaikan
+  const morinagaSympo = inMemoryRewards.find((r) => r.id === "morinaga-sympo");
+  const morinagaBooth = inMemoryRewards.find((r) => r.id === "morinaga-booth");
+  const earlyLife = inMemoryRewards.find((r) => r.id === "early-life");
+
+  if (
+    morinagaSympo?.obtained &&
+    morinagaBooth?.obtained &&
+    earlyLife?.obtained
+  ) {
+    const misteryBox = inMemoryRewards.find((r) => r.id === "mistery-box");
+    if (misteryBox && !misteryBox.obtained) {
+      misteryBox.obtained = true;
+      misteryBox.date = formatRewardTimestamp();
+    }
+  }
+
+  return item ? { ...item } : null;
 };
 
 /**
@@ -86,4 +155,6 @@ export const getUnclaimedCount = (): number => {
 export const resetRewardStore = (): void => {
   inMemoryRewards = JSON.parse(JSON.stringify(initialRewardsData));
   hasCompletedPostTest = false;
+  hasCompletedBoothDetailing = false;
+  hasCompletedEarlyLifeDetailing = false;
 };

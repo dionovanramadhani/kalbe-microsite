@@ -1,0 +1,29 @@
+[
+  {
+    "id": "user-1",
+    "fullName": "dr. Ridwan Setiawan",
+    "phone": "081234567890",
+    "email": "ridwan@kalbe.co.id",
+    "speciality": "DSA",
+    "practicePlace": "RSIA Bunda Jakarta",
+    "avatar": "/assets/docter-avatar.png"
+  },
+  {
+    "id": "user-2",
+    "fullName": "dr. Sarah Amanda, Sp.A",
+    "phone": "081298765432",
+    "email": "sarah@kalbe.co.id",
+    "speciality": "PPDS",
+    "practicePlace": "RS Cipto Mangunkusumo",
+    "avatar": "/assets/docter-avatar.png"
+  },
+  {
+    "id": "user-3",
+    "fullName": "dr. Budi Pratama",
+    "phone": "081122334455",
+    "email": "budi@kalbe.co.id",
+    "speciality": "GP",
+    "practicePlace": "Klinik Medika Sehat",
+    "avatar": "/assets/docter-avatar.png"
+  }
+]

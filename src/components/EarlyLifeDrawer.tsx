@@ -1,17 +1,15 @@
 import React from "react";
 import { X } from "lucide-react";
 
-export interface BoothDrawerProps {
+export interface EarlyLifeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onPodcastScheduleClick?: () => void;
   onContinueClick?: () => void;
 }
 
-export const BoothDrawer: React.FC<BoothDrawerProps> = ({
+export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
   isOpen,
   onClose,
-  onPodcastScheduleClick,
   onContinueClick,
 }) => {
   const [isClosing, setIsClosing] = React.useState(false);
@@ -55,20 +53,20 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
 
         {/* Drawer Body Container */}
         <div className="w-full bg-white rounded-t-[32px] px-5 pt-6 pb-6 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)]">
-          {/* Top Header Badge: Futuristic MORINAGA BOOTH Plate */}
+          {/* Top Header Badge: Futuristic KALBE EARLY LIFE SOLUTIONS Plate */}
           <div className="mb-4 w-[240px] sm:w-[255px] shrink-0 flex items-center justify-center drop-shadow-sm">
             <img
-              src="/assets/morinaga-booth-title.png"
-              alt="Morinaga Booth"
+              src="/assets/kalbe-early-life-solution-title-image.png"
+              alt="Kalbe Early Life Solutions"
               className="w-full h-auto object-contain pointer-events-none select-none"
             />
           </div>
 
-          {/* Booth 3D Visual Artwork (slightly narrower width) */}
+          {/* Booth 3D Visual Artwork */}
           <div className="w-[270px] sm:w-[280px] rounded-2xl overflow-hidden bg-black/5 shadow-sm mb-4 border border-gray-100 flex justify-center">
             <img
-              src="/assets/morinaga-booth-image.png"
-              alt="Morinaga Booth Detailing"
+              src="/assets/kalbe-early-life-booth-image.png"
+              alt="Kalbe Early Life Solutions Booth"
               className="w-full h-auto object-cover pointer-events-none select-none"
             />
           </div>
@@ -76,7 +74,7 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
           {/* Content Heading & Description */}
           <div className="w-full text-left mb-5">
             <h3 className="text-[16px] font-extrabold text-[#111111] leading-tight mb-2 tracking-tight">
-              MoriTalks Morinaga – Meet The Expert
+              Kalbe Early Life Solutions
             </h3>
             <p className="text-[14px] font-normal text-[#222222B2] leading-relaxed">
               Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai
@@ -85,34 +83,18 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
             </p>
           </div>
 
-          {/* Action Buttons Row: Jadwal Podcast & LANJUT */}
-          <div className="w-full flex items-center justify-between gap-3 shrink-0">
-            {/* Left Button: Jadwal Podcast (Orange Futuristic) */}
-            <button
-              onClick={onPodcastScheduleClick}
-              className="flex-1 h-[42px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
-              style={{
-                backgroundImage: `url('/assets/detailing-orange.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span className="text-white font-bold text-[13px] tracking-wide drop-shadow-sm">
-                Jadwal Podcast
-              </span>
-            </button>
-
-            {/* Right Button: LANJUT (Red Futuristic) */}
+          {/* Action Button: LANJUT (Full width single button without podcast schedule) */}
+          <div className="w-full flex items-center justify-center shrink-0">
             <button
               onClick={onContinueClick}
-              className="flex-1 h-[42px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
+              className="w-52 h-[44px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
               style={{
-                backgroundImage: `url('/assets/detailing-red.png')`,
+                backgroundImage: `url('/assets/red-button.png')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}
             >
-              <span className="text-white font-bold text-[13px] tracking-wider uppercase drop-shadow-sm">
+              <span className="text-white font-extrabold text-[14px] tracking-wider uppercase drop-shadow-sm">
                 LANJUT
               </span>
             </button>

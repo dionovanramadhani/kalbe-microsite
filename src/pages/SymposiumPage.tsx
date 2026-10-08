@@ -1,22 +1,103 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, RefreshCw, QrCode, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Camera, RefreshCw, X } from "lucide-react";
 import jsQR from "jsqr";
-import { isPostTestCompleted } from "../data/rewardStore";
+import {
+  isPostTestCompleted,
+  isBoothDetailingCompleted,
+  setBoothDetailingCompleted,
+  isEarlyLifeDetailingCompleted,
+  setEarlyLifeDetailingCompleted,
+  unlockReward,
+} from "../data/rewardStore";
+import { setSymposiumJoined } from "../data/symposiumStore";
 
-export const SymposiumPage: React.FC = () => {
+export interface SymposiumPageProps {
+  scanType?: "symposium" | "booth" | "early-life";
+}
+
+const isQrCodeValid = (
+  decodedText: string,
+  scanType: "symposium" | "booth" | "early-life",
+): boolean => {
+  if (!decodedText || typeof decodedText !== "string") return false;
+
+  try {
+    const parsed = JSON.parse(decodedText);
+    if (typeof parsed === "object" && parsed !== null) {
+      const eventStr = String(parsed.event || "").toUpperCase();
+      const actionStr = String(parsed.action || "").toUpperCase();
+
+      if (scanType === "symposium") {
+        return (
+          eventStr.includes("SYMPOSIUM") ||
+          actionStr.includes("POST_TEST") ||
+          actionStr.includes("SYMPOSIUM")
+        );
+      }
+
+      if (scanType === "booth") {
+        return (
+          eventStr.includes("BOOTH") ||
+          actionStr.includes("BOOTH") ||
+          actionStr.includes("DETAILING")
+        );
+      }
+
+      if (scanType === "early-life") {
+        return (
+          eventStr.includes("EARLY_LIFE") ||
+          eventStr.includes("KALBE") ||
+          actionStr.includes("EARLY_LIFE") ||
+          actionStr.includes("DETAILING")
+        );
+      }
+    }
+  } catch {
+    const textUpper = decodedText.toUpperCase();
+    if (scanType === "symposium") {
+      return textUpper.includes("SYMPOSIUM") || textUpper.includes("POST_TEST");
+    }
+    if (scanType === "booth") {
+      return textUpper.includes("BOOTH") || textUpper.includes("DETAILING");
+    }
+    if (scanType === "early-life") {
+      return textUpper.includes("EARLY_LIFE") || textUpper.includes("KALBE");
+    }
+  }
+
+  return false;
+};
+
+export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeScanType =
+    scanType ||
+    (location.pathname === "/early-life-scan" || location.state?.type === "early-life"
+      ? "early-life"
+      : location.pathname === "/booth-scan" || location.state?.type === "booth"
+        ? "booth"
+        : "symposium");
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
   const isNavigatingRef = useRef(false);
+  const isProcessingScanRef = useRef(false);
+  const scanFrameRef = useRef<((time: number) => void) | null>(null);
 
-  // Jika user sudah menyelesaikan post-test, tidak boleh masuk lagi ke symposium
+  // Jika user sudah menyelesaikan misi terkait, redirect ke home
   useEffect(() => {
-    if (isPostTestCompleted()) {
+    if (activeScanType === "symposium" && isPostTestCompleted()) {
+      navigate("/home", { replace: true });
+    } else if (activeScanType === "booth" && isBoothDetailingCompleted()) {
+      navigate("/home", { replace: true });
+    } else if (activeScanType === "early-life" && isEarlyLifeDetailingCompleted()) {
       navigate("/home", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, activeScanType]);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -90,8 +171,35 @@ export const SymposiumPage: React.FC = () => {
   }, []);
 
   const onScanSuccess = useCallback(
-    (decodedText: string) => {
-      if (isNavigatingRef.current) return;
+    (decodedText: string): boolean => {
+      if (isNavigatingRef.current || isProcessingScanRef.current) return false;
+      isProcessingScanRef.current = true;
+
+      // Validasi QR code: jika QR yang discan salah, user tidak bisa lanjut
+      const isValid = isQrCodeValid(decodedText, activeScanType);
+
+      if (!isValid) {
+        const errorMsg =
+          activeScanType === "early-life"
+            ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Kalbe Early Life Solutions."
+            : activeScanType === "booth"
+              ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Morinaga Booth."
+              : "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Symposium Morinaga.";
+        alert(errorMsg);
+
+        // Setelah alert ditutup oleh user, langsung hidupkan kembali scanning loop
+        setTimeout(() => {
+          isProcessingScanRef.current = false;
+          if (!isNavigatingRef.current && scanFrameRef.current) {
+            if (animFrameIdRef.current) {
+              cancelAnimationFrame(animFrameIdRef.current);
+            }
+            animFrameIdRef.current = requestAnimationFrame(scanFrameRef.current);
+          }
+        }, 400);
+        return false;
+      }
+
       isNavigatingRef.current = true;
 
       // Play scanner beep audio feedback
@@ -103,12 +211,31 @@ export const SymposiumPage: React.FC = () => {
       // Stop camera hardware immediately
       stopCameraHardware();
 
-      setTimeout(() => {
-        setIsScanned(false);
-        navigate("/post-test", { state: { scannedData: decodedText } });
-      }, 450);
+      if (activeScanType === "early-life") {
+        setEarlyLifeDetailingCompleted(true);
+        unlockReward("early-life");
+        setTimeout(() => {
+          setIsScanned(false);
+          navigate("/home", { state: { showEarlyLifeSuccessModal: true } });
+        }, 350);
+      } else if (activeScanType === "booth") {
+        setBoothDetailingCompleted(true);
+        unlockReward("morinaga-booth");
+        setTimeout(() => {
+          setIsScanned(false);
+          navigate("/home", { state: { showBoothSuccessModal: true } });
+        }, 350);
+      } else {
+        setSymposiumJoined(true);
+        setTimeout(() => {
+          setIsScanned(false);
+          navigate("/post-test", { state: { scannedData: decodedText } });
+        }, 450);
+      }
+
+      return true;
     },
-    [navigate, stopCameraHardware, playBeepSound]
+    [navigate, stopCameraHardware, playBeepSound, activeScanType],
   );
 
   const handleBackToHome = () => {
@@ -123,14 +250,20 @@ export const SymposiumPage: React.FC = () => {
 
     let lastScanTime = 0;
     // Check if high-performance hardware-accelerated BarcodeDetector is supported
-    const hasBarcodeDetector = typeof window !== "undefined" && "BarcodeDetector" in window;
+    const hasBarcodeDetector =
+      typeof window !== "undefined" && "BarcodeDetector" in window;
     const barcodeDetector = hasBarcodeDetector
-      // @ts-expect-error BarcodeDetector is a modern browser web standard
-      ? new window.BarcodeDetector({ formats: ["qr_code"] })
+      ? // @ts-expect-error BarcodeDetector is a modern browser web standard
+        new window.BarcodeDetector({ formats: ["qr_code"] })
       : null;
 
     const scanFrame = async (timestamp: number) => {
       if (!isSubscribed || isNavigatingRef.current) return;
+
+      if (isProcessingScanRef.current) {
+        animFrameIdRef.current = requestAnimationFrame(scanFrame);
+        return;
+      }
 
       const video = videoRef.current;
       // Throttle scanning calculation to every 100ms (10 FPS) so the main thread & CSS laser animation stays 60fps buttery smooth
@@ -146,8 +279,8 @@ export const SymposiumPage: React.FC = () => {
             // Hardware-accelerated browser QR detector (Instant & 0 CPU overhead)
             const barcodes = await barcodeDetector.detect(video);
             if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-              onScanSuccess(barcodes[0].rawValue);
-              return;
+              const handled = onScanSuccess(barcodes[0].rawValue);
+              if (handled) return;
             }
           }
         } catch {
@@ -175,14 +308,16 @@ export const SymposiumPage: React.FC = () => {
           });
 
           if (code && code.data) {
-            onScanSuccess(code.data);
-            return;
+            const handled = onScanSuccess(code.data);
+            if (handled) return;
           }
         }
       }
 
       animFrameIdRef.current = requestAnimationFrame(scanFrame);
     };
+
+    scanFrameRef.current = scanFrame;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setTimeout(() => {
@@ -212,15 +347,18 @@ export const SymposiumPage: React.FC = () => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.setAttribute("playsinline", "true");
-          videoRef.current.play().then(() => {
-            if (isSubscribed) {
-              setIsCameraActive(true);
-              setCameraError(null);
-              animFrameIdRef.current = requestAnimationFrame(scanFrame);
-            }
-          }).catch((err) => {
-            console.warn("Video play error:", err);
-          });
+          videoRef.current
+            .play()
+            .then(() => {
+              if (isSubscribed) {
+                setIsCameraActive(true);
+                setCameraError(null);
+                animFrameIdRef.current = requestAnimationFrame(scanFrame);
+              }
+            })
+            .catch((err) => {
+              console.warn("Video play error:", err);
+            });
         }
       })
       .catch((err) => {
@@ -233,6 +371,7 @@ export const SymposiumPage: React.FC = () => {
 
     return () => {
       isSubscribed = false;
+      scanFrameRef.current = null;
       stopCameraHardware();
     };
   }, [retryCount, onScanSuccess, stopCameraHardware]);
@@ -242,18 +381,36 @@ export const SymposiumPage: React.FC = () => {
   };
 
   const handleManualScan = () => {
-    onScanSuccess(
-      JSON.stringify({
-        event: "MORINAGA_SYMPOSIUM_2026",
-        action: "CHECKIN_POST_TEST",
-        redirectUrl: "/post-test",
-      })
-    );
+    if (activeScanType === "early-life") {
+      onScanSuccess(
+        JSON.stringify({
+          event: "KALBE_EARLY_LIFE",
+          action: "DETAILING_SCAN",
+          title: "Kalbe Early Life Solutions Detailing",
+        }),
+      );
+    } else if (activeScanType === "booth") {
+      onScanSuccess(
+        JSON.stringify({
+          event: "MORINAGA_BOOTH_2026",
+          action: "DETAILING_BOOTH",
+          title: "Morinaga Booth Detailing",
+        }),
+      );
+    } else {
+      onScanSuccess(
+        JSON.stringify({
+          event: "MORINAGA_SYMPOSIUM_2026",
+          action: "CHECKIN_POST_TEST",
+          redirectUrl: "/post-test",
+        }),
+      );
+    }
   };
 
   return (
     <div
-      className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-3 pb-4 overflow-hidden"
+      className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-2.5 pb-3 overflow-hidden"
       style={{
         backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
@@ -262,36 +419,56 @@ export const SymposiumPage: React.FC = () => {
       {/* Subtle Floating Back Button */}
       <button
         onClick={handleBackToHome}
-        className="absolute top-3.5 left-3.5 z-30 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-[#C70412] shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer"
+        className="absolute top-3 left-3.5 z-30 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-[#C70412] shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer"
         title="Kembali ke Homepage"
       >
         <ArrowLeft className="w-4 h-4" />
       </button>
 
       {/* Floating QR Modal Trigger Button (Right) */}
-      <button
+      {/* <button
         onClick={() => setShowQrModal(true)}
-        className="absolute top-3.5 right-3.5 z-30 flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-[#8E000A] shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer text-[11px] font-bold border border-red-100"
+        className="absolute top-3 right-3.5 z-30 flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-[#8E000A] shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer text-[11px] font-bold border border-red-100"
         title="Lihat QR Code Contoh"
       >
         <QrCode className="w-3.5 h-3.5 text-[#C70412]" />
         <span>QR Demo</span>
-      </button>
+      </button> */}
 
-      {/* Top Banner: Morinaga Sympo Badge (Rocket + Banner) */}
-      <div className="w-full flex justify-center pt-1.5 shrink-0">
-        <div className="w-[165px] sm:w-[178px]">
+      {/* Top Banner: Kalbe Early Life Solutions, Morinaga Booth, or Morinaga Sympo Badge */}
+      <div className="w-full flex justify-center pt-0.5 shrink-0">
+        <div
+          className={
+            activeScanType === "early-life"
+              ? "w-[180px] sm:w-[195px]"
+              : activeScanType === "booth"
+                ? "w-[175px] sm:w-[190px]"
+                : "w-[168px] sm:w-[180px]"
+          }
+        >
           <img
-            src="/assets/morinaga-sympo-image.png"
-            alt="Morinaga Sympo"
+            src={
+              activeScanType === "early-life"
+                ? "/assets/kalbe-early-life-solution-logo-scaner.png"
+                : activeScanType === "booth"
+                  ? "/assets/morinaga-booth-image-2.png"
+                  : "/assets/morinaga-sympo-image.png"
+            }
+            alt={
+              activeScanType === "early-life"
+                ? "Kalbe Early Life Solutions"
+                : activeScanType === "booth"
+                  ? "Morinaga Booth"
+                  : "Morinaga Sympo"
+            }
             className="w-full h-auto object-contain drop-shadow-sm pointer-events-none"
           />
         </div>
       </div>
 
-      {/* Center Camera Scanner Viewfinder */}
-      <div className="relative w-full flex-1 flex items-center justify-center py-2 min-h-0">
-        <div className="relative w-full max-w-[350px] aspect-[366/462] max-h-[355px] sm:max-h-[375px] flex items-center justify-center shrink-0">
+      {/* Center Camera Scanner Viewfinder (Responsive to desktop and mobile viewport height) */}
+      <div className="relative w-full flex-1 flex flex-col items-center justify-center my-auto py-1 min-h-0">
+        <div className="relative h-full max-h-[375px] sm:max-h-[395px] aspect-[366/462] max-w-[320px] sm:max-w-[330px] flex items-center justify-center">
           {/* Video Feed Container with 45-degree chamfered polygon clip-path matching frame */}
           <div
             className="relative w-full h-full bg-[#111116] overflow-hidden flex items-center justify-center"
@@ -352,7 +529,7 @@ export const SymposiumPage: React.FC = () => {
       </div>
 
       {/* Bottom Floating Scanner Action Button */}
-      <div className="relative w-full flex justify-center items-center pt-1 pb-1 shrink-0 z-20">
+      <div className="relative w-full flex justify-center items-center pt-0.5 pb-2 shrink-0 z-20">
         <button
           onClick={handleManualScan}
           className="relative group cursor-pointer transition-transform duration-200 active:scale-95 hover:scale-105"
@@ -361,7 +538,7 @@ export const SymposiumPage: React.FC = () => {
           <img
             src="/assets/scan-image.png"
             alt="Scan QR"
-            className="w-[70px] h-[70px] object-contain drop-shadow-md group-hover:brightness-110 transition-all"
+            className="w-[62px] h-[62px] sm:w-[66px] sm:h-[66px] object-contain drop-shadow-md group-hover:brightness-110 transition-all"
           />
         </button>
       </div>
@@ -378,15 +555,26 @@ export const SymposiumPage: React.FC = () => {
             </button>
 
             <h3 className="text-[15px] font-bold text-[#8E000A] mb-1">
-              QR Code Dummy Symposium
+              {activeScanType === "early-life"
+                ? "QR Code Dummy Kalbe Early Life Solutions"
+                : activeScanType === "booth"
+                  ? "QR Code Dummy Morinaga Booth"
+                  : "QR Code Dummy Symposium"}
             </h3>
             <p className="text-[11px] text-gray-500 mb-4 leading-snug">
-              Arahkan kamera smartphone lain ke QR ini, atau gunakan tombol di bawah untuk test instant.
+              Arahkan kamera smartphone lain ke QR ini, atau gunakan tombol di bawah untuk
+              test instant.
             </p>
 
             <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-inner mb-4">
               <img
-                src="/assets/sample-qr-symposium.png"
+                src={
+                  activeScanType === "early-life"
+                    ? "/assets/sample-qr-early-life.png"
+                    : activeScanType === "booth"
+                      ? "/assets/sample-qr-booth.png"
+                      : "/assets/sample-qr-symposium.png"
+                }
                 alt="Sample QR Code"
                 className="w-[180px] h-[180px] object-contain"
               />

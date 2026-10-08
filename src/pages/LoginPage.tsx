@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { authenticateUser, DUMMY_USERS } from '../data/dummyUser';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  authenticateUser,
+  // DUMMY_USERS
+} from "../data/dummyUser";
 
 // Solid / filled icons matching the design mockup precisely
 const PhoneFilledIcon = () => (
@@ -27,17 +30,17 @@ const MailFilledIcon = () => (
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleQuickFill = () => {
-    const dummy = DUMMY_USERS[0];
-    setPhone(dummy.phone);
-    setEmail(dummy.email);
-    setErrorMessage(null);
-  };
+  // const handleQuickFill = () => {
+  //   const dummy = DUMMY_USERS[0];
+  //   setPhone(dummy.phone);
+  //   setEmail(dummy.email);
+  //   setErrorMessage(null);
+  // };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +48,11 @@ export const LoginPage: React.FC = () => {
 
     const result = authenticateUser(phone, email);
     if (!result.success) {
-      setErrorMessage(result.error || 'Nomor telepon atau email salah.');
+      setErrorMessage(result.error || "Nomor telepon atau email salah.");
       return;
     }
 
-    navigate('/home');
+    navigate("/home");
   };
 
   return (
@@ -71,7 +74,7 @@ export const LoginPage: React.FC = () => {
       {/* Sliced White Bottom Sheet Card */}
       <div
         className="relative flex-1 bg-white px-5 pt-6 pb-7 shadow-[0_-12px_32px_rgba(0,0,0,0.06)] flex flex-col justify-between"
-        style={{ borderTopLeftRadius: '32px', borderTopRightRadius: '32px' }}
+        style={{ borderTopLeftRadius: "32px", borderTopRightRadius: "32px" }}
       >
         <div>
           {/* Header */}
@@ -79,13 +82,11 @@ export const LoginPage: React.FC = () => {
             <h1 className="text-[26px] font-bold text-[#1E1E1E] leading-tight tracking-normal">
               Welcome
             </h1>
-            <p className="text-[14px] text-[#4B5563] mt-0.5">
-              Log in to your account.
-            </p>
+            <p className="text-[14px] text-[#4B5563] mt-0.5">Log in to your account.</p>
           </div>
 
           {/* Dummy User Hint & Auto-Fill helper */}
-          <div className="mb-3.5 p-2.5 rounded-lg bg-red-50/70 border border-red-100 flex items-center justify-between text-[11px] text-gray-600">
+          {/* <div className="mb-3.5 p-2.5 rounded-lg bg-red-50/70 border border-red-100 flex items-center justify-between text-[11px] text-gray-600">
             <div>
               <span className="font-semibold text-[#8E000A] block">Akun Dummy Demo:</span>
               <span className="text-gray-500 font-mono">081234567890 / ridwan@kalbe.co.id</span>
@@ -97,7 +98,7 @@ export const LoginPage: React.FC = () => {
             >
               Isi Otomatis
             </button>
-          </div>
+          </div> */}
 
           {/* Error Message Alert */}
           {errorMessage && (
@@ -113,9 +114,12 @@ export const LoginPage: React.FC = () => {
               <PhoneFilledIcon />
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={phone}
                 onChange={(e) => {
-                  setPhone(e.target.value);
+                  const numbersOnly = e.target.value.replace(/\D/g, "");
+                  setPhone(numbersOnly);
                   if (errorMessage) setErrorMessage(null);
                 }}
                 placeholder="Masukan nomor telepon"
@@ -162,7 +166,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               style={{
-                background: 'linear-gradient(90deg, #C70412 0%, #8E000A 100%)',
+                background: "linear-gradient(90deg, #C70412 0%, #8E000A 100%)",
               }}
               className="w-full h-[48px] rounded-[8px] text-white font-bold text-[16px] uppercase tracking-normal cursor-pointer flex items-center justify-center transition-all duration-150 active:scale-[0.99] hover:brightness-105 shadow-md shadow-red-900/20 mt-2.5"
             >
@@ -192,5 +196,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-
-

@@ -66,7 +66,7 @@
     opacity: 1;
   }
   100% {
-    transform: translateY(335px);
+    transform: translateY(350px);
     opacity: 0.3;
   }
 }
@@ -141,8 +141,40 @@
   animation: backdrop-fade-in 0.3s ease-out forwards;
 }
 
-.animate-backdrop-out {
-  animation: backdrop-fade-out 0.28s ease-in forwards;
+@keyframes toast-slide-down {
+  0% {
+    transform: translateY(-130%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-up {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-130%);
+    opacity: 0;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-toast-out {
+  animation: toast-slide-up 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform, opacity;
 }
 
 @layer base {
@@ -172,33 +204,31 @@
   }
 }
 
-/* Base Wrapper for Desktop Preview (matching nestle architecture) */
+/* Base Wrapper for Desktop Preview */
 .app-viewport {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 50% 38%, #5a0b12 0%, #34040a 55%, #180205 100%);
-  padding: 24px 16px;
+  padding: 0;
   position: relative;
   overflow: hidden;
 }
 
-/* Device Shell for Desktop Preview */
+/* Mobile Viewport Container on Desktop (no phone frame/borders, full viewport height) */
 .mobile-frame {
-  height: min(844px, 94vh);
-  max-height: 94vh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   width: 100%;
-  max-width: 393px;
+  max-width: 480px;
   background: #ffffff;
-  border-radius: 30px;
-  box-shadow:
-    0 25px 60px -12px rgba(0, 0, 0, 0.8),
-    0 0 0 10px #250408,
-    0 0 0 12px rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
   position: relative;
   overflow: hidden;
   display: flex;

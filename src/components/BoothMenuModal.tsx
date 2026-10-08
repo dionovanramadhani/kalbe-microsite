@@ -24,7 +24,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({ isOpen, onClose 
       />
 
       {/* Modal Wrapper with Top-Right Close Button and Central Card */}
-      <div className="relative z-10 w-full max-w-[315px] sm:max-w-[325px] flex flex-col items-center animate-in fade-in zoom-in-95 duration-200 gap-7">
+      <div className="relative z-10 w-full max-w-[361px] flex flex-col items-center animate-in fade-in zoom-in-95 duration-200 gap-7">
         {/* Floating Red Circular Close Button (top-right, outside/above the card) */}
         <div className="w-full flex justify-end mb-2 pr-1">
           <button

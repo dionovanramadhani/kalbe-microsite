@@ -1,3 +1,5 @@
+import initialDummyUsers from './dummyUsers.json';
+
 export interface User {
   id: string;
   fullName: string;
@@ -5,39 +7,12 @@ export interface User {
   email: string;
   speciality?: string;
   practicePlace?: string;
+  practiceAddress?: string;
   avatar?: string;
 }
 
 // Default dummy users available locally
-export const DUMMY_USERS: User[] = [
-  {
-    id: 'user-1',
-    fullName: 'dr. Ridwan Setiawan',
-    phone: '081234567890',
-    email: 'ridwan@kalbe.co.id',
-    speciality: 'DSA',
-    practicePlace: 'RSIA Bunda Jakarta',
-    avatar: '/assets/docter-avatar.png',
-  },
-  {
-    id: 'user-2',
-    fullName: 'dr. Sarah Amanda, Sp.A',
-    phone: '081298765432',
-    email: 'sarah@kalbe.co.id',
-    speciality: 'PPDS',
-    practicePlace: 'RS Cipto Mangunkusumo',
-    avatar: '/assets/docter-avatar.png',
-  },
-  {
-    id: 'user-3',
-    fullName: 'dr. Budi Pratama',
-    phone: '081122334455',
-    email: 'budi@kalbe.co.id',
-    speciality: 'GP',
-    practicePlace: 'Klinik Medika Sehat',
-    avatar: '/assets/docter-avatar.png',
-  },
-];
+export const DUMMY_USERS: User[] = initialDummyUsers;
 
 const STORAGE_KEY_AUTH = 'kalbe_auth_user';
 const STORAGE_KEY_REGISTERED_USERS = 'kalbe_registered_users';
@@ -53,6 +28,64 @@ export const getRegisteredUsers = (): User[] => {
     console.error('Failed to read registered users from localStorage:', err);
   }
   return DUMMY_USERS;
+};
+
+export const registerNewUser = (
+  userData: Omit<User, 'id'>
+): { success: boolean; user?: User; error?: string } => {
+  try {
+    const cleanPhone = normalizePhone(userData.phone);
+    const cleanEmail = userData.email.trim().toLowerCase();
+
+    if (!cleanPhone) {
+      return { success: false, error: 'Nomor telepon tidak valid.' };
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, error: 'Format email tidak valid.' };
+    }
+
+    const allUsers = getRegisteredUsers();
+
+    // Check if phone or email is already registered
+    const isPhoneTaken = allUsers.some(
+      (u) => normalizePhone(u.phone) === cleanPhone
+    );
+    if (isPhoneTaken) {
+      return {
+        success: false,
+        error: 'Nomor telepon sudah terdaftar. Silakan gunakan nomor lain atau login.',
+      };
+    }
+
+    const isEmailTaken = allUsers.some(
+      (u) => u.email.trim().toLowerCase() === cleanEmail
+    );
+    if (isEmailTaken) {
+      return {
+        success: false,
+        error: 'Email sudah terdaftar. Silakan gunakan email lain atau login.',
+      };
+    }
+
+    const newUser: User = {
+      ...userData,
+      id: `user-${Date.now()}`,
+      phone: cleanPhone,
+      email: cleanEmail,
+      avatar: userData.avatar || '/assets/docter-avatar.png',
+    };
+
+    const stored = localStorage.getItem(STORAGE_KEY_REGISTERED_USERS);
+    const existing: User[] = stored ? JSON.parse(stored) : [];
+    existing.push(newUser);
+    localStorage.setItem(STORAGE_KEY_REGISTERED_USERS, JSON.stringify(existing));
+
+    return { success: true, user: newUser };
+  } catch (err) {
+    console.error('Failed to save registered user:', err);
+    return { success: false, error: 'Terjadi kesalahan sistem saat mendaftar.' };
+  }
 };
 
 export const saveRegisteredUser = (user: User): void => {

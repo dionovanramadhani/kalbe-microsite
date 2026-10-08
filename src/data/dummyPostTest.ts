@@ -2,55 +2,66 @@ export interface PostTestQuestion {
   id: number;
   question: string;
   options: string[];
+  correctAnswer?: number; // 0-indexed index of correct answer
 }
 
 export const POST_TEST_QUESTIONS: PostTestQuestion[] = [
-  // Section 1 (Soal 1 - 3)
   {
     id: 1,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
+    question: "Yang dimaksud dengan bifidogenic factor adalah...",
+    options: [
+      "Bakteri hidup yang bila dikonsumsi dalam jumlah cukup memberi manfaat kesehatan bagi inang",
+      "Substansi yang secara selektif merangsang pertumbuhan dan/atau aktivitas Bifidobacterium di saluran cerna",
+      "Enzim pencernaan yang membantu hidrolisis laktosa di usus halus",
+      "Antibodi dalam ASI yang menetralkan bakteri pathogen",
+    ],
+    correctAnswer: 1,
   },
   {
     id: 2,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
+    question:
+      "Komponen dalam ASI yang berperan sebagai bifidogenic factor alami utama dan merupakan komponen padat terbanyak adalah…",
+    options: [
+      "Kasein",
+      "Laktoferin",
+      "Human Milk Oligosaccharides (HMO)",
+      "Imunoglobulin A sekretori (sIgA)",
+    ],
+    correctAnswer: 2,
   },
   {
     id: 3,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
+    question:
+      "Pada bayi yang mendapat ASI, mikrobiota usus cenderung didominasi oleh…",
+    options: [
+      "Clostridium",
+      "Bifidobacterium",
+      "Escherichia",
+      "Bacteroides",
+    ],
+    correctAnswer: 1,
   },
-  // Section 2 (Soal 4 - 6)
   {
     id: 4,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
+    question:
+      "Protein dalam ASI yang mampu mengikat zat besi dan diketahui memiliki efek bifidogenik adalah...",
+    options: [
+      "Kasein",
+      "Lisozim",
+      "Laktoferin",
+      "Alfa-laktalbumin",
+    ],
+    correctAnswer: 2,
   },
   {
     id: 5,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
-  },
-  {
-    id: 6,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
-  },
-  // Section 3 (Soal 7 - 9)
-  {
-    id: 7,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
-  },
-  {
-    id: 8,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
-  },
-  {
-    id: 9,
-    question: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
-    options: ["Lorem ipsum", "Lorem ipsum", "Lorem ipsum", "Lorem ipsum"],
+    question: "Berikut ini yang BUKAN termasuk bifidogenic factor adalah...",
+    options: [
+      "Laktoferin",
+      "Fruktooligosakarida",
+      "Galaktooligosakarida",
+      "Sukrosa",
+    ],
+    correctAnswer: 3,
   },
 ];

@@ -20,6 +20,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/symposium" element={<SymposiumPage />} />
+          <Route path="/booth-scan" element={<SymposiumPage scanType="booth" />} />
+          <Route path="/early-life-scan" element={<SymposiumPage scanType="early-life" />} />
           <Route path="/post-test" element={<PostTestPage />} />
           <Route path="/claim-reward" element={<ClaimRewardPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
