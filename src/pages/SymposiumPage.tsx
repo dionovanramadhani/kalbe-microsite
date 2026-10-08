@@ -28,29 +28,33 @@ const isQrCodeValid = (
     if (typeof parsed === "object" && parsed !== null) {
       const eventStr = String(parsed.event || "").toUpperCase();
       const actionStr = String(parsed.action || "").toUpperCase();
+      const titleStr = String(parsed.title || "").toUpperCase();
+      const combined = `${eventStr} ${actionStr} ${titleStr}`;
 
       if (scanType === "symposium") {
         return (
-          eventStr.includes("SYMPOSIUM") ||
-          actionStr.includes("POST_TEST") ||
-          actionStr.includes("SYMPOSIUM")
+          combined.includes("SYMPOSIUM") ||
+          combined.includes("POST_TEST") ||
+          combined.includes("CHECKIN_POST_TEST")
         );
       }
 
       if (scanType === "booth") {
+        // Harus spesifik ke Morinaga Booth, tidak boleh kecampur symposium atau early-life
         return (
-          eventStr.includes("BOOTH") ||
-          actionStr.includes("BOOTH") ||
-          actionStr.includes("DETAILING")
+          (combined.includes("BOOTH") || combined.includes("MORINAGA_BOOTH")) &&
+          !combined.includes("EARLY_LIFE") &&
+          !combined.includes("SYMPOSIUM")
         );
       }
 
       if (scanType === "early-life") {
+        // Harus spesifik ke Early Life Solutions, tidak boleh kecampur booth biasa atau symposium
         return (
-          eventStr.includes("EARLY_LIFE") ||
-          eventStr.includes("KALBE") ||
-          actionStr.includes("EARLY_LIFE") ||
-          actionStr.includes("DETAILING")
+          (combined.includes("EARLY_LIFE") ||
+            (combined.includes("KALBE") && !combined.includes("BOOTH"))) &&
+          !combined.includes("BOOTH") &&
+          !combined.includes("SYMPOSIUM")
         );
       }
     }
@@ -60,10 +64,19 @@ const isQrCodeValid = (
       return textUpper.includes("SYMPOSIUM") || textUpper.includes("POST_TEST");
     }
     if (scanType === "booth") {
-      return textUpper.includes("BOOTH") || textUpper.includes("DETAILING");
+      return (
+        textUpper.includes("BOOTH") &&
+        !textUpper.includes("EARLY_LIFE") &&
+        !textUpper.includes("SYMPOSIUM")
+      );
     }
     if (scanType === "early-life") {
-      return textUpper.includes("EARLY_LIFE") || textUpper.includes("KALBE");
+      return (
+        (textUpper.includes("EARLY_LIFE") ||
+          (textUpper.includes("KALBE") && !textUpper.includes("BOOTH"))) &&
+        !textUpper.includes("BOOTH") &&
+        !textUpper.includes("SYMPOSIUM")
+      );
     }
   }
 
