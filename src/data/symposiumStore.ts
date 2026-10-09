@@ -1,4 +1,5 @@
 import symposiumData from "./dummySymposium.json";
+import { sqliteUpdateUserActivity } from "./sqliteDb";
 
 export interface SymposiumMasterData {
   id: string;
@@ -80,13 +81,65 @@ export const isSymposiumEnded = (): boolean => {
   return now > end;
 };
 
+const STORAGE_KEY_USER_TEST_SYMPO_JOINED = "kalbe_sympo_joined_user_test";
+const STORAGE_KEY_SYMPO_PREFIX = "kalbe_sympo_joined_";
+
+const getCurrentUserFromStorage = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("kalbe_auth_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getSympoStorageKey = (): string => {
+  const user = getCurrentUserFromStorage();
+  if (user && user.email?.trim().toLowerCase() === "user@test.com") {
+    return STORAGE_KEY_USER_TEST_SYMPO_JOINED;
+  }
+  return `${STORAGE_KEY_SYMPO_PREFIX}${user?.id || "guest"}`;
+};
+
+const getInitialJoinedStatus = (): boolean => {
+  if (typeof window !== "undefined") {
+    try {
+      const key = getSympoStorageKey();
+      const stored = localStorage.getItem(key);
+      if (stored === "true") return true;
+    } catch {}
+  }
+  return false;
+};
+
 // Flag apakah user sudah join / check-in ke simposium
-let hasJoinedSymposium: boolean = false;
+let hasJoinedSymposium: boolean = getInitialJoinedStatus();
 
 export const isSymposiumJoined = (): boolean => {
+  if (typeof window !== "undefined") {
+    try {
+      const key = getSympoStorageKey();
+      return localStorage.getItem(key) === "true" || hasJoinedSymposium;
+    } catch {}
+  }
   return hasJoinedSymposium;
 };
 
 export const setSymposiumJoined = (joined = true): void => {
   hasJoinedSymposium = joined;
+  if (typeof window !== "undefined") {
+    try {
+      const key = getSympoStorageKey();
+      localStorage.setItem(key, String(joined));
+
+      // Sync ke SQLite
+      const user = getCurrentUserFromStorage();
+      if (user?.id) {
+        sqliteUpdateUserActivity(user.id, {
+          hasJoinedSymposium: joined,
+        }).catch((e) => console.warn("Failed to sync symposium check-in to SQLite:", e));
+      }
+    } catch {}
+  }
 };

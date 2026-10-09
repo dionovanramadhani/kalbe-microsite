@@ -1,4 +1,5 @@
 import initialDummyUsers from './dummyUsers.json';
+import { sqliteInsertUser } from './sqliteDb';
 
 export interface User {
   id: string;
@@ -88,10 +89,16 @@ export const registerNewUser = (
       avatar: userData.avatar || '/assets/docter-avatar.png',
     };
 
+    // 1. Simpan di LocalStorage
     const stored = localStorage.getItem(STORAGE_KEY_REGISTERED_USERS);
     const existing: User[] = stored ? JSON.parse(stored) : [];
     existing.push(newUser);
     localStorage.setItem(STORAGE_KEY_REGISTERED_USERS, JSON.stringify(existing));
+
+    // 2. Simpan di Database Local SQLite
+    sqliteInsertUser(newUser).catch((e) => {
+      console.warn("Failed to insert user into SQLite database:", e);
+    });
 
     return { success: true, user: newUser };
   } catch (err) {
@@ -154,6 +161,13 @@ export const authenticateUser = (
       localStorage.setItem(STORAGE_KEY_REMEMBER_ME, 'true');
     } else {
       localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
+    }
+
+    // Khusus untuk user dummy (user@test.com), reset data aktivitas dan rewards saat login
+    if (matchedUser.email.trim().toLowerCase() === 'user@test.com') {
+      localStorage.removeItem('kalbe_rewards_user_test');
+      localStorage.removeItem('kalbe_activities_user_test');
+      localStorage.removeItem('kalbe_sympo_joined_user_test');
     }
   } catch (err) {
     console.error('Failed to save current user session:', err);

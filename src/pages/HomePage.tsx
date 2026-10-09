@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getCurrentUser, type User } from "../data/dummyUser";
+import { getCurrentUser } from "../data/dummyUser";
 import { RewardModal } from "../components/RewardModal";
 import { BoothDrawer } from "../components/BoothDrawer";
 import { BoothMenuModal } from "../components/BoothMenuModal";
@@ -38,14 +38,14 @@ export const HomePage: React.FC = () => {
   const hasBoothSuccess = Boolean(location.state?.showBoothSuccessModal);
   const hasEarlyLifeSuccess = Boolean(location.state?.showEarlyLifeSuccessModal);
 
-  const [currentUser] = useState<User | null>(() => getCurrentUser());
-  const [postTestDone] = useState<boolean>(
+  const currentUser = getCurrentUser();
+  const [postTestDone, setPostTestDone] = useState<boolean>(
     () => isPostTestCompleted() || hasPostTestSuccess,
   );
-  const [boothDone] = useState<boolean>(
+  const [boothDone, setBoothDone] = useState<boolean>(
     () => isBoothDetailingCompleted() || hasBoothSuccess,
   );
-  const [earlyLifeDone] = useState<boolean>(
+  const [earlyLifeDone, setEarlyLifeDone] = useState<boolean>(
     () => isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess,
   );
   const [unclaimedCount, setUnclaimedCount] = useState<number>(() => {
@@ -60,6 +60,15 @@ export const HomePage: React.FC = () => {
     }
     return getUnclaimedCount();
   });
+
+  // Re-sync state whenever user navigates to HomePage or switches user session
+  useEffect(() => {
+    setPostTestDone(isPostTestCompleted() || hasPostTestSuccess);
+    setBoothDone(isBoothDetailingCompleted() || hasBoothSuccess);
+    setEarlyLifeDone(isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess);
+    setUnclaimedCount(getUnclaimedCount());
+  }, [location.pathname, hasPostTestSuccess, hasBoothSuccess, hasEarlyLifeSuccess]);
+
   const [showPostTestModal, setShowPostTestModal] = useState<boolean>(hasPostTestSuccess);
   const [showBoothCompletionModal, setShowBoothCompletionModal] =
     useState<boolean>(hasBoothSuccess);
@@ -70,7 +79,8 @@ export const HomePage: React.FC = () => {
       // Selalu muncul ketika sympo sudah mulai (meskipun user berpindah halaman lalu kembali),
       // namun tidak muncul jika user sedang melihat modal sukses lain atau SUDAH join/post-test
       if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
-      if (postTestDone || isSymposiumJoined()) return false;
+      const isDone = isPostTestCompleted() || hasPostTestSuccess;
+      if (isDone || isSymposiumJoined()) return false;
       return isSymposiumStartedOrOngoing();
     },
   );

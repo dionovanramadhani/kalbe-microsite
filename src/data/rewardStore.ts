@@ -1,4 +1,9 @@
 import initialRewardsData from "./dummyRewards.json";
+import { getCurrentUser } from "./dummyUser";
+import {
+  sqliteUpdateUserActivity,
+  sqliteUpdateUserReward,
+} from "./sqliteDb";
 
 export interface RewardItem {
   id: string;
@@ -12,61 +17,142 @@ export interface RewardItem {
   rewardImage: string;
 }
 
-// In-memory state: initialized fresh from JSON every time page loads/refreshes
-let inMemoryRewards: RewardItem[] = JSON.parse(
-  JSON.stringify(initialRewardsData),
-);
+const STORAGE_KEY_USER_TEST_REWARDS = "kalbe_rewards_user_test";
+const STORAGE_KEY_USER_TEST_ACTIVITIES = "kalbe_activities_user_test";
+const STORAGE_KEY_REWARDS_PREFIX = "kalbe_rewards_user_";
+const STORAGE_KEY_ACTIVITIES_PREFIX = "kalbe_activities_user_";
 
-// Flag apakah user telah menyelesaikan post-test
-let hasCompletedPostTest: boolean = false;
-// Flag apakah user telah menyelesaikan detailing booth
-let hasCompletedBoothDetailing: boolean = false;
-// Flag apakah user telah menyelesaikan detailing Kalbe Early Life Solutions
-let hasCompletedEarlyLifeDetailing: boolean = false;
+const getCurrentUserId = (): string => {
+  const user = getCurrentUser();
+  return user?.id || "user-1";
+};
+
+const getUserStorageKey = (type: "rewards" | "activities"): string => {
+  const user = getCurrentUser();
+  if (user && user.email?.trim().toLowerCase() === "user@test.com") {
+    return type === "rewards" ? STORAGE_KEY_USER_TEST_REWARDS : STORAGE_KEY_USER_TEST_ACTIVITIES;
+  }
+  return type === "rewards" 
+    ? `${STORAGE_KEY_REWARDS_PREFIX}${user?.id || "guest"}` 
+    : `${STORAGE_KEY_ACTIVITIES_PREFIX}${user?.id || "guest"}`;
+};
+
+const loadRewardsForCurrentUser = (): RewardItem[] => {
+  if (typeof window !== "undefined") {
+    try {
+      const key = getUserStorageKey("rewards");
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("Failed to load rewards from localStorage:", e);
+    }
+  }
+  return JSON.parse(JSON.stringify(initialRewardsData));
+};
+
+const loadActivitiesForCurrentUser = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const key = getUserStorageKey("activities");
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("Failed to load activities from localStorage:", e);
+    }
+  }
+  return {
+    postTest: false,
+    booth: false,
+    earlyLife: false,
+  };
+};
 
 export const isPostTestCompleted = (): boolean => {
-  return hasCompletedPostTest;
+  return loadActivitiesForCurrentUser().postTest;
 };
 
 export const setPostTestCompleted = (completed = true): void => {
-  hasCompletedPostTest = completed;
+  const current = loadActivitiesForCurrentUser();
+  current.postTest = completed;
+  saveActivitiesForCurrentUser(current);
 };
 
 export const isBoothDetailingCompleted = (): boolean => {
-  return hasCompletedBoothDetailing;
+  return loadActivitiesForCurrentUser().booth;
 };
 
 export const setBoothDetailingCompleted = (completed = true): void => {
-  hasCompletedBoothDetailing = completed;
+  const current = loadActivitiesForCurrentUser();
+  current.booth = completed;
+  saveActivitiesForCurrentUser(current);
 };
 
 export const isEarlyLifeDetailingCompleted = (): boolean => {
-  return hasCompletedEarlyLifeDetailing;
+  return loadActivitiesForCurrentUser().earlyLife;
 };
 
 export const setEarlyLifeDetailingCompleted = (completed = true): void => {
-  hasCompletedEarlyLifeDetailing = completed;
+  const current = loadActivitiesForCurrentUser();
+  current.earlyLife = completed;
+  saveActivitiesForCurrentUser(current);
+};
+
+const saveActivitiesForCurrentUser = (activities: {
+  postTest: boolean;
+  booth: boolean;
+  earlyLife: boolean;
+}) => {
+  if (typeof window === "undefined") return;
+  const key = getUserStorageKey("activities");
+  try {
+    localStorage.setItem(key, JSON.stringify(activities));
+  } catch (e) {
+    console.warn("Failed to save activities:", e);
+  }
+
+  const userId = getCurrentUserId();
+  if (userId) {
+    sqliteUpdateUserActivity(userId, {
+      hasCompletedPostTest: activities.postTest,
+      hasCompletedBooth: activities.booth,
+      hasCompletedEarlyLife: activities.earlyLife,
+    }).catch((e) => console.warn("Failed to sync activity to SQLite:", e));
+  }
+};
+
+const saveRewardsForCurrentUser = (rewards: RewardItem[]) => {
+  if (typeof window === "undefined") return;
+  const key = getUserStorageKey("rewards");
+  try {
+    localStorage.setItem(key, JSON.stringify(rewards));
+  } catch (e) {
+    console.warn("Failed to save rewards:", e);
+  }
 };
 
 /**
- * Mendapatkan seluruh daftar reward terbaru.
+ * Mendapatkan seluruh daftar reward terbaru untuk pengguna aktif.
  */
 export const getAllRewards = (): RewardItem[] => {
-  return [...inMemoryRewards];
+  return loadRewardsForCurrentUser();
 };
 
 /**
  * Mendapatkan daftar reward yang telah didapatkan (obtained).
  */
 export const getObtainedRewards = (): RewardItem[] => {
-  return inMemoryRewards.filter((r) => r.obtained);
+  return loadRewardsForCurrentUser().filter((r) => r.obtained);
 };
 
 /**
  * Mendapatkan reward berdasarkan ID.
  */
 export const getRewardById = (id: string): RewardItem | undefined => {
-  return inMemoryRewards.find((r) => r.id === id);
+  return loadRewardsForCurrentUser().find((r) => r.id === id);
 };
 
 /**
@@ -102,7 +188,8 @@ const formatRewardTimestamp = (dateObj: Date = new Date()): string => {
  * Jika semua 3 misi utama selesai, otomatis unlock mistery-box dengan timestamp sekarang juga.
  */
 export const unlockReward = (id: string): RewardItem | null => {
-  const item = inMemoryRewards.find((r) => r.id === id);
+  const currentRewards = loadRewardsForCurrentUser();
+  const item = currentRewards.find((r) => r.id === id);
   if (item) {
     if (!item.obtained) {
       item.obtained = true;
@@ -111,19 +198,39 @@ export const unlockReward = (id: string): RewardItem | null => {
   }
 
   // Cek apakah 3 misi utama telah diperoleh/diselesaikan
-  const morinagaSympo = inMemoryRewards.find((r) => r.id === "morinaga-sympo");
-  const morinagaBooth = inMemoryRewards.find((r) => r.id === "morinaga-booth");
-  const earlyLife = inMemoryRewards.find((r) => r.id === "early-life");
+  const morinagaSympo = currentRewards.find((r) => r.id === "morinaga-sympo");
+  const morinagaBooth = currentRewards.find((r) => r.id === "morinaga-booth");
+  const earlyLife = currentRewards.find((r) => r.id === "early-life");
 
   if (
     morinagaSympo?.obtained &&
     morinagaBooth?.obtained &&
     earlyLife?.obtained
   ) {
-    const misteryBox = inMemoryRewards.find((r) => r.id === "mistery-box");
+    const misteryBox = currentRewards.find((r) => r.id === "mistery-box");
     if (misteryBox && !misteryBox.obtained) {
       misteryBox.obtained = true;
       misteryBox.date = formatRewardTimestamp();
+    }
+  }
+
+  saveRewardsForCurrentUser(currentRewards);
+
+  // Sync reward perolehan ke SQLite
+  const userId = getCurrentUserId();
+  if (userId) {
+    if (item && item.obtained) {
+      sqliteUpdateUserReward(userId, item.id, {
+        obtained: true,
+        obtainedDate: item.date,
+      }).catch((e) => console.warn("Failed to sync reward to SQLite:", e));
+    }
+    const misteryBox = currentRewards.find((r) => r.id === "mistery-box");
+    if (misteryBox && misteryBox.obtained) {
+      sqliteUpdateUserReward(userId, "mistery-box", {
+        obtained: true,
+        obtainedDate: misteryBox.date,
+      }).catch((e) => console.warn("Failed to sync mistery-box to SQLite:", e));
     }
   }
 
@@ -134,9 +241,18 @@ export const unlockReward = (id: string): RewardItem | null => {
  * Mengklaim reward (user memasukkan PIN crew dengan benar).
  */
 export const claimReward = (id: string): boolean => {
-  const item = inMemoryRewards.find((r) => r.id === id);
+  const currentRewards = loadRewardsForCurrentUser();
+  const item = currentRewards.find((r) => r.id === id);
   if (item && item.obtained && !item.claimed) {
     item.claimed = true;
+    saveRewardsForCurrentUser(currentRewards);
+
+    const userId = getCurrentUserId();
+    if (userId) {
+      sqliteUpdateUserReward(userId, id, {
+        claimed: true,
+      }).catch((e) => console.warn("Failed to sync claimed reward to SQLite:", e));
+    }
     return true;
   }
   return false;
@@ -146,15 +262,5 @@ export const claimReward = (id: string): boolean => {
  * Menghitung jumlah reward yang telah diperoleh tapi belum diclaim.
  */
 export const getUnclaimedCount = (): number => {
-  return inMemoryRewards.filter((r) => r.obtained && !r.claimed).length;
-};
-
-/**
- * Reset data store ke kondisi awal dummy JSON.
- */
-export const resetRewardStore = (): void => {
-  inMemoryRewards = JSON.parse(JSON.stringify(initialRewardsData));
-  hasCompletedPostTest = false;
-  hasCompletedBoothDetailing = false;
-  hasCompletedEarlyLifeDetailing = false;
+  return loadRewardsForCurrentUser().filter((r) => r.obtained && !r.claimed).length;
 };
