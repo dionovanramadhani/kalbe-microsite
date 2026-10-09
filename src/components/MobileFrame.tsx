@@ -1,4 +1,5 @@
 import React from 'react';
+import { AssetPreloader } from './AssetPreloader';
 
 interface MobileFrameProps {
   children: React.ReactNode;
@@ -9,7 +10,9 @@ export const MobileFrame: React.FC<MobileFrameProps> = ({ children }) => {
     <div className="app-viewport">
       <div className="mobile-frame">
         <div className="main-content">
-          {children}
+          <AssetPreloader>
+            {children}
+          </AssetPreloader>
         </div>
       </div>
     </div>
