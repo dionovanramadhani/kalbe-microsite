@@ -345,79 +345,89 @@ export const HomePage: React.FC = () => {
 
           {/* Mission Items List */}
           <div className="relative z-10 space-y-3 flex flex-col gap-3">
-            {missions.map((mission) => (
-              <div key={mission.id} className="flex items-start gap-2.5 py-0.5">
-                {/* Left: Hexagonal Futuristic Icon */}
-                <div className="shrink-0 flex items-center justify-center pt-0.5">
-                  <img
-                    src={mission.icon}
-                    alt={mission.title}
-                    className="w-[56px] h-[56px] object-contain drop-shadow-sm"
-                  />
-                </div>
-
-                {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-[#535252] mb-1.5 truncate">
-                    {mission.title}
+            {missions.map((mission) => {
+              const isClickable = !mission.isCompleted;
+              return (
+                <div
+                  key={mission.id}
+                  onClick={() => {
+                    if (isClickable) {
+                      handleEnterMission(mission);
+                    }
+                  }}
+                  className={`flex items-start gap-2.5 py-1 px-1.5 rounded-xl ${
+                    isClickable ? "cursor-pointer" : "cursor-default"
+                  }`}
+                >
+                  {/* Left: Hexagonal Futuristic Icon */}
+                  <div className="shrink-0 flex items-center justify-center pt-0.5">
+                    <img
+                      src={mission.icon}
+                      alt={mission.title}
+                      className="w-[56px] h-[56px] object-contain drop-shadow-sm pointer-events-none"
+                    />
                   </div>
 
-                  {/* Detailing pill aligned side-by-side with MASUK / SELESAI button */}
-                  <div className="flex items-center gap-2">
-                    {mission.isCompleted ? (
-                      <div
-                        className="flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] font-medium text-white shadow-sm"
-                        style={{ backgroundColor: "#24B500" }}
-                      >
-                        <span className="truncate">Selesai</span>
-                      </div>
-                    ) : (
-                      <div className="flex-1 min-w-0 flex items-center border border-[#F87171] rounded-full px-3.5 h-[28px] text-[11px] text-[#444444] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                        <span className="truncate">{mission.subtitle}</span>
-                      </div>
-                    )}
+                  {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold text-[#535252] mb-1.5 truncate">
+                      {mission.title}
+                    </div>
 
-                    {/* Button MASUK / SELESAI sejajar dengan Detailing */}
-                    {mission.isCompleted ? (
-                      <button
-                        disabled={true}
-                        className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center cursor-default select-none transition-transform"
-                        style={{
-                          backgroundImage: `url('/assets/check-in-green.png')`,
-                          backgroundSize: "contain",
-                          backgroundRepeat: "no-repeat",
-                          backgroundPosition: "center",
-                        }}
-                      >
-                        <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
-                          SELESAI
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleEnterMission(mission)}
-                        disabled={mission.disabled}
-                        className={`relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all ${
-                          mission.disabled
-                            ? "opacity-40 grayscale cursor-not-allowed"
-                            : "cursor-pointer active:scale-95 hover:brightness-110"
-                        }`}
-                        style={{
-                          backgroundImage: `url('/assets/check-in-red.png')`,
-                          backgroundSize: "contain",
-                          backgroundRepeat: "no-repeat",
-                          backgroundPosition: "center",
-                        }}
-                      >
-                        <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
-                          MASUK
-                        </span>
-                      </button>
-                    )}
+                    {/* Detailing pill aligned side-by-side with MASUK / SELESAI button */}
+                    <div className="flex items-center gap-2">
+                      {mission.isCompleted ? (
+                        <div
+                          className="flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] font-medium text-white shadow-sm"
+                          style={{ backgroundColor: "#24B500" }}
+                        >
+                          <span className="truncate">Selesai</span>
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-w-0 flex items-center border border-[#F87171] rounded-full px-3.5 h-[28px] text-[11px] text-[#444444] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                          <span className="truncate">{mission.subtitle}</span>
+                        </div>
+                      )}
+
+                      {/* Button MASUK / SELESAI sejajar dengan Detailing */}
+                      {mission.isCompleted ? (
+                        <div
+                          className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center select-none"
+                          style={{
+                            backgroundImage: `url('/assets/check-in-green.png')`,
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                          }}
+                        >
+                          <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
+                            SELESAI
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEnterMission(mission);
+                          }}
+                          className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all cursor-pointer active:scale-95 hover:brightness-110"
+                          style={{
+                            backgroundImage: `url('/assets/check-in-red.png')`,
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                          }}
+                        >
+                          <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
+                            MASUK
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

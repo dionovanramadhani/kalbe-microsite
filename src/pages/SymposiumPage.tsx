@@ -583,19 +583,21 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         </div>
       </div>
 
-      {/* Bottom Floating Scanner Action Button */}
+      {/* Bottom Floating Scanner Action Button (Bypass scan disabled / commented for now) */}
       <div className="relative w-full flex justify-center items-center pt-0.5 pb-2 shrink-0 z-20">
-        <button
+        {/* <button
           onClick={handleManualScan}
           className="relative group cursor-pointer transition-transform duration-200 active:scale-95 hover:scale-105"
           title="Tekan untuk Pindai Manual"
-        >
+        > */}
+        <div className="relative pointer-events-none select-none">
           <img
             src="/assets/scan-image.png"
             alt="Scan QR"
-            className="w-[62px] h-[62px] sm:w-[66px] sm:h-[66px] object-contain drop-shadow-md group-hover:brightness-110 transition-all"
+            className="w-[62px] h-[62px] sm:w-[66px] sm:h-[66px] object-contain drop-shadow-md"
           />
-        </button>
+        </div>
+        {/* </button> */}
       </div>
 
       {/* Sample QR Modal for Easy Testing */}
