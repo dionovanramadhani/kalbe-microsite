@@ -491,14 +491,14 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       </button> */}
 
       {/* Top Banner: Kalbe Early Life Solutions, Morinaga Booth, or Morinaga Sympo Badge */}
-      <div className="w-full flex justify-center pt-0.5 shrink-0">
+      <div className="w-full flex justify-center pt-3.5 pb-1 shrink-0 z-10">
         <div
           className={
             activeScanType === "early-life"
-              ? "w-[180px] sm:w-[195px]"
+              ? "w-[215px] sm:w-[230px]"
               : activeScanType === "booth"
-                ? "w-[175px] sm:w-[190px]"
-                : "w-[168px] sm:w-[180px]"
+                ? "w-[210px] sm:w-[225px]"
+                : "w-[200px] sm:w-[215px]"
           }
         >
           <img
@@ -516,7 +516,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
                   ? "Morinaga Booth"
                   : "Morinaga Sympo"
             }
-            className="w-full h-auto object-contain drop-shadow-sm pointer-events-none"
+            className="w-full h-auto object-contain drop-shadow-md pointer-events-none"
           />
         </div>
       </div>
