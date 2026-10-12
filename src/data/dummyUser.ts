@@ -163,6 +163,9 @@ export const authenticateUser = (
       localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
     }
 
+    sessionStorage.removeItem('kalbe_welcome_shown');
+    sessionStorage.setItem('kalbe_welcome_pending', 'true');
+
     // Khusus untuk user dummy (user@test.com), reset data aktivitas dan rewards saat login
     if (matchedUser.email.trim().toLowerCase() === 'user@test.com') {
       localStorage.removeItem('kalbe_rewards_user_test');
@@ -196,6 +199,8 @@ export const logoutUser = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY_AUTH);
     localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
+    sessionStorage.removeItem('kalbe_welcome_pending');
+    sessionStorage.removeItem('kalbe_welcome_shown');
   } catch (err) {
     console.error('Failed to remove auth user:', err);
   }

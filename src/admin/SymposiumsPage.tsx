@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent, type ChangeEvent } from 'react';
 import {
   getKalbeSymposiums,
   createKalbeSymposium,
@@ -6,7 +6,7 @@ import {
   deleteKalbeSymposium,
   isBrandUser,
   type KalbeSymposiumResponse,
-  type KalbeSymposiumRequest,
+  type KalbeSymposiumFormValues,
 } from './adminApi';
 import { useToast } from '../context/ToastContext';
 
@@ -27,6 +27,14 @@ export function SymposiumsPage() {
   const [startedAt, setStartedAt] = useState('');
   const [endedAt, setEndedAt] = useState('');
   const [isActive, setIsActive] = useState(true);
+
+  // File uploads & previews
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreview, setIconPreview] = useState<string>('');
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+
   const [saving, setSaving] = useState(false);
 
   // Modal Delete
@@ -91,6 +99,10 @@ export function SymposiumsPage() {
     setEditing(null);
     setTitle('');
     setDescription('');
+    setIconFile(null);
+    setIconPreview('');
+    setLogoFile(null);
+    setLogoPreview('');
     const now = new Date();
     const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     setStartedAt(toLocalInputValue(now.toISOString()));
@@ -104,10 +116,26 @@ export function SymposiumsPage() {
     setEditing(sym);
     setTitle(sym.title);
     setDescription(sym.description);
+    setIconFile(null);
+    setIconPreview(sym.icon || '');
+    setLogoFile(null);
+    setLogoPreview(sym.logo || '');
     setStartedAt(toLocalInputValue(sym.started_at));
     setEndedAt(toLocalInputValue(sym.ended_at));
     setIsActive(sym.is_active);
     setModalOpen(true);
+  };
+
+  const handleFileChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    setFile: (file: File | null) => void,
+    setPreview: (url: string) => void
+  ) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFile(file);
+      setPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -132,12 +160,16 @@ export function SymposiumsPage() {
       return;
     }
 
-    const payload: KalbeSymposiumRequest = {
+    const payload: KalbeSymposiumFormValues = {
       title: title.trim(),
       description: description.trim(),
       started_at: start.toISOString(),
       ended_at: end.toISOString(),
       is_active: isActive,
+      iconFile,
+      logoFile,
+      iconUrl: !iconFile && editing ? (editing.icon || '') : undefined,
+      logoUrl: !logoFile && editing ? (editing.logo || '') : undefined,
     };
 
     setSaving(true);
@@ -310,6 +342,7 @@ export function SymposiumsPage() {
             <thead>
               <tr>
                 <th style={{ width: 60 }}>No</th>
+                <th style={{ width: 80 }}>Media</th>
                 <th>Judul Simposium</th>
                 <th>Deskripsi</th>
                 <th>Waktu Pelaksanaan</th>
@@ -321,7 +354,7 @@ export function SymposiumsPage() {
             <tbody>
               {filteredSymposiums.length === 0 ? (
                 <tr>
-                  <td colSpan={isBrand ? 6 : 7} style={{ textAlign: 'center', padding: 50 }}>
+                  <td colSpan={isBrand ? 7 : 8} style={{ textAlign: 'center', padding: 50 }}>
                     <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>📅</div>
                     <div style={{ color: 'var(--admin-text-secondary)', fontSize: 14 }}>
                       Belum ada simposium yang ditemukan
@@ -332,6 +365,33 @@ export function SymposiumsPage() {
                 filteredSymposiums.map((sym, index) => (
                   <tr key={sym.id}>
                     <td style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>{index + 1}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {sym.icon ? (
+                          <img
+                            src={sym.icon}
+                            alt="Icon"
+                            title="Icon"
+                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : null}
+                        {sym.logo ? (
+                          <img
+                            src={sym.logo}
+                            alt="Logo"
+                            title="Logo"
+                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : null}
+                        {!sym.icon && !sym.logo && (
+                          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--admin-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                            📅
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--admin-text)', fontSize: 14 }}>
                         {sym.title}
@@ -503,6 +563,51 @@ export function SymposiumsPage() {
                       onChange={(e) => setEndedAt(e.target.value)}
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Media Icon & Logo */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
+                  {/* Icon Image */}
+                  <div className="admin-field">
+                    <label>Icon Simposium</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={(e) => handleFileChange(e, setIconFile, setIconPreview)}
+                    />
+                    {iconPreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={iconPreview}
+                          alt="Icon Preview"
+                          style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Logo Image */}
+                  <div className="admin-field">
+                    <label>Logo Simposium</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={(e) => handleFileChange(e, setLogoFile, setLogoPreview)}
+                    />
+                    {logoPreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={logoPreview}
+                          alt="Logo Preview"
+                          style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

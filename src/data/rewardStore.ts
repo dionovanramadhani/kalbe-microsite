@@ -43,7 +43,10 @@ const loadRewardsForCurrentUser = (): RewardItem[] => {
       const key = getUserStorageKey("rewards");
       const stored = localStorage.getItem(key);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: RewardItem[] = JSON.parse(stored);
+        return parsed.map((item) =>
+          item.title === "Mistery Box" ? { ...item, title: "Mystery Box" } : item,
+        );
       }
     } catch (e) {
       console.warn("Failed to load rewards from localStorage:", e);
@@ -185,7 +188,7 @@ const formatRewardTimestamp = (dateObj: Date = new Date()): string => {
 /**
  * Menandai reward sebagai diperoleh (misal setelah menyelesaikan post-test atau scan booth).
  * Tanggal reward akan di-update ke waktu user menyelesaikan aktivitas tersebut.
- * Jika semua 3 misi utama selesai, otomatis unlock mistery-box dengan timestamp sekarang juga.
+ * Jika semua 3 misi utama selesai, otomatis unlock mystery-box dengan timestamp sekarang juga.
  */
 export const unlockReward = (id: string): RewardItem | null => {
   const currentRewards = loadRewardsForCurrentUser();
@@ -264,3 +267,76 @@ export const claimReward = (id: string): boolean => {
 export const getUnclaimedCount = (): number => {
   return loadRewardsForCurrentUser().filter((r) => r.obtained && !r.claimed).length;
 };
+
+/**
+ * Menghitung jumlah reward non-mystery-box yang diperoleh tapi belum diclaim.
+ */
+export const getUnclaimedRewardsCount = (): number => {
+  return loadRewardsForCurrentUser().filter(
+    (r) => r.obtained && !r.claimed && r.id !== "mistery-box" && r.id !== "mystery-box",
+  ).length;
+};
+
+/**
+ * Cek apakah user memiliki Mystery Box yang belum di-claim.
+ */
+export const hasUnclaimedMysteryBox = (): boolean => {
+  if (isMysteryBoxClaimed()) return false;
+  if (isAllActivitiesCompleted()) return true;
+  const mb = getRewardById("mistery-box");
+  return Boolean(mb && mb.obtained && !mb.claimed);
+};
+
+/**
+ * Cek apakah user telah memiliki/membuka Mystery Box (sudah menyelesaikan 3 aktivitas atau item mystery-box obtained).
+ */
+export const hasUserMysteryBox = (): boolean => {
+  if (isAllActivitiesCompleted()) return true;
+  const mb = getRewardById("mistery-box");
+  return Boolean(mb && mb.obtained);
+};
+
+/**
+ * Cek apakah 3 aktivitas utama (Post-test, Booth Detailing, Early Life Detailing) telah selesai.
+ */
+export const isAllActivitiesCompleted = (): boolean => {
+  return (
+    isPostTestCompleted() &&
+    isBoothDetailingCompleted() &&
+    isEarlyLifeDetailingCompleted()
+  );
+};
+
+/**
+ * Cek apakah Mystery Box telah di-claim oleh pengguna.
+ */
+export const isMysteryBoxClaimed = (): boolean => {
+  const mb = getRewardById("mistery-box");
+  return Boolean(mb?.claimed);
+};
+
+/**
+ * Memeriksa dan otomatis membuka mystery box jika semua 3 aktivitas telah selesai.
+ */
+export const checkAndUnlockMysteryBox = (): boolean => {
+  if (isAllActivitiesCompleted()) {
+    const currentRewards = loadRewardsForCurrentUser();
+    const misteryBox = currentRewards.find((r) => r.id === "mistery-box");
+    if (misteryBox && !misteryBox.obtained) {
+      misteryBox.obtained = true;
+      misteryBox.date = formatRewardTimestamp();
+      saveRewardsForCurrentUser(currentRewards);
+      const userId = getCurrentUserId();
+      if (userId) {
+        sqliteUpdateUserReward(userId, "mistery-box", {
+          obtained: true,
+          obtainedDate: misteryBox.date,
+        }).catch((e) => console.warn("Failed to sync mystery box to SQLite:", e));
+      }
+      return true;
+    }
+    return Boolean(misteryBox?.obtained);
+  }
+  return false;
+};
+

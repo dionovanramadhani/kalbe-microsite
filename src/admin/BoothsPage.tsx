@@ -40,6 +40,9 @@ export function BoothsPage() {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string>('');
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+
   const fetchBooths = async () => {
     setLoading(true);
     try {
@@ -78,6 +81,8 @@ export function BoothsPage() {
     setImageTitlePreview('');
     setBannerFile(null);
     setBannerPreview('');
+    setLogoFile(null);
+    setLogoPreview('');
 
     setModalOpen(true);
   };
@@ -96,6 +101,8 @@ export function BoothsPage() {
     setImageTitlePreview(booth.image_title || '');
     setBannerFile(null);
     setBannerPreview(booth.detailing_banner || '');
+    setLogoFile(null);
+    setLogoPreview(booth.logo || '');
 
     setModalOpen(true);
   };
@@ -144,9 +151,11 @@ export function BoothsPage() {
         iconFile,
         imageTitleFile,
         detailingBannerFile: bannerFile,
+        logoFile,
         iconUrl: !iconFile && editing ? (editing.icon || '') : undefined,
         imageTitleUrl: !imageTitleFile && editing ? (editing.image_title || '') : undefined,
         detailingBannerUrl: !bannerFile && editing ? (editing.detailing_banner || '') : undefined,
+        logoUrl: !logoFile && editing ? (editing.logo || '') : undefined,
       };
 
       if (editing) {
@@ -295,7 +304,7 @@ export function BoothsPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Icon</th>
+                <th>Media</th>
                 <th>Nama Booth</th>
                 <th>Detailing Title</th>
                 <th>Status</th>
@@ -317,18 +326,31 @@ export function BoothsPage() {
                 booths.map((booth) => (
                   <tr key={booth.id}>
                     <td>
-                      {booth.icon ? (
-                        <img
-                          src={booth.icon}
-                          alt={booth.name}
-                          style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                        />
-                      ) : (
-                        <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--admin-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                          🏪
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {booth.icon ? (
+                          <img
+                            src={booth.icon}
+                            alt={`${booth.name} Icon`}
+                            title="Icon"
+                            style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : null}
+                        {booth.logo ? (
+                          <img
+                            src={booth.logo}
+                            alt={`${booth.name} Logo`}
+                            title="Logo"
+                            style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : null}
+                        {!booth.icon && !booth.logo && (
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--admin-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                            🏪
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="primary">
                       <div style={{ fontWeight: 600 }}>{booth.name}</div>
@@ -461,7 +483,7 @@ export function BoothsPage() {
                 </div>
 
                 {/* Media Uploads Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
                   {/* Icon Image */}
                   <div className="admin-field">
                     <label>Icon Booth (Logo / Icon)</label>
@@ -477,6 +499,27 @@ export function BoothsPage() {
                         <img
                           src={iconPreview}
                           alt="Icon Preview"
+                          style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Logo Image */}
+                  <div className="admin-field">
+                    <label>Logo Booth (Brand Logo)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={(e) => handleFileChange(e, setLogoFile, setLogoPreview)}
+                    />
+                    {logoPreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={logoPreview}
+                          alt="Logo Preview"
                           style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
                         />
                       </div>

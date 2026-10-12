@@ -6,6 +6,7 @@ import { BoothDrawer } from "../components/BoothDrawer";
 import { BoothMenuModal } from "../components/BoothMenuModal";
 import { PodcastScheduleModal } from "../components/PodcastScheduleModal";
 import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
+import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumStartedModal } from "../components/SymposiumStartedModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
 import {
@@ -14,12 +15,17 @@ import {
   isSymposiumJoined,
 } from "../data/symposiumStore";
 import {
-  getUnclaimedCount,
+  getUnclaimedRewardsCount,
+  hasUnclaimedMysteryBox as checkHasUnclaimedMysteryBox,
+  hasUserMysteryBox,
   claimReward,
   unlockReward,
   isPostTestCompleted,
   isBoothDetailingCompleted,
   isEarlyLifeDetailingCompleted,
+  isAllActivitiesCompleted,
+  isMysteryBoxClaimed,
+  checkAndUnlockMysteryBox,
 } from "../data/rewardStore";
 
 interface MissionItem {
@@ -48,7 +54,7 @@ export const HomePage: React.FC = () => {
   const [earlyLifeDone, setEarlyLifeDone] = useState<boolean>(
     () => isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess,
   );
-  const [unclaimedCount, setUnclaimedCount] = useState<number>(() => {
+  const [unclaimedRewardsCount, setUnclaimedRewardsCount] = useState<number>(() => {
     if (hasPostTestSuccess) {
       unlockReward("morinaga-sympo");
     }
@@ -58,34 +64,161 @@ export const HomePage: React.FC = () => {
     if (hasEarlyLifeSuccess) {
       unlockReward("early-life");
     }
-    return getUnclaimedCount();
+    return getUnclaimedRewardsCount();
   });
+  const [hasUnclaimedMysteryBoxState, setHasUnclaimedMysteryBoxState] = useState<boolean>(
+    () => {
+      return checkHasUnclaimedMysteryBox();
+    },
+  );
+  const [hasMysteryBox, setHasMysteryBox] = useState<boolean>(() => {
+    return hasUserMysteryBox();
+  });
+  const [mysteryBoxClaimed, setMysteryBoxClaimed] = useState<boolean>(() => {
+    return isMysteryBoxClaimed();
+  });
+
+  const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
 
   // Re-sync state whenever user navigates to HomePage or switches user session
   useEffect(() => {
     setPostTestDone(isPostTestCompleted() || hasPostTestSuccess);
     setBoothDone(isBoothDetailingCompleted() || hasBoothSuccess);
     setEarlyLifeDone(isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess);
-    setUnclaimedCount(getUnclaimedCount());
-  }, [location.pathname, hasPostTestSuccess, hasBoothSuccess, hasEarlyLifeSuccess]);
+    setUnclaimedRewardsCount(getUnclaimedRewardsCount());
+    setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
+    setHasMysteryBox(hasUserMysteryBox());
+    setMysteryBoxClaimed(isMysteryBoxClaimed());
+
+    if (
+      !isWelcomePending &&
+      !hasPostTestSuccess &&
+      !hasBoothSuccess &&
+      !hasEarlyLifeSuccess &&
+      isAllActivitiesCompleted() &&
+      !isMysteryBoxClaimed()
+    ) {
+      checkAndUnlockMysteryBox();
+      setShowMysteryBoxModal(true);
+    }
+  }, [
+    location.pathname,
+    hasPostTestSuccess,
+    hasBoothSuccess,
+    hasEarlyLifeSuccess,
+    isWelcomePending,
+  ]);
+
+  const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(
+    () => isWelcomePending,
+  );
 
   const [showPostTestModal, setShowPostTestModal] = useState<boolean>(hasPostTestSuccess);
   const [showBoothCompletionModal, setShowBoothCompletionModal] =
     useState<boolean>(hasBoothSuccess);
   const [showEarlyLifeCompletionModal, setShowEarlyLifeCompletionModal] =
     useState<boolean>(hasEarlyLifeSuccess);
+
+  const [showMysteryBoxModal, setShowMysteryBoxModal] = useState<boolean>(() => {
+    if (isWelcomePending) return false;
+    if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+      checkAndUnlockMysteryBox();
+      return true;
+    }
+    return false;
+  });
+
   const [showSymposiumStartedModal, setShowSymposiumStartedModal] = useState<boolean>(
     () => {
-      // Selalu muncul ketika sympo sudah mulai (meskipun user berpindah halaman lalu kembali),
-      // namun tidak muncul jika user sedang melihat modal sukses lain atau SUDAH join/post-test
+      // Jika welcoming pop up atau mystery box pop up sedang aktif/pending, jangan tampilkan symposium modal terlebih dahulu
+      if (isWelcomePending) return false;
       if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
+      if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) return false;
       const isDone = isPostTestCompleted() || hasPostTestSuccess;
       if (isDone || isSymposiumJoined()) return false;
       return isSymposiumStartedOrOngoing();
     },
   );
+
+  const handleCloseWelcomeModal = () => {
+    sessionStorage.removeItem("kalbe_welcome_pending");
+    sessionStorage.setItem("kalbe_welcome_shown", "true");
+    setShowWelcomeModal(false);
+
+    // Prioritas 1: Jika user sudah menyelesaikan semua 3 aktivitas dan punya Mystery Box yang belum di-claim
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+      checkAndUnlockMysteryBox();
+      setShowMysteryBoxModal(true);
+      return;
+    }
+
+    // Prioritas 2: Pop up reminder symposium (jika ada symposium)
+    const isDone = isPostTestCompleted() || hasPostTestSuccess;
+    if (
+      !hasPostTestSuccess &&
+      !hasBoothSuccess &&
+      !hasEarlyLifeSuccess &&
+      !isDone &&
+      !isSymposiumJoined() &&
+      isSymposiumStartedOrOngoing()
+    ) {
+      setShowSymposiumStartedModal(true);
+    }
+  };
+
+  const handleClosePostTestModal = () => {
+    setShowPostTestModal(false);
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+      checkAndUnlockMysteryBox();
+      setHasMysteryBox(true);
+      setHasUnclaimedMysteryBoxState(true);
+      setShowMysteryBoxModal(true);
+    }
+  };
+
+  const handleCloseBoothCompletionModal = () => {
+    setShowBoothCompletionModal(false);
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+      checkAndUnlockMysteryBox();
+      setHasMysteryBox(true);
+      setHasUnclaimedMysteryBoxState(true);
+      setShowMysteryBoxModal(true);
+    }
+  };
+
+  const handleCloseEarlyLifeCompletionModal = () => {
+    setShowEarlyLifeCompletionModal(false);
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+      checkAndUnlockMysteryBox();
+      setHasMysteryBox(true);
+      setHasUnclaimedMysteryBoxState(true);
+      setShowMysteryBoxModal(true);
+    }
+  };
+
+  const handleCloseMysteryBoxModal = () => {
+    setShowMysteryBoxModal(false);
+    const isDone = isPostTestCompleted() || hasPostTestSuccess;
+    if (
+      !hasPostTestSuccess &&
+      !hasBoothSuccess &&
+      !hasEarlyLifeSuccess &&
+      !isDone &&
+      !isSymposiumJoined() &&
+      isSymposiumStartedOrOngoing()
+    ) {
+      setShowSymposiumStartedModal(true);
+    }
+  };
+
+  const handleTakeMysteryBox = () => {
+    setShowMysteryBoxModal(false);
+    navigate("/mystery-box");
+  };
+
   const [showSymposiumUpcomingModal, setShowSymposiumUpcomingModal] = useState(false);
-  const [targetRewardId, setTargetRewardId] = useState<string>(
+  const [targetRewardId] = useState<string>(
     hasEarlyLifeSuccess
       ? "early-life"
       : hasBoothSuccess
@@ -142,16 +275,6 @@ export const HomePage: React.FC = () => {
     }
   }, [location.state]);
 
-  const handleOpenPinModal = (rewardId: string = "morinaga-sympo") => {
-    setTargetRewardId(rewardId);
-    setShowPostTestModal(false);
-    setShowBoothCompletionModal(false);
-    setShowEarlyLifeCompletionModal(false);
-    setPinDigits(["", ""]);
-    setPinError(null);
-    setShowPinModal(true);
-  };
-
   const handleClaimReward = () => {
     navigate("/claim-reward");
   };
@@ -170,7 +293,8 @@ export const HomePage: React.FC = () => {
 
     // Success PIN validation -> Mark target reward as claimed
     claimReward(targetRewardId);
-    setUnclaimedCount(getUnclaimedCount());
+    setUnclaimedRewardsCount(getUnclaimedRewardsCount());
+    setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
 
     setShowPinModal(false);
     setShowRewardSuccessModal(true);
@@ -200,14 +324,14 @@ export const HomePage: React.FC = () => {
 
   return (
     <div
-      className="font-kalbe relative min-h-full w-full flex flex-col bg-cover bg-top select-none pb-10"
+      className="font-kalbe relative h-full w-full flex flex-col justify-between bg-cover bg-top select-none overflow-hidden pb-3"
       style={{
         backgroundImage: `url('/assets/tower-background.png')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
       {/* Top Section with Morinaga Tower & Kalbe Universe Logo (Shifted higher up) */}
-      <div className="relative h-[200px] w-full shrink-0">
+      <div className="relative h-[185px] w-full shrink-0">
         <div className="absolute top-[42px] right-[16px] w-[172px]">
           <img
             src="/assets/kalbe-universe-logo.png"
@@ -217,64 +341,115 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Badges Row: Doctor Info & Claim Reward (Enlarged & spaced) */}
-      <div className="relative px-3 flex items-center justify-between gap-2.5 mb-3.5 z-10">
-        {/* Doctor Info Badge (Enlarged for better spacing) */}
+      {/* Floating Badges Row: Doctor Info & Claim Reward Buttons */}
+      <div className="relative px-3 flex items-center justify-between gap-1.5 mb-3.5 z-10">
+        {/* Doctor Info Badge */}
         <div
-          className="relative flex items-center h-[52px] pr-4 pl-1 shrink-0"
+          className="relative flex items-center h-[52px] pr-3 pl-1 shrink-0 transition-all duration-200"
           style={{
             backgroundImage: `url('/assets/docter-bg.png')`,
             backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
-            width: "202px",
+            width: hasMysteryBox ? "172px" : "202px",
           }}
         >
           <img
             src={currentUser?.avatar || "/assets/docter-avatar.png"}
             alt={currentUser?.fullName || "Doctor"}
-            className="w-[54px] h-[54px] -ml-2.5 shrink-0 object-contain drop-shadow"
+            className="w-[48px] h-[48px] -ml-2 shrink-0 object-contain drop-shadow"
           />
-          <div className="ml-2 flex flex-col justify-center overflow-hidden">
-            <span className="text-[12.5px] font-bold text-[#1E1E1E] leading-tight">
+          <div className="ml-1.5 flex flex-col justify-center overflow-hidden">
+            <span className="text-[12px] font-bold text-[#1E1E1E] leading-tight">
               Hello,
             </span>
-            <span className="text-[11.5px]  text-[#444444] truncate leading-tight mt-0.5">
+            <span className="text-[10.5px] text-[#444444] truncate leading-tight mt-0.5">
               {currentUser?.fullName || "dr. Ridwan Setiawan"}
             </span>
           </div>
         </div>
 
-        {/* Claim Reward Badge (Enlarged) */}
-        <button
-          onClick={handleClaimReward}
-          className="relative flex items-center justify-center gap-2 h-[48px] px-3.5 shrink-0 cursor-pointer transition-transform active:scale-95 hover:brightness-105"
-          style={{
-            backgroundImage: `url('/assets/reward-claim-bg.png')`,
-            backgroundSize: "100% 100%",
-            backgroundRepeat: "no-repeat",
-            width: "152px",
-          }}
-        >
-          <img
-            src="/assets/reward-icon-red.png"
-            alt="Reward Gift"
-            className="w-[23px] h-[23px] object-contain shrink-0"
-          />
-          <span className="text-[12.5px] font-bold text-[#C70412] tracking-tight">
-            Klaim Hadiah
-          </span>
+        {/* Right Buttons: Klaim Hadiah & Mystery Box */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* 1. Klaim Hadiah Button */}
+          <button
+            onClick={handleClaimReward}
+            className="relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 cursor-pointer transition-transform active:scale-95 hover:brightness-105 select-none"
+            style={{
+              backgroundImage: `url('/assets/reward-claim-bg-new.png')`,
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
+            }}
+          >
+            {unclaimedRewardsCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
+                {unclaimedRewardsCount}
+              </span>
+            )}
+            <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
+              <img
+                src="/assets/reward-icon-red.png"
+                alt="Klaim Hadiah"
+                className="w-[38px] h-[38px] object-contain drop-shadow-sm animate-bell-shake"
+              />
+            </div>
+            <div className="w-full h-[18px] flex items-center justify-center mt-4">
+              <span className="text-[8px] font-bold text-[#FF1D1D] tracking-tight whitespace-nowrap leading-none">
+                Klaim Hadiah
+              </span>
+            </div>
+          </button>
 
-          {unclaimedCount > 0 && (
-            <span className="absolute -top-0.5 right-0.5 w-[19px] h-[19px] bg-[#E50014] text-white text-[10.5px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-              {unclaimedCount}
-            </span>
+          {/* 2. Mystery Box Button (Hanya tampil jika user telah memiliki mystery box) */}
+          {hasMysteryBox && (
+            <button
+              onClick={() => {
+                if (!mysteryBoxClaimed) {
+                  navigate("/mystery-box");
+                }
+              }}
+              disabled={mysteryBoxClaimed}
+              className={`relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 select-none transition-all ${
+                mysteryBoxClaimed
+                  ? "opacity-50 grayscale cursor-not-allowed pointer-events-none"
+                  : "cursor-pointer transition-transform active:scale-95 hover:brightness-105"
+              }`}
+              style={{
+                backgroundImage: `url('/assets/reward-claim-bg-new.png')`,
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              {hasUnclaimedMysteryBoxState && !mysteryBoxClaimed && (
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10.5px] font-extrabold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
+                  !
+                </span>
+              )}
+              <div className="w-full flex-1 flex items-center justify-center translate-y-[4px]">
+                <img
+                  src="/assets/mistery-box.png"
+                  alt="Mystery Box"
+                  className={`w-[58px] h-[58px] object-contain drop-shadow-sm ${
+                    !mysteryBoxClaimed ? "animate-bell-shake-delayed" : ""
+                  }`}
+                />
+              </div>
+              <div className="w-full h-[18px] flex items-center justify-center -mt-[2.5px]">
+                <span
+                  className={`text-[8px] font-bold tracking-tight whitespace-nowrap leading-none ${
+                    mysteryBoxClaimed ? "text-gray-400" : "text-[#FF1D1D]"
+                  }`}
+                >
+                  Mystery Box
+                </span>
+              </div>
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Main Mission Card ("Misi Utama") */}
-      <div className="relative px-3 flex-1 flex flex-col z-10">
-        <div className="relative w-full px-4 pt-5 pb-6 drop-shadow-sm">
+      <div className="relative px-3 flex-1 flex flex-col z-10 min-h-0 mb-1">
+        <div className="relative w-full h-full px-4 pt-4 pb-4 drop-shadow-sm flex flex-col justify-between">
           {/* Sliced SVG Futuristic 8-Sided (Octagon) Background with Thicker Accent Corners */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
@@ -334,17 +509,17 @@ export const HomePage: React.FC = () => {
           </svg>
 
           {/* Card Header */}
-          <div className="relative z-10 text-center mb-4">
-            <h2 className="text-[22px] font-bold text-[#940B0A] tracking-tight leading-tight">
+          <div className="relative z-10 text-center mb-2 shrink-0">
+            <h2 className="text-[20px] font-bold text-[#940B0A] tracking-tight leading-tight">
               Misi Utama
             </h2>
-            <p className="text-[12px] text-[#5A5A5A] mt-1.5 font-normal">
+            <p className="text-[12px] text-[#5A5A5A] mt-1 font-normal">
               Ikuti aktivitas berikut untuk mendapatkan reward.
             </p>
           </div>
 
           {/* Mission Items List */}
-          <div className="relative z-10 space-y-3 flex flex-col gap-3">
+          <div className="relative z-10 flex-1 flex flex-col justify-around py-0.5 min-h-0">
             {missions.map((mission) => {
               const isClickable = !mission.isCompleted;
               return (
@@ -435,43 +610,71 @@ export const HomePage: React.FC = () => {
       {/* 1. Post-Test Completion Congratulations Modal */}
       <RewardModal
         isOpen={showPostTestModal}
-        onClose={() => setShowPostTestModal(false)}
+        onClose={handleClosePostTestModal}
         imageSrc="/assets/reward-box.png"
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle="Terimakasih telah mengikuti post test Morinaga Symposium."
         description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
-        buttonText="AMBIL HADIAH"
-        onButtonClick={() => handleOpenPinModal("morinaga-sympo")}
+        footerContent={
+          <p className="text-[12px] font-bold text-[#D41025] text-center">
+            Silahkan Ambil Hadiah di Booth Morinaga
+          </p>
+        }
       />
 
       {/* 2. Morinaga Booth Detailing Congratulations Modal */}
       <RewardModal
         isOpen={showBoothCompletionModal}
-        onClose={() => setShowBoothCompletionModal(false)}
+        onClose={handleCloseBoothCompletionModal}
         imageSrc="/assets/reward-box.png"
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle="Terimakasih telah mengikuti Detailing Morinaga Booth."
         description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
-        buttonText="AMBIL HADIAH"
-        onButtonClick={() => handleOpenPinModal("morinaga-booth")}
+        footerContent={
+          <p className="text-[12px] font-bold text-[#D41025] text-center">
+            Silahkan Ambil Hadiah di Booth Morinaga
+          </p>
+        }
       />
 
       {/* 2b. Kalbe Early Life Solutions Detailing Congratulations Modal */}
       <RewardModal
         isOpen={showEarlyLifeCompletionModal}
-        onClose={() => setShowEarlyLifeCompletionModal(false)}
+        onClose={handleCloseEarlyLifeCompletionModal}
         imageSrc="/assets/reward-box.png"
         imageAlt="Kalbe Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle="Terimakasih telah mengikuti Detailing Kalbe Early Life Solutions."
         description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
-        buttonText="AMBIL HADIAH"
-        onButtonClick={() => handleOpenPinModal("early-life")}
+        footerContent={
+          <p className="text-[12px] font-bold text-[#D41025] text-center">
+            Silahkan Ambil Hadiah di Booth Morinaga
+          </p>
+        }
+      />
+
+      {/* 2c. Mystery Box Unlocked Congratulations Modal */}
+      <RewardModal
+        isOpen={showMysteryBoxModal}
+        onClose={handleCloseMysteryBoxModal}
+        imageSrc="/assets/mistery-box.png"
+        imageAlt="Mystery Box Morinaga"
+        imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
+        title="Congratulations!"
+        subtitle={
+          <span>
+            Anda mendapatkan <br />
+            <span className="font-bold">MYSTERY BOX Morinaga</span>
+          </span>
+        }
+        description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
+        buttonText="Ambil"
+        onButtonClick={handleTakeMysteryBox}
       />
 
       {/* 3. Enter PIN Modal */}
@@ -589,7 +792,8 @@ export const HomePage: React.FC = () => {
       {/* 5. Morinaga Booth Activities Menu Modal */}
       <BoothMenuModal
         isOpen={showBoothMenuModal}
-        onClose={() => {
+        onClose={() => setShowBoothMenuModal(false)}
+        onStartDetailing={() => {
           setShowBoothMenuModal(false);
           setShowBoothDrawer(true);
         }}
@@ -623,6 +827,9 @@ export const HomePage: React.FC = () => {
         isOpen={showPodcastScheduleModal}
         onClose={() => setShowPodcastScheduleModal(false)}
       />
+
+      {/* 0. Welcoming Pop Up PIT IKA 2026 */}
+      <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
       {/* 9. Morinaga Symposium Started / Ongoing Modal */}
       <SymposiumStartedModal

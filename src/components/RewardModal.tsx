@@ -14,6 +14,7 @@ export interface RewardModalProps {
   onButtonClick?: () => void;
   children?: React.ReactNode;
   hideDefaultButton?: boolean;
+  footerContent?: React.ReactNode;
 }
 
 export const RewardModal: React.FC<RewardModalProps> = ({
@@ -29,6 +30,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
   onButtonClick,
   children,
   hideDefaultButton = false,
+  footerContent,
 }) => {
   if (!isOpen) return null;
 
@@ -74,30 +76,36 @@ export const RewardModal: React.FC<RewardModalProps> = ({
             )}
 
             {description && (
-              <div className="text-[12px] font-normal text-[#4B5563] leading-relaxed max-w-[260px]">
+              <div className="text-[12px] font-normal text-[#4B5563] leading-relaxed max-w-[290px]">
                 {description}
               </div>
             )}
           </div>
         )}
 
-        {/* Bottom Action Button */}
-        {!hideDefaultButton && buttonText && onButtonClick && (
-          <div className="w-full flex justify-center shrink-0">
-            <button
-              onClick={onButtonClick}
-              className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
-              style={{
-                backgroundImage: `url('/assets/red-button.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span className="text-white font-extrabold text-[13px] sm:text-[14px] tracking-wider uppercase drop-shadow">
-                {buttonText}
-              </span>
-            </button>
-          </div>
+        {/* Bottom Action Button or Custom Footer Content */}
+        {footerContent ? (
+          <div className="w-full flex justify-center shrink-0">{footerContent}</div>
+        ) : (
+          !hideDefaultButton &&
+          buttonText &&
+          onButtonClick && (
+            <div className="w-full flex justify-center shrink-0">
+              <button
+                onClick={onButtonClick}
+                className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
+                style={{
+                  backgroundImage: `url('/assets/red-button.png')`,
+                  backgroundSize: "100% 100%",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
+                <span className="text-white font-extrabold text-[13px] sm:text-[14px] tracking-wider uppercase drop-shadow">
+                  {buttonText}
+                </span>
+              </button>
+            </div>
+          )
         )}
       </div>
     </div>

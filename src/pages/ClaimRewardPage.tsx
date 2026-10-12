@@ -12,7 +12,11 @@ const DUMMY_CREW_PIN = "88";
 
 export const ClaimRewardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [rewards, setRewards] = useState<RewardItem[]>(() => getObtainedRewards());
+  const [rewards, setRewards] = useState<RewardItem[]>(() =>
+    getObtainedRewards().filter(
+      (r) => r.id !== "mistery-box" && r.id !== "mystery-box",
+    ),
+  );
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
 
   // Modal States
@@ -256,11 +260,7 @@ export const ClaimRewardPage: React.FC = () => {
           subtitle={
             <span>
               Anda mendapatkan <br />
-              {selectedReward.id === "mistery-box" ? (
-                <span className="font-bold">{selectedReward.rewardName}</span>
-              ) : (
-                selectedReward.rewardName
-              )}
+              {selectedReward.rewardName}
             </span>
           }
           buttonText="OKE"

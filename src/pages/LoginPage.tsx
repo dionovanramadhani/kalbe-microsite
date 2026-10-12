@@ -52,16 +52,17 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    sessionStorage.setItem("kalbe_welcome_pending", "true");
     navigate("/home");
   };
 
   return (
     <div
-      className="relative min-h-full w-full flex flex-col justify-between bg-cover bg-top select-none"
+      className="relative h-full w-full flex flex-col justify-between bg-cover bg-top select-none overflow-hidden"
       style={{ backgroundImage: `url('/assets/tower-background.png')` }}
     >
       {/* Top Banner with Morinaga Tower & Kalbe Universe Logo */}
-      <div className="relative h-[280px] w-full shrink-0">
+      <div className="relative h-[220px] sm:h-[240px] w-full shrink-0">
         <div className="absolute top-[68px] right-[16px] w-[172px]">
           <img
             src="/assets/kalbe-universe-logo.png"

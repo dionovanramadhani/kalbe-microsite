@@ -186,6 +186,7 @@ export interface KalbeBoothResponse {
   id: string;
   name: string;
   icon?: string | null;
+  logo?: string | null;
   detailing_title: string;
   image_title?: string | null;
   detailing_description: string;
@@ -204,9 +205,11 @@ export interface KalbeBoothFormValues {
   iconFile?: File | null;
   imageTitleFile?: File | null;
   detailingBannerFile?: File | null;
+  logoFile?: File | null;
   iconUrl?: string;
   imageTitleUrl?: string;
   detailingBannerUrl?: string;
+  logoUrl?: string;
 }
 
 // ─── Auth API ───────────────────────────────────────────────────────────────
@@ -271,6 +274,12 @@ export async function createKalbeBooth(values: KalbeBoothFormValues): Promise<Ap
     formData.append('detailing_banner', values.detailingBannerUrl);
   }
 
+  if (values.logoFile) {
+    formData.append('logo', values.logoFile);
+  } else if (values.logoUrl) {
+    formData.append('logo', values.logoUrl);
+  }
+
   return apiFetch<ApiResponse<KalbeBoothResponse>>('/api/v1/kalbe/booth', {
     method: 'POST',
     body: formData,
@@ -300,6 +309,12 @@ export async function updateKalbeBooth(id: string, values: KalbeBoothFormValues)
     formData.append('detailing_banner', values.detailingBannerFile);
   } else if (values.detailingBannerUrl) {
     formData.append('detailing_banner', values.detailingBannerUrl);
+  }
+
+  if (values.logoFile) {
+    formData.append('logo', values.logoFile);
+  } else if (values.logoUrl) {
+    formData.append('logo', values.logoUrl);
   }
 
   return apiFetch<ApiResponse<KalbeBoothResponse>>(`/api/v1/kalbe/booth/${id}`, {
@@ -469,6 +484,8 @@ export interface KalbeSymposiumResponse {
   started_at: string;
   ended_at: string;
   is_active: boolean;
+  icon?: string | null;
+  logo?: string | null;
   is_completed?: boolean;
   created_at: string;
   updated_at: string;
@@ -480,6 +497,20 @@ export interface KalbeSymposiumRequest {
   started_at: string;
   ended_at: string;
   is_active?: boolean;
+  icon?: string | null;
+  logo?: string | null;
+}
+
+export interface KalbeSymposiumFormValues {
+  title: string;
+  description: string;
+  started_at: string;
+  ended_at: string;
+  is_active: boolean;
+  iconFile?: File | null;
+  logoFile?: File | null;
+  iconUrl?: string;
+  logoUrl?: string;
 }
 
 export async function getKalbeSymposiums(params?: {
@@ -505,14 +536,66 @@ export async function getKalbeSymposiumByID(id: string, userId?: string): Promis
   return apiFetch<ApiResponse<KalbeSymposiumResponse>>(`/api/v1/kalbe/symposium/${id}${qs}`);
 }
 
-export async function createKalbeSymposium(data: KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
+export async function createKalbeSymposium(data: KalbeSymposiumFormValues | KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
+  if ('iconFile' in data || 'logoFile' in data || 'iconUrl' in data || 'logoUrl' in data) {
+    const formData = new FormData();
+    formData.append('title', data.title.trim());
+    formData.append('description', data.description.trim());
+    formData.append('started_at', data.started_at);
+    formData.append('ended_at', data.ended_at);
+    formData.append('is_active', data.is_active ? 'true' : 'false');
+
+    if (data.iconFile) {
+      formData.append('icon', data.iconFile);
+    } else if (data.iconUrl) {
+      formData.append('icon', data.iconUrl);
+    }
+
+    if (data.logoFile) {
+      formData.append('logo', data.logoFile);
+    } else if (data.logoUrl) {
+      formData.append('logo', data.logoUrl);
+    }
+
+    return apiFetch<ApiResponse<KalbeSymposiumResponse>>('/api/v1/kalbe/symposium', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
   return apiFetch<ApiResponse<KalbeSymposiumResponse>>('/api/v1/kalbe/symposium', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function updateKalbeSymposium(id: string, data: KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
+export async function updateKalbeSymposium(id: string, data: KalbeSymposiumFormValues | KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
+  if ('iconFile' in data || 'logoFile' in data || 'iconUrl' in data || 'logoUrl' in data) {
+    const formData = new FormData();
+    formData.append('title', data.title.trim());
+    formData.append('description', data.description.trim());
+    formData.append('started_at', data.started_at);
+    formData.append('ended_at', data.ended_at);
+    formData.append('is_active', data.is_active ? 'true' : 'false');
+
+    if (data.iconFile) {
+      formData.append('icon', data.iconFile);
+    } else if (data.iconUrl) {
+      formData.append('icon', data.iconUrl);
+    }
+
+    if (data.logoFile) {
+      formData.append('logo', data.logoFile);
+    } else if (data.logoUrl) {
+      formData.append('logo', data.logoUrl);
+    }
+
+    return apiFetch<ApiResponse<KalbeSymposiumResponse>>(`/api/v1/kalbe/symposium/${id}`, {
+      method: 'PUT',
+      body: formData,
+    });
+  }
+
   return apiFetch<ApiResponse<KalbeSymposiumResponse>>(`/api/v1/kalbe/symposium/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

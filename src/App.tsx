@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { SymposiumPage } from './pages/SymposiumPage';
 import { PostTestPage } from './pages/PostTestPage';
 import { ClaimRewardPage } from './pages/ClaimRewardPage';
+import { MysteryBoxPage } from './pages/MysteryBoxPage';
 import { AdminLayout } from './admin/AdminLayout';
 
 const RootRoute = () => {
@@ -41,6 +42,7 @@ export default function App() {
                 <Route path="/early-life-scan" element={<SymposiumPage scanType="early-life" />} />
                 <Route path="/post-test" element={<PostTestPage />} />
                 <Route path="/claim-reward" element={<ClaimRewardPage />} />
+                <Route path="/mystery-box" element={<MysteryBoxPage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </MobileFrame>
