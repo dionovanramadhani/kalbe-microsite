@@ -9,7 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { SymposiumPage } from './pages/SymposiumPage';
 import { PostTestPage } from './pages/PostTestPage';
 import { ClaimRewardPage } from './pages/ClaimRewardPage';
-import { AdminLogin } from './admin/AdminLogin';
+import { AdminLayout } from './admin/AdminLayout';
 
 const RootRoute = () => {
   if (isRememberMeActive()) {
@@ -23,7 +23,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Admin Route - Rendered full screen without MobileFrame */}
-        <Route path="/admin/*" element={<AdminLogin />} />
+        <Route path="/admin/*" element={<AdminLayout />} />
 
         {/* User Mobile Microsite Routes - Rendered within MobileFrame */}
         <Route

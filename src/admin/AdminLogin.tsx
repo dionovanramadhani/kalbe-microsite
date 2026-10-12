@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { login, setToken, setAdminUser } from './adminApi';
 import './admin.css';
 
 interface AdminLoginProps {
@@ -19,20 +20,23 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // Simulasi delay autentikasi
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const result = await login({
+        email: email.trim(),
+        password,
+      });
 
-      // Mock credentials check untuk admin slicing
-      if (email.trim().toLowerCase() === 'admin@kalbe.co.id' && password === 'admin123') {
-        localStorage.setItem('kalbe_admin_token', 'mock_kalbe_admin_token');
+      if (result.success && result.data?.access_token) {
+        setToken(result.data.access_token);
+        setAdminUser(result.data);
         if (onLoginSuccess) {
           onLoginSuccess();
-        } else {
-          alert('Login Admin Berhasil! Selamat datang di Portal Admin Kalbe.');
         }
       } else {
-        // Berikan info kredensial dummy untuk kemudahan pengetesan jika salah
-        setError('Email atau password tidak sesuai. (Gunakan: admin@kalbe.co.id / admin123)');
+        const errorMsg =
+          (typeof result.error?.details === 'string' ? result.error.details : null) ||
+          result.error?.message ||
+          'Login failed. Please check your credentials.';
+        setError(errorMsg);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat masuk.');
@@ -52,6 +56,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
                 src="/assets/kalbe-logo.svg"
                 alt="Kalbe Logo"
                 className="w-12 h-12 object-contain drop-shadow"
+                onError={(e) => {
+                  // Fallback icon jika asset svg tidak ada di public folder
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
               />
             </div>
             <div className="admin-login-logo">
