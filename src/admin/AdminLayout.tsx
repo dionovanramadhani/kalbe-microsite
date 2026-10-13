@@ -11,6 +11,7 @@ import { BoothsPage } from './BoothsPage';
 import { BoothActivitiesPage } from './BoothActivitiesPage';
 import { SymposiumsPage } from './SymposiumsPage';
 import { PostTestsPage } from './PostTestsPage';
+import { RewardsPage } from './RewardsPage';
 import { ToastProvider } from '../context/ToastContext';
 import './admin.css';
 
@@ -314,7 +315,7 @@ export function AdminLayout() {
       case 'post-tests':
         return <PostTestsPage />;
       case 'rewards':
-        return <UnderDevelopmentPage title="Rewards Merchandise" description="Kelola reward merchandise booth/symposium dan kuota stok" />;
+        return <RewardsPage />;
       case 'mystery-box':
         return <UnderDevelopmentPage title="Mystery Box Management" description="Kelola reward khusus mystery box untuk pengunjung yang menyelesaikan semua booth & simposium aktif" />;
       default:

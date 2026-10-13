@@ -699,3 +699,102 @@ export async function deleteKalbePostTest(id: string): Promise<ApiResponse<Kalbe
   });
 }
 
+// ─── Reward Types & API ─────────────────────────────────────────────────────
+
+export type KalbeRewardType = 'booth' | 'symposium' | 'mystery_box';
+
+export interface KalbeRewardResponse {
+  id: string;
+  name: string;
+  reward_type: KalbeRewardType | string;
+  symposium_id?: string | null;
+  stock: number;
+  picture?: string | null;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  symposium?: KalbeSymposiumResponse | null;
+}
+
+export interface KalbeRewardFormValues {
+  name: string;
+  reward_type: KalbeRewardType | string;
+  symposium_id?: string | null;
+  stock: number;
+  pictureFile?: File | null;
+  pictureUrl?: string;
+}
+
+export async function getKalbeRewards(params?: {
+  page?: number;
+  limit?: number;
+  reward_type?: string;
+  search?: string;
+  is_deleted?: boolean;
+}): Promise<ApiResponse<KalbeRewardResponse[]>> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.reward_type) query.append('reward_type', params.reward_type);
+  if (params?.search) query.append('search', params.search);
+  if (params?.is_deleted !== undefined) query.append('is_deleted', params.is_deleted.toString());
+
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiFetch<ApiResponse<KalbeRewardResponse[]>>(`/api/v1/kalbe/rewards${qs}`);
+}
+
+export async function getKalbeRewardByID(id: string): Promise<ApiResponse<KalbeRewardResponse>> {
+  return apiFetch<ApiResponse<KalbeRewardResponse>>(`/api/v1/kalbe/reward/${id}`);
+}
+
+export async function createKalbeReward(data: KalbeRewardFormValues): Promise<ApiResponse<KalbeRewardResponse>> {
+  const formData = new FormData();
+  formData.append('name', data.name.trim());
+  formData.append('reward_type', data.reward_type.trim());
+  formData.append('stock', data.stock.toString());
+
+  if (data.reward_type === 'symposium' && data.symposium_id) {
+    formData.append('symposium_id', data.symposium_id);
+  }
+
+  if (data.pictureFile) {
+    formData.append('picture', data.pictureFile);
+  } else if (data.pictureUrl) {
+    formData.append('picture', data.pictureUrl);
+  }
+
+  return apiFetch<ApiResponse<KalbeRewardResponse>>('/api/v1/kalbe/reward', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function updateKalbeReward(id: string, data: KalbeRewardFormValues): Promise<ApiResponse<KalbeRewardResponse>> {
+  const formData = new FormData();
+  formData.append('name', data.name.trim());
+  formData.append('reward_type', data.reward_type.trim());
+  formData.append('stock', data.stock.toString());
+
+  if (data.reward_type === 'symposium' && data.symposium_id) {
+    formData.append('symposium_id', data.symposium_id);
+  }
+
+  if (data.pictureFile) {
+    formData.append('picture', data.pictureFile);
+  } else if (data.pictureUrl) {
+    formData.append('picture', data.pictureUrl);
+  }
+
+  return apiFetch<ApiResponse<KalbeRewardResponse>>(`/api/v1/kalbe/reward/${id}`, {
+    method: 'PUT',
+    body: formData,
+  });
+}
+
+export async function deleteKalbeReward(id: string): Promise<ApiResponse<KalbeRewardResponse>> {
+  return apiFetch<ApiResponse<KalbeRewardResponse>>(`/api/v1/kalbe/reward/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+

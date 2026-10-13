@@ -108,12 +108,14 @@ export function PostTestsPage() {
 
   // Filtered List
   const filteredPostTests = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return postTests.filter((item) => {
-      const sympTitle = symposiumMap.get(item.ref_id)?.title || '';
+      const sympTitle = (symposiumMap.get(item.ref_id)?.title || '').toLowerCase();
       const matchesSearch =
-        item.title.toLowerCase().includes(search.toLowerCase()) ||
-        item.description.toLowerCase().includes(search.toLowerCase()) ||
-        sympTitle.toLowerCase().includes(search.toLowerCase());
+        !q ||
+        (item.title || '').toLowerCase().includes(q) ||
+        (item.description || '').toLowerCase().includes(q) ||
+        sympTitle.includes(q);
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'active' && item.status) ||
@@ -513,28 +515,9 @@ export function PostTestsPage() {
         {loading ? (
           <div className="admin-loading-state">
             <div className="admin-spinner-ring" />
-            <span style={{ marginTop: 12, color: 'var(--admin-text-secondary)', fontSize: 14 }}>
+            <span style={{ marginTop: 12, color: 'var(--admin-text-secondary)', fontSize: 13.5 }}>
               Memuat data post-test...
             </span>
-          </div>
-        ) : filteredPostTests.length === 0 ? (
-          <div className="admin-empty-state">
-            <div className="admin-empty-icon">📝</div>
-            <div className="admin-empty-title">Belum ada post-test</div>
-            <p className="admin-empty-desc">
-              {search || statusFilter !== 'all'
-                ? 'Tidak ada post-test yang cocok dengan filter pencarian.'
-                : 'Mulai buat soal post-test untuk simposium dengan menekan tombol Tambah Post-Test.'}
-            </p>
-            {!isBrand && !search && statusFilter === 'all' && (
-              <button
-                className="admin-btn admin-btn-primary admin-btn-sm"
-                onClick={openCreate}
-                style={{ marginTop: 16 }}
-              >
-                + Tambah Post-Test Sekarang
-              </button>
-            )}
           </div>
         ) : (
           <div className="admin-table-scroll">
@@ -544,14 +527,38 @@ export function PostTestsPage() {
                   <th style={{ width: 48, textAlign: 'center' }}>No</th>
                   <th>Judul Post-Test</th>
                   <th>Simposium Terkait</th>
-                  <th style={{ textAlign: 'center' }}>Jumlah Soal</th>
-                  <th style={{ textAlign: 'center' }}>Status</th>
-                  <th>Tanggal Dibuat</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                  <th style={{ textAlign: 'center', width: 110 }}>Jumlah Soal</th>
+                  <th style={{ textAlign: 'center', width: 100 }}>Status</th>
+                  <th style={{ width: 150 }}>Tanggal Dibuat</th>
+                  {!isBrand && <th style={{ textAlign: 'right', width: 120 }}>Aksi</th>}
                 </tr>
               </thead>
               <tbody>
-                {filteredPostTests.map((item, idx) => {
+                {filteredPostTests.length === 0 ? (
+                  <tr>
+                    <td colSpan={isBrand ? 6 : 7} className="admin-table-empty">
+                      <div className="admin-table-empty-icon">📝</div>
+                      <div className="admin-table-empty-title">
+                        {search || statusFilter !== 'all' ? 'Post-Test Tidak Ditemukan' : 'Belum Ada Post-Test'}
+                      </div>
+                      <div className="admin-table-empty-text">
+                        {search || statusFilter !== 'all'
+                          ? 'Tidak ada post-test yang cocok dengan filter pencarian.'
+                          : 'Mulai buat soal post-test untuk simposium dengan menekan tombol Tambah Post-Test.'}
+                      </div>
+                      {!isBrand && !search && statusFilter === 'all' && (
+                        <button
+                          className="admin-btn admin-btn-primary admin-btn-sm"
+                          onClick={openCreate}
+                          style={{ marginTop: 16 }}
+                        >
+                          + Tambah Post-Test Sekarang
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPostTests.map((item, idx) => {
                   const symp = symposiumMap.get(item.ref_id);
                   const qCount = item.questions?.length || 0;
 
@@ -672,8 +679,9 @@ export function PostTestsPage() {
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
+                })
+              )}
+            </tbody>
             </table>
           </div>
         )}
