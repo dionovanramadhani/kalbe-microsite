@@ -723,9 +723,12 @@
   border: 1px solid var(--admin-border);
 }
 
-.admin-stat-icon-wrapper svg {
-  width: 22px;
-  height: 22px;
+.admin-stat-icon-wrapper svg,
+.admin-stat-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
 }
 
 .admin-stat-icon-primary {
@@ -740,10 +743,22 @@
   color: var(--admin-success);
 }
 
+.admin-stat-icon-warning {
+  background: var(--admin-warning-subtle);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: var(--admin-warning);
+}
+
 .admin-stat-icon-info {
   background: var(--admin-info-subtle);
   border-color: rgba(59, 130, 246, 0.2);
   color: var(--admin-info);
+}
+
+.admin-stat-icon-danger {
+  background: var(--admin-danger-subtle);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--admin-danger);
 }
 
 .admin-stat-label {
@@ -1378,3 +1393,100 @@
     gap: 12px;
   }
 }
+
+/* ─── Question Builder (Post-Tests & Surveys) ─────────────────────────────── */
+
+.admin-survey-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-question-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 20px;
+  position: relative;
+  transition: all var(--admin-transition);
+}
+
+.admin-question-card:hover {
+  border-color: var(--admin-border-strong);
+}
+
+.admin-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.admin-question-number {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-primary-light);
+  background: var(--admin-primary-subtle);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.admin-question-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-question-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-options-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.admin-options-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.admin-option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.admin-option-row .admin-input {
+  flex: 1;
+}
+
+.admin-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--admin-primary);
+  cursor: pointer;
+}
+
+.admin-checkbox-label {
+  font-size: 13px;
+  color: var(--admin-text);
+  cursor: pointer;
+}
+

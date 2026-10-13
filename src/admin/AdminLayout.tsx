@@ -10,6 +10,7 @@ import { DashboardPage } from './DashboardPage';
 import { BoothsPage } from './BoothsPage';
 import { BoothActivitiesPage } from './BoothActivitiesPage';
 import { SymposiumsPage } from './SymposiumsPage';
+import { PostTestsPage } from './PostTestsPage';
 import { ToastProvider } from '../context/ToastContext';
 import './admin.css';
 
@@ -311,7 +312,7 @@ export function AdminLayout() {
       case 'symposiums':
         return <SymposiumsPage />;
       case 'post-tests':
-        return <UnderDevelopmentPage title="Post-Tests (Symposium)" description="Kelola soal post-test, opsi jawaban, dan passing grade simposium" />;
+        return <PostTestsPage />;
       case 'rewards':
         return <UnderDevelopmentPage title="Rewards Merchandise" description="Kelola reward merchandise booth/symposium dan kuota stok" />;
       case 'mystery-box':

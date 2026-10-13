@@ -607,3 +607,95 @@ export async function deleteKalbeSymposium(id: string): Promise<ApiResponse<{ me
     method: 'DELETE',
   });
 }
+
+// ─── Post-Test Types & API ──────────────────────────────────────────────────
+
+export interface KalbePostTestQuestionOptionRequest {
+  option_text: string;
+  is_correct?: boolean;
+  order_number?: number;
+}
+
+export interface KalbePostTestQuestionOptionResponse {
+  id: string;
+  option_text: string;
+  is_correct?: boolean;
+  order_number: number;
+}
+
+export interface KalbePostTestQuestionRequest {
+  question_text: string;
+  question_type: 'single_choice' | 'multiple_choice' | 'text';
+  is_required: boolean;
+  order_number: number;
+  options?: KalbePostTestQuestionOptionRequest[];
+}
+
+export interface KalbePostTestQuestionResponse {
+  id: string;
+  question_text: string;
+  question_type: string;
+  is_required: boolean;
+  order_number: number;
+  options?: KalbePostTestQuestionOptionResponse[];
+}
+
+export interface KalbePostTestRequest {
+  title: string;
+  description?: string;
+  ref_id: string; // Symposium ID
+  status: boolean;
+  questions?: KalbePostTestQuestionRequest[];
+}
+
+export interface KalbePostTestResponse {
+  id: string;
+  title: string;
+  description: string;
+  ref_id: string; // Symposium ID
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+  questions?: KalbePostTestQuestionResponse[];
+}
+
+export async function getKalbePostTests(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<ApiResponse<KalbePostTestResponse[]>> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiFetch<ApiResponse<KalbePostTestResponse[]>>(`/api/v1/kalbe/post-tests${qs}`);
+}
+
+export async function getKalbePostTestByID(id: string): Promise<ApiResponse<KalbePostTestResponse>> {
+  return apiFetch<ApiResponse<KalbePostTestResponse>>(`/api/v1/kalbe/post-test/${id}`);
+}
+
+export async function getKalbePostTestByRefID(refId: string): Promise<ApiResponse<KalbePostTestResponse>> {
+  return apiFetch<ApiResponse<KalbePostTestResponse>>(`/api/v1/kalbe/post-test/ref/${refId}`);
+}
+
+export async function createKalbePostTest(data: KalbePostTestRequest): Promise<ApiResponse<KalbePostTestResponse>> {
+  return apiFetch<ApiResponse<KalbePostTestResponse>>('/api/v1/kalbe/post-test', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateKalbePostTest(id: string, data: KalbePostTestRequest): Promise<ApiResponse<KalbePostTestResponse>> {
+  return apiFetch<ApiResponse<KalbePostTestResponse>>(`/api/v1/kalbe/post-test/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteKalbePostTest(id: string): Promise<ApiResponse<KalbePostTestResponse>> {
+  return apiFetch<ApiResponse<KalbePostTestResponse>>(`/api/v1/kalbe/post-test/${id}`, {
+    method: 'DELETE',
+  });
+}
+
