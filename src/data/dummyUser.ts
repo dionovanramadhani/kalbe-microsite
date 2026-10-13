@@ -171,6 +171,8 @@ export const authenticateUser = (
       localStorage.removeItem('kalbe_rewards_user_test');
       localStorage.removeItem('kalbe_activities_user_test');
       localStorage.removeItem('kalbe_sympo_joined_user_test');
+      localStorage.removeItem('kalbe_mystery_box_popup_animated_user_test');
+      localStorage.removeItem('kalbe_mystery_box_popup_animated_user_test_com');
     }
   } catch (err) {
     console.error('Failed to save current user session:', err);

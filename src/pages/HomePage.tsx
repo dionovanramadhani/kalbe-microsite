@@ -129,6 +129,38 @@ export const HomePage: React.FC = () => {
     return false;
   });
 
+  const getMysteryBoxAnimatedKey = () => {
+    const user = getCurrentUser();
+    const userId = user?.id || (user?.email ? user.email.replace(/[^a-zA-Z0-9]/g, "_") : "guest");
+    return `kalbe_mystery_box_popup_animated_${userId}`;
+  };
+
+  const [shouldAnimateMysteryBox, setShouldAnimateMysteryBox] = useState<boolean>(() => {
+    try {
+      const key = getMysteryBoxAnimatedKey();
+      return localStorage.getItem(key) !== "true";
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (showMysteryBoxModal) {
+      try {
+        const key = getMysteryBoxAnimatedKey();
+        const alreadyAnimated = localStorage.getItem(key) === "true";
+        if (!alreadyAnimated) {
+          setShouldAnimateMysteryBox(true);
+          localStorage.setItem(key, "true");
+        } else {
+          setShouldAnimateMysteryBox(false);
+        }
+      } catch (e) {
+        console.warn("Failed to check/set mystery box animation storage:", e);
+      }
+    }
+  }, [showMysteryBoxModal]);
+
   const [showSymposiumStartedModal, setShowSymposiumStartedModal] = useState<boolean>(
     () => {
       // Jika welcoming pop up atau mystery box pop up sedang aktif/pending, jangan tampilkan symposium modal terlebih dahulu
@@ -199,6 +231,7 @@ export const HomePage: React.FC = () => {
 
   const handleCloseMysteryBoxModal = () => {
     setShowMysteryBoxModal(false);
+    setShouldAnimateMysteryBox(false);
     const isDone = isPostTestCompleted() || hasPostTestSuccess;
     if (
       !hasPostTestSuccess &&
@@ -214,6 +247,7 @@ export const HomePage: React.FC = () => {
 
   const handleTakeMysteryBox = () => {
     setShowMysteryBoxModal(false);
+    setShouldAnimateMysteryBox(false);
     navigate("/mystery-box");
   };
 
@@ -389,7 +423,9 @@ export const HomePage: React.FC = () => {
               <img
                 src="/assets/reward-icon-red.png"
                 alt="Klaim Hadiah"
-                className="w-[38px] h-[38px] object-contain drop-shadow-sm animate-bell-shake"
+                className={`w-[38px] h-[38px] object-contain drop-shadow-sm ${
+                  unclaimedRewardsCount > 0 ? "animate-bell-shake" : ""
+                }`}
               />
             </div>
             <div className="w-full h-[18px] flex items-center justify-center mt-4">
@@ -675,6 +711,7 @@ export const HomePage: React.FC = () => {
         description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         buttonText="Ambil"
         onButtonClick={handleTakeMysteryBox}
+        cardClassName={shouldAnimateMysteryBox ? "animate-popup-scale-up" : ""}
       />
 
       {/* 3. Enter PIN Modal */}

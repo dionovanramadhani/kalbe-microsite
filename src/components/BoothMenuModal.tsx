@@ -104,7 +104,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
 
           {/* 1. "Tugas Utama" #940B0A 14px extra bold */}
           <h3 className="relative z-10 text-[14px] font-extrabold text-[#940B0A] text-center leading-snug">
-            Tugas Utama: Lakukan Detailing di Booth
+            Lakukan Detailing di Booth
           </h3>
 
           {/* 2. "selesaikan sesi" 12px regular #5A5A5A */}

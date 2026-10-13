@@ -204,6 +204,27 @@
   will-change: transform;
 }
 
+@keyframes popup-scale-up {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-popup-scale-up {
+  transform-origin: center center;
+  animation: popup-scale-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
 @layer base {
   :root {
     font-family: Arial, Helvetica, sans-serif;

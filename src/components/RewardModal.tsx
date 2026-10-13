@@ -15,6 +15,7 @@ export interface RewardModalProps {
   children?: React.ReactNode;
   hideDefaultButton?: boolean;
   footerContent?: React.ReactNode;
+  cardClassName?: string;
 }
 
 export const RewardModal: React.FC<RewardModalProps> = ({
@@ -31,13 +32,18 @@ export const RewardModal: React.FC<RewardModalProps> = ({
   children,
   hideDefaultButton = false,
   footerContent,
+  cardClassName,
 }) => {
   if (!isOpen) return null;
 
   return (
     <div className="absolute inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
       <div
-        className="relative w-full max-w-[361px] h-[456px] max-h-[92%] aspect-[361/456] flex flex-col items-center justify-center px-5 pt-6 pb-7 drop-shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`relative w-full max-w-[361px] h-[456px] max-h-[92%] aspect-[361/456] flex flex-col items-center justify-center px-5 pt-6 pb-7 drop-shadow-2xl ${
+          cardClassName !== undefined
+            ? cardClassName
+            : "animate-in fade-in zoom-in-95 duration-200"
+        }`}
         style={{
           backgroundImage: `url('/assets/modal-background.png')`,
           backgroundSize: "100% 100%",
