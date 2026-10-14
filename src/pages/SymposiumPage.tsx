@@ -157,25 +157,8 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
   }, []);
 
   // Play sound effect (/assets/sound-effect/beep.mp3) with Web Audio API synthesizer fallback
-  const playScanSound = useCallback((isSuccess: boolean = true) => {
-    // 1. Try playing audio file first
-    try {
-      const audio = new Audio("/assets/sound-effect/beep.mp3");
-      audio.volume = 0.85;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Fallback to Web Audio synthesizer if audio file autoplay is restricted
-          playSynthesizedTone(isSuccess);
-        });
-      }
-    } catch {
-      playSynthesizedTone(isSuccess);
-    }
-  }, []);
-
   // Web Audio synthesizer tone fallback
-  const playSynthesizedTone = (isSuccess: boolean) => {
+  const playSynthesizedTone = useCallback((isSuccess: boolean) => {
     try {
       const AudioCtx =
         window.AudioContext ||
@@ -218,7 +201,24 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
     } catch (e) {
       console.warn("Audio synthesizer error:", e);
     }
-  };
+  }, []);
+
+  const playScanSound = useCallback((isSuccess: boolean = true) => {
+    // 1. Try playing audio file first
+    try {
+      const audio = new Audio("/assets/sound-effect/beep.mp3");
+      audio.volume = 0.85;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Fallback to Web Audio synthesizer if audio file autoplay is restricted
+          playSynthesizedTone(isSuccess);
+        });
+      }
+    } catch {
+      playSynthesizedTone(isSuccess);
+    }
+  }, [playSynthesizedTone]);
 
   const onScanSuccess = useCallback(
     (decodedText: string): boolean => {

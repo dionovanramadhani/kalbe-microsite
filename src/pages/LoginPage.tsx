@@ -134,8 +134,8 @@ export const LoginPage: React.FC = () => {
               items = data.items || [];
             }
           }
-        } catch (fetchErr: any) {
-          if (fetchErr.name === "AbortError") return;
+        } catch (fetchErr: unknown) {
+          if (fetchErr instanceof Error && fetchErr.name === "AbortError") return;
           try {
             const directRes = await fetch(directUrl, {
               headers: {
@@ -148,15 +148,15 @@ export const LoginPage: React.FC = () => {
               const data: MasterDoctorResponse = await directRes.json();
               items = data.items || [];
             }
-          } catch (fallbackErr: any) {
-            if (fallbackErr.name === "AbortError") return;
+          } catch (fallbackErr: unknown) {
+            if (fallbackErr instanceof Error && fallbackErr.name === "AbortError") return;
             console.error("Master doctor search fetch error:", fallbackErr);
           }
         }
 
         setDoctorResults(items);
-      } catch (err: any) {
-        if (err.name === "AbortError") return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
         console.error("Failed to search master doctor:", err);
         setDoctorResults([]);
       } finally {
@@ -322,11 +322,13 @@ export const LoginPage: React.FC = () => {
       sessionStorage.setItem("kalbe_welcome_pending", "true");
 
       navigate("/home");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login submission error:", err);
-      setErrorMessage(
-        err.message || "Gagal menghubungi server. Silakan coba beberapa saat lagi."
-      );
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Gagal menghubungi server. Silakan coba beberapa saat lagi.";
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }

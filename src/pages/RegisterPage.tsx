@@ -146,12 +146,13 @@ export const RegisterPage: React.FC = () => {
       setTimeout(() => {
         navigate("/login");
       }, 1600);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Registration request error:", err);
-      showToast(
-        "error",
-        err?.message || "Terjadi kesalahan koneksi saat mendaftar. Silakan coba lagi."
-      );
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan koneksi saat mendaftar. Silakan coba lagi.";
+      showToast("error", message);
     } finally {
       setIsLoading(false);
     }

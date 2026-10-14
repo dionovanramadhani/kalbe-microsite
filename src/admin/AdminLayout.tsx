@@ -265,6 +265,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: <IconGrid />, section: "Overview" },
   { id: "users", label: "Daftar Users", icon: <IconUsers />, section: "Operations" },
+  { id: "register-user", label: "Registrasi User", icon: <IconUserPlus />, section: "Operations" },
   { id: "visitors", label: "Data Visitor", icon: <IconUsers />, section: "Operations" },
   {
     id: "symposium-checkin",

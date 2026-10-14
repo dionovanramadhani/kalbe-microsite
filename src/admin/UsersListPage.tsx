@@ -328,18 +328,25 @@ export function UsersListPage({ initialOpenRegister = false }: { initialOpenRegi
       }
 
       // Store auth response token & user
-      const token = json.data?.access_token || (json as any).access_token || (json as any).token;
-      const respData = json.data || {};
+      const rawJson = json as unknown as Record<string, unknown>;
+      const rawData = (rawJson?.data || {}) as Record<string, unknown>;
+      const token =
+        typeof rawData.access_token === 'string'
+          ? rawData.access_token
+          : typeof rawJson.token === 'string'
+          ? rawJson.token
+          : undefined;
+
       const userData = {
-        ...respData,
-        id: respData.id,
-        fullname: respData.fullname || trimmedName,
-        fullName: respData.fullname || trimmedName,
-        email: respData.email || finalEmail,
-        phone_number: respData.phone_number || trimmedPhone,
-        phoneNumber: respData.phone_number || trimmedPhone,
-        phone: respData.phone_number || trimmedPhone,
-        role: respData.role || 'user',
+        ...rawData,
+        id: typeof rawData.id === 'string' || typeof rawData.id === 'number' ? rawData.id : undefined,
+        fullname: typeof rawData.fullname === 'string' ? rawData.fullname : trimmedName,
+        fullName: typeof rawData.fullname === 'string' ? rawData.fullname : trimmedName,
+        email: typeof rawData.email === 'string' ? rawData.email : finalEmail,
+        phone_number: typeof rawData.phone_number === 'string' ? rawData.phone_number : trimmedPhone,
+        phoneNumber: typeof rawData.phone_number === 'string' ? rawData.phone_number : trimmedPhone,
+        phone: typeof rawData.phone_number === 'string' ? rawData.phone_number : trimmedPhone,
+        role: typeof rawData.role === 'string' ? rawData.role : 'user',
       };
 
       if (token) {

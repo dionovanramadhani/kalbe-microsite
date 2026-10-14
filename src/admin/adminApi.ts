@@ -851,8 +851,8 @@ export interface RegisterKalbeUserPayload {
   master_doctor_id?: string;
 }
 
-export async function registerKalbeUser(data: RegisterKalbeUserPayload): Promise<ApiResponse<any>> {
-  return apiFetch<ApiResponse<any>>('/api/kalbe/register', {
+export async function registerKalbeUser(data: RegisterKalbeUserPayload): Promise<ApiResponse<Record<string, unknown>>> {
+  return apiFetch<ApiResponse<Record<string, unknown>>>('/api/kalbe/register', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -864,8 +864,8 @@ export interface LoginKalbeUserPayload {
   phone_number: string;
 }
 
-export async function loginKalbeUser(data: LoginKalbeUserPayload): Promise<ApiResponse<any>> {
-  return apiFetch<ApiResponse<any>>('/api/kalbe/login', {
+export async function loginKalbeUser(data: LoginKalbeUserPayload): Promise<ApiResponse<Record<string, unknown>>> {
+  return apiFetch<ApiResponse<Record<string, unknown>>>('/api/kalbe/login', {
     method: 'POST',
     body: JSON.stringify(data),
   });

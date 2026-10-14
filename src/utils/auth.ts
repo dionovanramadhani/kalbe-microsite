@@ -16,7 +16,12 @@ export interface AuthUser {
   role?: string;
   master_doctor_id?: string;
   avatar?: string;
-  [key: string]: any;
+  user?: {
+    fullname?: string;
+    nama?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
 }
 
 /**

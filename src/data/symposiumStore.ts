@@ -108,7 +108,9 @@ const getInitialJoinedStatus = (): boolean => {
       const key = getSympoStorageKey();
       const stored = localStorage.getItem(key);
       if (stored === "true") return true;
-    } catch {}
+    } catch {
+      // ignore storage access errors
+    }
   }
   return false;
 };
@@ -121,7 +123,9 @@ export const isSymposiumJoined = (): boolean => {
     try {
       const key = getSympoStorageKey();
       return localStorage.getItem(key) === "true" || hasJoinedSymposium;
-    } catch {}
+    } catch {
+      // ignore storage access errors
+    }
   }
   return hasJoinedSymposium;
 };
@@ -140,6 +144,8 @@ export const setSymposiumJoined = (joined = true): void => {
           hasJoinedSymposium: joined,
         }).catch((e) => console.warn("Failed to sync symposium check-in to SQLite:", e));
       }
-    } catch {}
+    } catch {
+      // ignore storage access errors
+    }
   }
 };

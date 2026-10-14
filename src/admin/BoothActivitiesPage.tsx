@@ -275,6 +275,8 @@ export function BoothActivitiesPage() {
     setEditingPodcast(pod);
     setPodcastName(pod.name);
     setPodcastRefId(pod.ref_id);
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 3600000);
     setPodcastSessions(
       pod.sessions && pod.sessions.length > 0
         ? pod.sessions.map((sess) => ({
@@ -285,8 +287,8 @@ export function BoothActivitiesPage() {
         : [
             {
               speaker: '',
-              start_at: toLocalInputValue(new Date().toISOString()),
-              end_at: toLocalInputValue(new Date(Date.now() + 3600000).toISOString()),
+              start_at: toLocalInputValue(now.toISOString()),
+              end_at: toLocalInputValue(oneHourLater.toISOString()),
             },
           ]
     );
