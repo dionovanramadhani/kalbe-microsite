@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiTarget = env.VITE_API_TARGET || 'http://localhost:1999'
 
+  const morinagaApiTarget = env.VITE_MORINAGA_API_URL || 'https://api-morinaga-medical.dev.rollingglory.com'
+
   return {
     plugins: [
       tailwindcss(),
@@ -23,6 +25,12 @@ export default defineConfig(({ mode }) => {
           headers: {
             'ngrok-skip-browser-warning': 'true',
           },
+        },
+        '/morinaga-api': {
+          target: morinagaApiTarget,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/morinaga-api/, ''),
         },
       },
     },

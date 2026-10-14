@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerNewUser } from "../data/dummyUser";
+import { saveRegisteredUser, type User } from "../data/dummyUser";
 import { Toast, type ToastType } from "../components/Toast";
 
 const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
@@ -35,7 +35,7 @@ export const RegisterPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const cleanDigits = phone.trim().replace(/\D/g, "");
@@ -70,41 +70,96 @@ export const RegisterPage: React.FC = () => {
 
     const fullPhoneNumber = `0${cleanDigits}`;
 
-    setTimeout(() => {
-      const result = registerNewUser({
-        fullName: fullName.trim(),
-        phone: fullPhoneNumber,
-        email: email.trim(),
-        speciality,
-        practicePlace: practicePlace.trim(),
-        practiceAddress: practiceAddress.trim(),
-        avatar: "/assets/docter-avatar.png",
+    try {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+      const res = await fetch(`${BASE_URL}/api/kalbe/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify({
+          fullname: fullName.trim(),
+          practice_place: practicePlace.trim(),
+          practice_place_address: practiceAddress.trim(),
+          email: email.trim(),
+          phone_number: fullPhoneNumber,
+          speciality: speciality,
+        }),
       });
 
-      setIsLoading(false);
+      const json = await res.json().catch(() => null);
 
-      if (!result.success) {
-        showToast("error", result.error || "Pendaftaran gagal. Silakan coba lagi.");
+      if (!res.ok) {
+        let errorMsg = "Pendaftaran gagal. Silakan coba lagi.";
+        if (json?.error?.details) {
+          if (typeof json.error.details === "string") {
+            errorMsg = json.error.details;
+          } else if (typeof json.error.details === "object") {
+            errorMsg = Object.values(json.error.details).join(", ");
+          }
+        } else if (json?.error?.message) {
+          errorMsg = json.error.message;
+        } else if (json?.message) {
+          errorMsg = json.message;
+        }
+
+        if (errorMsg === "email already registered") {
+          errorMsg = "Email sudah terdaftar. Silakan gunakan email lain atau masuk.";
+        } else if (errorMsg === "phone number already registered") {
+          errorMsg = "Nomor handphone sudah terdaftar. Silakan gunakan nomor lain atau masuk.";
+        }
+
+        showToast("error", errorMsg);
         return;
       }
+
+      // Also persist to local registered user cache for offline/demo compatibility
+      const token = json?.data?.access_token || json?.access_token;
+      if (token) {
+        localStorage.setItem("kalbe_token", token);
+      }
+
+      const userData: User = {
+        id: json?.data?.id || `user-${Date.now()}`,
+        fullName: json?.data?.fullname || fullName.trim(),
+        phone: json?.data?.phone_number || fullPhoneNumber,
+        email: json?.data?.email || email.trim(),
+        speciality: json?.data?.speciality || speciality,
+        practicePlace: json?.data?.practice_place || practicePlace.trim(),
+        practiceAddress: json?.data?.practice_place_address || practiceAddress.trim(),
+        avatar: "/assets/docter-avatar.png",
+      };
+      saveRegisteredUser(userData);
 
       // Success Registration Toast
       showToast(
         "success",
-        `Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.`,
+        "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda."
       );
 
       // Redirect to login after brief delay so user sees toast
       setTimeout(() => {
         navigate("/login");
       }, 1600);
-    }, 600);
+    } catch (err: any) {
+      console.error("Registration request error:", err);
+      showToast(
+        "error",
+        err?.message || "Terjadi kesalahan koneksi saat mendaftar. Silakan coba lagi."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div
-      className="relative min-h-full w-full flex flex-col justify-between bg-cover bg-top select-none"
-      style={{ backgroundImage: `url('/assets/red-and-white-curve-bg.png')` }}
+      className="relative h-full w-full flex flex-col bg-cover bg-top select-none overflow-y-auto"
+      style={{
+        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        WebkitOverflowScrolling: "touch",
+      }}
     >
       {/* Top Floating Toast Notification */}
       <Toast
@@ -127,7 +182,7 @@ export const RegisterPage: React.FC = () => {
 
       {/* Sliced White Bottom Sheet Card */}
       <div
-        className="relative -mt-5 flex-1 bg-white px-5 sm:px-6 pt-6 pb-8 shadow-[0_-12px_32px_rgba(0,0,0,0.06)] flex flex-col justify-between"
+        className="relative -mt-5 flex-1 min-h-fit bg-white px-5 sm:px-6 pt-6 pb-10 shadow-[0_-12px_32px_rgba(0,0,0,0.06)] flex flex-col justify-between shrink-0"
         style={{ borderTopLeftRadius: "32px", borderTopRightRadius: "32px" }}
       >
         <div>

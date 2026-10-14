@@ -1,11 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   authenticateUser,
   // DUMMY_USERS
 } from "../data/dummyUser";
 
+export interface MasterDoctorItem {
+  id: string;
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  phoneNumber?: string | null;
+  clinicLocation?: string | null;
+  clinicAddress?: string | null;
+  micrositeId?: string | null;
+}
+
+interface MasterDoctorResponse {
+  items: MasterDoctorItem[];
+  page: number;
+  pageSize: number;
+  hasNextPage: boolean;
+}
+
 // Solid / filled icons matching the design mockup precisely
+const UserFilledIcon = () => (
+  <svg
+    className="w-5 h-5 text-gray-500 shrink-0"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+  </svg>
+);
+
 const PhoneFilledIcon = () => (
   <svg
     className="w-5 h-5 text-gray-500 shrink-0"
@@ -30,10 +59,135 @@ const MailFilledIcon = () => (
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState<MasterDoctorItem | null>(null);
+  const [doctorResults, setDoctorResults] = useState<MasterDoctorItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // ── Debounce Master Doctor Search API Call ─────────────────────────────────
+  useEffect(() => {
+    const query = fullName.trim();
+
+    // If query matches currently selected doctor's fullName, don't trigger re-search
+    if (selectedDoctor && selectedDoctor.fullName === query) {
+      return;
+    }
+
+    if (query.length < 3) {
+      setDoctorResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowDropdown(true);
+
+    const abortController = new AbortController();
+
+    // Debounce delay 1.5 detik setelah user selesai mengetik baru hit API
+    const timer = setTimeout(async () => {
+      try {
+        const morinagaBaseUrl = (import.meta.env.VITE_MORINAGA_API_URL || "https://api-morinaga-medical.dev.rollingglory.com").replace(/\/$/, "");
+        const username = import.meta.env.VITE_MORINAGA_USERNAME || "uLCrEf4ECb";
+        const password = import.meta.env.VITE_MORINAGA_PASSWORD || "cmFAiDg6SX";
+        const authHeader = "Basic " + btoa(`${username}:${password}`);
+        const endpoint = `/api/external/magenta/get-master-doctor?search=${encodeURIComponent(query)}&page=1&size=10`;
+        const primaryUrl = import.meta.env.DEV
+          ? `/morinaga-api${endpoint}`
+          : `${morinagaBaseUrl}${endpoint}`;
+
+        let items: MasterDoctorItem[] = [];
+        try {
+          const res = await fetch(primaryUrl, {
+            headers: {
+              Authorization: authHeader,
+              Accept: "application/json",
+            },
+            signal: abortController.signal,
+          });
+          if (res.ok) {
+            const data: MasterDoctorResponse = await res.json();
+            items = data.items || [];
+          } else {
+            console.warn(`Primary fetch returned status ${res.status}`);
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.name === "AbortError") return;
+          // If DEV proxy failed, attempt direct URL
+          if (import.meta.env.DEV) {
+            try {
+              const directUrl = `${morinagaBaseUrl}${endpoint}`;
+              const directRes = await fetch(directUrl, {
+                headers: {
+                  Authorization: authHeader,
+                  Accept: "application/json",
+                },
+                signal: abortController.signal,
+              });
+              if (directRes.ok) {
+                const data: MasterDoctorResponse = await directRes.json();
+                items = data.items || [];
+              }
+            } catch (fallbackErr: any) {
+              if (fallbackErr.name === "AbortError") return;
+              console.error("Direct fetch error:", fallbackErr);
+            }
+          }
+        }
+
+        setDoctorResults(items);
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        console.error("Failed to search master doctor:", err);
+        setDoctorResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 1500);
+
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
+  }, [fullName, selectedDoctor]);
+
+  // ── Handle outside click to close dropdown ──────────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectDoctor = (doctor: MasterDoctorItem) => {
+    setFullName(doctor.fullName);
+    if (doctor.phone || doctor.phoneNumber) {
+      const rawPhone = doctor.phone || doctor.phoneNumber || "";
+      const cleanDigits = rawPhone.replace(/\D/g, "");
+      const normalizedPhone = cleanDigits.startsWith("62")
+        ? "0" + cleanDigits.slice(2)
+        : cleanDigits.startsWith("0")
+        ? cleanDigits
+        : "0" + cleanDigits;
+      setPhone(normalizedPhone);
+    }
+    if (doctor.email) {
+      setEmail(doctor.email);
+    }
+    setSelectedDoctor(doctor);
+    setShowDropdown(false);
+    if (errorMessage) setErrorMessage(null);
+  };
 
   // const handleQuickFill = () => {
   //   const dummy = DUMMY_USERS[0];
@@ -110,7 +264,71 @@ export const LoginPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Input 1: Nomor Telepon */}
+            {/* Input 1: Nama Lengkap (Searchable Dropdown) */}
+            <div className="relative" ref={dropdownRef}>
+              <div className="relative flex items-center h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30">
+                <UserFilledIcon />
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    setSelectedDoctor(null);
+                    setShowDropdown(true);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  onFocus={() => {
+                    if (fullName.trim().length > 0) {
+                      setShowDropdown(true);
+                    }
+                  }}
+                  placeholder="Masukan nama lengkap"
+                  className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
+                  autoComplete="off"
+                />
+                {isSearching && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-[#C70412] shrink-0 ml-2" />
+                )}
+              </div>
+
+              {/* Search Dropdown Panel */}
+              {showDropdown && fullName.trim().length > 0 && (
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] bg-white rounded-[10px] border border-gray-200 shadow-xl max-h-[220px] overflow-y-auto z-50 py-1">
+                  {isSearching && doctorResults.length === 0 ? (
+                    <div className="py-3 px-4 text-center text-[13px] text-gray-500 font-medium">
+                      Mencari dokter...
+                    </div>
+                  ) : doctorResults.length > 0 ? (
+                    doctorResults.map((doc, idx) => (
+                      <div
+                        key={doc.id || idx}
+                        onClick={() => handleSelectDoctor(doc)}
+                        className="px-4 py-2.5 hover:bg-red-50/60 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-left flex flex-col gap-0.5"
+                      >
+                        <span className="text-[14px] font-semibold text-gray-800 leading-tight">
+                          {doc.fullName}
+                        </span>
+                        {(doc.email || doc.phone || doc.phoneNumber) ? (
+                          <span className="text-[12px] text-gray-500 leading-tight">
+                            {[doc.email, doc.phone || doc.phoneNumber].filter(Boolean).join(" • ")}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : fullName.trim().length >= 3 ? (
+                    <div className="py-3 px-4 text-center text-[13px] text-gray-500 font-medium">
+                      Dokter tidak ditemukan
+                    </div>
+                  ) : (
+                    <div className="py-3 px-4 text-center text-[13px] text-gray-400 font-normal">
+                      Ketik minimal 3 karakter untuk mencari...
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Input 2: Nomor Telepon */}
             <div className="relative flex items-center h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30">
               <PhoneFilledIcon />
               <input
