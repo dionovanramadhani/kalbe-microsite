@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/morinaga-api/:path*",
+      "destination": "https://api-morinaga-medical.dev.rollingglory.com/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

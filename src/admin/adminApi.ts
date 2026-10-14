@@ -1,7 +1,7 @@
 // Kalbe Admin API Service Layer
 // Aligned with Nestle Tree Journey Admin API architecture
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 // ─── Auth Storage Helpers ───────────────────────────────────────────────────
 

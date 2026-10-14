@@ -71,7 +71,7 @@ export const RegisterPage: React.FC = () => {
     const fullPhoneNumber = `0${cleanDigits}`;
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+      const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
       const res = await fetch(`${BASE_URL}/api/kalbe/register`, {
         method: "POST",
         headers: {

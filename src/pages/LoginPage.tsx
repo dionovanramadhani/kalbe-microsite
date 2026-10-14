@@ -99,9 +99,9 @@ export const LoginPage: React.FC = () => {
         const password = import.meta.env.VITE_MORINAGA_PASSWORD || "cmFAiDg6SX";
         const authHeader = "Basic " + btoa(`${username}:${password}`);
         const endpoint = `/api/external/magenta/get-master-doctor?search=${encodeURIComponent(query)}&page=1&size=10`;
-        const primaryUrl = import.meta.env.DEV
-          ? `/morinaga-api${endpoint}`
-          : `${morinagaBaseUrl}${endpoint}`;
+        // Primary URL uses /morinaga-api proxy (handled by Vite in dev and by vercel.json in production) to avoid CORS issues
+        const primaryUrl = `/morinaga-api${endpoint}`;
+        const directUrl = `${morinagaBaseUrl}${endpoint}`;
 
         let items: MasterDoctorItem[] = [];
         try {
@@ -116,29 +116,36 @@ export const LoginPage: React.FC = () => {
             const data: MasterDoctorResponse = await res.json();
             items = data.items || [];
           } else {
-            console.warn(`Primary fetch returned status ${res.status}`);
+            console.warn(`Primary proxy fetch returned status ${res.status}, trying direct URL`);
+            const directRes = await fetch(directUrl, {
+              headers: {
+                Authorization: authHeader,
+                Accept: "application/json",
+              },
+              signal: abortController.signal,
+            });
+            if (directRes.ok) {
+              const data: MasterDoctorResponse = await directRes.json();
+              items = data.items || [];
+            }
           }
         } catch (fetchErr: any) {
           if (fetchErr.name === "AbortError") return;
-          // If DEV proxy failed, attempt direct URL
-          if (import.meta.env.DEV) {
-            try {
-              const directUrl = `${morinagaBaseUrl}${endpoint}`;
-              const directRes = await fetch(directUrl, {
-                headers: {
-                  Authorization: authHeader,
-                  Accept: "application/json",
-                },
-                signal: abortController.signal,
-              });
-              if (directRes.ok) {
-                const data: MasterDoctorResponse = await directRes.json();
-                items = data.items || [];
-              }
-            } catch (fallbackErr: any) {
-              if (fallbackErr.name === "AbortError") return;
-              console.error("Direct fetch error:", fallbackErr);
+          try {
+            const directRes = await fetch(directUrl, {
+              headers: {
+                Authorization: authHeader,
+                Accept: "application/json",
+              },
+              signal: abortController.signal,
+            });
+            if (directRes.ok) {
+              const data: MasterDoctorResponse = await directRes.json();
+              items = data.items || [];
             }
+          } catch (fallbackErr: any) {
+            if (fallbackErr.name === "AbortError") return;
+            console.error("Master doctor search fetch error:", fallbackErr);
           }
         }
 
