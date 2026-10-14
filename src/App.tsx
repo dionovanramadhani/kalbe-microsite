@@ -4,6 +4,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { isRememberMeActive } from './data/dummyUser';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { isTokenValid, getToken } from './utils/auth';
 
 import { HomePage } from './pages/HomePage';
 import { SymposiumPage } from './pages/SymposiumPage';
@@ -13,7 +15,7 @@ import { MysteryBoxPage } from './pages/MysteryBoxPage';
 import { AdminLayout } from './admin/AdminLayout';
 
 const RootRoute = () => {
-  if (isRememberMeActive()) {
+  if (isTokenValid(getToken()) || isRememberMeActive()) {
     return <Navigate to="/home" replace />;
   }
   return <LoginPage />;
@@ -36,13 +38,18 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/home" element={<HomePage />} />
-                <Route path="/symposium" element={<SymposiumPage />} />
-                <Route path="/booth-scan" element={<SymposiumPage scanType="booth" />} />
-                <Route path="/early-life-scan" element={<SymposiumPage scanType="early-life" />} />
-                <Route path="/post-test" element={<PostTestPage />} />
-                <Route path="/claim-reward" element={<ClaimRewardPage />} />
-                <Route path="/mystery-box" element={<MysteryBoxPage />} />
+
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/home" element={<HomePage />} />
+                  <Route path="/symposium" element={<SymposiumPage />} />
+                  <Route path="/booth-scan" element={<SymposiumPage scanType="booth" />} />
+                  <Route path="/early-life-scan" element={<SymposiumPage scanType="early-life" />} />
+                  <Route path="/post-test" element={<PostTestPage />} />
+                  <Route path="/claim-reward" element={<ClaimRewardPage />} />
+                  <Route path="/mystery-box" element={<MysteryBoxPage />} />
+                </Route>
+
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </MobileFrame>

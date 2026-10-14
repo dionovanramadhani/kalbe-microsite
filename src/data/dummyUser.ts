@@ -186,7 +186,7 @@ export const authenticateUser = (
 
 export const getCurrentUser = (): User | null => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_AUTH);
+    const stored = localStorage.getItem(STORAGE_KEY_AUTH) || localStorage.getItem('user');
     if (stored) {
       return JSON.parse(stored) as User;
     }
@@ -201,6 +201,9 @@ export const logoutUser = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY_AUTH);
     localStorage.removeItem(STORAGE_KEY_REMEMBER_ME);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('kalbe_token');
     sessionStorage.removeItem('kalbe_welcome_pending');
     sessionStorage.removeItem('kalbe_welcome_shown');
   } catch (err) {

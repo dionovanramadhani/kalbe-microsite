@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  authenticateUser,
-  // DUMMY_USERS
-} from "../data/dummyUser";
+import { isTokenValid, setAuthSession } from "../utils/auth";
 
 export interface MasterDoctorItem {
   id: string;
@@ -69,7 +66,15 @@ export const LoginPage: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // ── Redirect to /home if user is already logged in with valid token ───────────
+  useEffect(() => {
+    if (isTokenValid()) {
+      navigate("/home", { replace: true });
+    }
+  }, [navigate]);
 
   // ── Debounce Master Doctor Search API Call ─────────────────────────────────
   useEffect(() => {
@@ -203,18 +208,125 @@ export const LoginPage: React.FC = () => {
   //   setErrorMessage(null);
   // };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const result = authenticateUser(phone, email, rememberMe);
-    if (!result.success) {
-      setErrorMessage(result.error || "Nomor telepon atau email salah.");
+    const cleanFullName = fullName.trim();
+    const cleanPhone = phone.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanFullName) {
+      setErrorMessage("Silakan masukan atau pilih nama lengkap terlebih dahulu.");
       return;
     }
 
-    sessionStorage.setItem("kalbe_welcome_pending", "true");
-    navigate("/home");
+    if (!cleanPhone || !cleanEmail) {
+      setErrorMessage("Nomor telepon dan email wajib diisi.");
+      return;
+    }
+
+    if (!cleanEmail.includes("@")) {
+      setErrorMessage("Format email tidak valid.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+      const primaryUrl = `${apiBaseUrl}/api/kalbe/login`;
+      const fallbackUrl = `/api/kalbe/login`;
+
+      const requestBody: {
+        fullname: string;
+        phone_number: string;
+        email: string;
+        master_doctor_id?: string;
+      } = {
+        fullname: cleanFullName,
+        phone_number: cleanPhone,
+        email: cleanEmail,
+      };
+
+      if (selectedDoctor?.id) {
+        requestBody.master_doctor_id = selectedDoctor.id;
+      }
+
+      const requestHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      };
+
+      let res: Response;
+      try {
+        res = await fetch(primaryUrl, {
+          method: "POST",
+          headers: requestHeaders,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (primaryErr) {
+        if (primaryUrl !== fallbackUrl) {
+          console.warn("Primary login URL failed, attempting fallback URL:", primaryErr);
+          res = await fetch(fallbackUrl, {
+            method: "POST",
+            headers: requestHeaders,
+            body: JSON.stringify(requestBody),
+          });
+        } else {
+          throw primaryErr;
+        }
+      }
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.success === false) {
+        const message =
+          json?.error?.message ||
+          json?.error?.details ||
+          json?.message ||
+          "Login gagal. Silakan periksa kembali data Anda.";
+        throw new Error(typeof message === "string" ? message : "Login gagal.");
+      }
+
+      const token = json.data?.access_token || json.access_token || json.token;
+      if (!token) {
+        throw new Error("Token otentikasi tidak ditemukan dari server.");
+      }
+
+      const respData = json.data || {};
+      const userData = {
+        ...respData,
+        id: respData.id,
+        fullname: respData.fullname || cleanFullName,
+        fullName: respData.fullname || cleanFullName,
+        email: respData.email || cleanEmail,
+        phone_number: respData.phone_number || cleanPhone,
+        phoneNumber: respData.phone_number || cleanPhone,
+        phone: respData.phone_number || cleanPhone,
+        practicePlace: respData.practice_place || selectedDoctor?.clinicLocation,
+        practiceAddress: respData.practice_place_address || selectedDoctor?.clinicAddress,
+        speciality: respData.speciality,
+        master_doctor_id: respData.master_doctor_id || selectedDoctor?.id,
+        role: respData.role || "user",
+        avatar: "/assets/docter-avatar.png",
+      };
+
+      setAuthSession(token, userData, rememberMe);
+
+      sessionStorage.removeItem("kalbe_welcome_shown");
+      sessionStorage.setItem("kalbe_welcome_pending", "true");
+
+      navigate("/home");
+    } catch (err: any) {
+      console.error("Login submission error:", err);
+      setErrorMessage(
+        err.message || "Gagal menghubungi server. Silakan coba beberapa saat lagi."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -391,12 +503,20 @@ export const LoginPage: React.FC = () => {
             {/* Action Button: MASUK */}
             <button
               type="submit"
+              disabled={isLoading}
               style={{
                 background: "linear-gradient(90deg, #C70412 0%, #8E000A 100%)",
               }}
-              className="w-full h-[48px] rounded-[8px] text-white font-bold text-[16px] uppercase tracking-normal cursor-pointer flex items-center justify-center transition-all duration-150 active:scale-[0.99] hover:brightness-105 shadow-md shadow-red-900/20 mt-2.5"
+              className="w-full h-[48px] rounded-[8px] text-white font-bold text-[16px] uppercase tracking-normal cursor-pointer flex items-center justify-center transition-all duration-150 active:scale-[0.99] hover:brightness-105 shadow-md shadow-red-900/20 mt-2.5 disabled:opacity-75 disabled:cursor-not-allowed"
             >
-              MASUK
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>MEMPROSES...</span>
+                </div>
+              ) : (
+                "MASUK"
+              )}
             </button>
           </form>
 
