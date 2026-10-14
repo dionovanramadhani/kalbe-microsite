@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://nestle-api.nika.qyubit.io/api/:path*"
+    },
+    {
       "source": "/morinaga-api/:path*",
       "destination": "https://api-morinaga-medical.dev.rollingglory.com/:path*"
     },
