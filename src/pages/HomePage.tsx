@@ -5,6 +5,7 @@ import { RewardModal } from "../components/RewardModal";
 import { BoothDrawer } from "../components/BoothDrawer";
 import { BoothMenuModal } from "../components/BoothMenuModal";
 import { PodcastScheduleModal } from "../components/PodcastScheduleModal";
+import { AwardPresentationModal } from "../components/AwardPresentationModal";
 import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumStartedModal } from "../components/SymposiumStartedModal";
@@ -61,10 +62,7 @@ export const HomePage: React.FC = () => {
     if (hasBoothSuccess) {
       unlockReward("morinaga-booth");
     }
-    if (hasEarlyLifeSuccess) {
-      unlockReward("early-life");
-    }
-    return getUnclaimedRewardsCount();
+    return Math.min(2, getUnclaimedRewardsCount());
   });
   const [hasUnclaimedMysteryBoxState, setHasUnclaimedMysteryBoxState] = useState<boolean>(
     () => {
@@ -85,22 +83,10 @@ export const HomePage: React.FC = () => {
     setPostTestDone(isPostTestCompleted() || hasPostTestSuccess);
     setBoothDone(isBoothDetailingCompleted() || hasBoothSuccess);
     setEarlyLifeDone(isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess);
-    setUnclaimedRewardsCount(getUnclaimedRewardsCount());
+    setUnclaimedRewardsCount(Math.min(2, getUnclaimedRewardsCount()));
     setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
     setHasMysteryBox(hasUserMysteryBox());
     setMysteryBoxClaimed(isMysteryBoxClaimed());
-
-    if (
-      !isWelcomePending &&
-      !hasPostTestSuccess &&
-      !hasBoothSuccess &&
-      !hasEarlyLifeSuccess &&
-      isAllActivitiesCompleted() &&
-      !isMysteryBoxClaimed()
-    ) {
-      checkAndUnlockMysteryBox();
-      setShowMysteryBoxModal(true);
-    }
   }, [
     location.pathname,
     hasPostTestSuccess,
@@ -119,19 +105,38 @@ export const HomePage: React.FC = () => {
   const [showEarlyLifeCompletionModal, setShowEarlyLifeCompletionModal] =
     useState<boolean>(hasEarlyLifeSuccess);
 
-  const [showMysteryBoxModal, setShowMysteryBoxModal] = useState<boolean>(() => {
-    if (isWelcomePending) return false;
-    if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
-      checkAndUnlockMysteryBox();
-      return true;
+  const getMysteryBoxPopupShownKey = () => {
+    const user = getCurrentUser();
+    const userId =
+      user?.id || (user?.email ? user.email.replace(/[^a-zA-Z0-9]/g, "_") : "guest");
+    return `kalbe_mystery_box_popup_shown_${userId}`;
+  };
+
+  const isMysteryBoxPopupShown = () => {
+    try {
+      const key = getMysteryBoxPopupShownKey();
+      return localStorage.getItem(key) === "true";
+    } catch {
+      return false;
     }
-    return false;
-  });
+  };
+
+  const markMysteryBoxPopupShown = () => {
+    try {
+      const key = getMysteryBoxPopupShownKey();
+      localStorage.setItem(key, "true");
+    } catch (e) {
+      console.warn("Failed to set mystery box shown storage:", e);
+    }
+  };
+
+  // Pop-up mystery box hanya muncul sekali ketika user baru saja mendapatkannya
+  const [showMysteryBoxModal, setShowMysteryBoxModal] = useState<boolean>(false);
 
   const getMysteryBoxAnimatedKey = () => {
     const user = getCurrentUser();
-    const userId = user?.id || (user?.email ? user.email.replace(/[^a-zA-Z0-9]/g, "_") : "guest");
+    const userId =
+      user?.id || (user?.email ? user.email.replace(/[^a-zA-Z0-9]/g, "_") : "guest");
     return `kalbe_mystery_box_popup_animated_${userId}`;
   };
 
@@ -178,14 +183,11 @@ export const HomePage: React.FC = () => {
     sessionStorage.setItem("kalbe_welcome_shown", "true");
     setShowWelcomeModal(false);
 
-    // Prioritas 1: Jika user sudah menyelesaikan semua 3 aktivitas dan punya Mystery Box yang belum di-claim
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+    if (isAllActivitiesCompleted()) {
       checkAndUnlockMysteryBox();
-      setShowMysteryBoxModal(true);
-      return;
     }
 
-    // Prioritas 2: Pop up reminder symposium (jika ada symposium)
+    // Reminder symposium jika belum diikuti dan sedang aktif
     const isDone = isPostTestCompleted() || hasPostTestSuccess;
     if (
       !hasPostTestSuccess &&
@@ -201,35 +203,39 @@ export const HomePage: React.FC = () => {
 
   const handleClosePostTestModal = () => {
     setShowPostTestModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
+      markMysteryBoxPopupShown();
       setShowMysteryBoxModal(true);
     }
   };
 
   const handleCloseBoothCompletionModal = () => {
     setShowBoothCompletionModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
+      markMysteryBoxPopupShown();
       setShowMysteryBoxModal(true);
     }
   };
 
   const handleCloseEarlyLifeCompletionModal = () => {
     setShowEarlyLifeCompletionModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) {
+    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
+      markMysteryBoxPopupShown();
       setShowMysteryBoxModal(true);
     }
   };
 
   const handleCloseMysteryBoxModal = () => {
+    markMysteryBoxPopupShown();
     setShowMysteryBoxModal(false);
     setShouldAnimateMysteryBox(false);
     const isDone = isPostTestCompleted() || hasPostTestSuccess;
@@ -265,6 +271,7 @@ export const HomePage: React.FC = () => {
   const [showBoothDrawer, setShowBoothDrawer] = useState(false);
   const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
+  const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
   const [pinDigits, setPinDigits] = useState<[string, string]>(["", ""]);
   const [pinError, setPinError] = useState<string | null>(null);
 
@@ -416,7 +423,7 @@ export const HomePage: React.FC = () => {
           >
             {unclaimedRewardsCount > 0 && (
               <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
-                {unclaimedRewardsCount}
+                {Math.min(2, unclaimedRewardsCount)}
               </span>
             )}
             <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
@@ -485,7 +492,7 @@ export const HomePage: React.FC = () => {
 
       {/* Main Mission Card ("Misi Utama") */}
       <div className="relative px-3 flex-1 flex flex-col z-10 min-h-0 mb-1">
-        <div className="relative w-full h-full px-4 pt-4 pb-4 drop-shadow-sm flex flex-col justify-between">
+        <div className="relative w-full h-fit px-4 pt-4 pb-4 drop-shadow-sm flex flex-col justify-between">
           {/* Sliced SVG Futuristic 8-Sided (Octagon) Background with Thicker Accent Corners */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
@@ -555,7 +562,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Mission Items List */}
-          <div className="relative z-10 flex-1 flex flex-col justify-around py-0.5 min-h-0">
+          <div className="relative z-10 flex-1 flex flex-col gap-7 py-0.5 min-h-0 mt-1">
             {missions.map((mission) => {
               const isClickable = !mission.isCompleted;
               return (
@@ -566,7 +573,7 @@ export const HomePage: React.FC = () => {
                       handleEnterMission(mission);
                     }
                   }}
-                  className={`flex items-start gap-2.5 py-1 px-1.5 rounded-xl ${
+                  className={`flex items-start gap-2 py-0.5 px-1.5 rounded-xl ${
                     isClickable ? "cursor-pointer" : "cursor-default"
                   }`}
                 >
@@ -581,12 +588,12 @@ export const HomePage: React.FC = () => {
 
                   {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold text-[#535252] mb-1.5 truncate">
+                    <div className="text-[13px] font-semibold text-[#535252] mb-1 truncate">
                       {mission.title}
                     </div>
 
                     {/* Detailing pill aligned side-by-side with MASUK / SELESAI button */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {mission.isCompleted ? (
                         <div
                           className="flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] font-medium text-white shadow-sm"
@@ -681,15 +688,27 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showEarlyLifeCompletionModal}
         onClose={handleCloseEarlyLifeCompletionModal}
-        imageSrc="/assets/reward-box.png"
-        imageAlt="Kalbe Reward Gift"
-        imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
+        containerClassName="max-w-[361px] h-[515px] max-h-[94%] aspect-[361/515] flex flex-col items-center justify-center px-5 pt-5 pb-11"
+        imageSrc="/assets/spin-wheel-reward.png"
+        imageAlt="Spin Wheel Reward"
+        imageClassName="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-md pointer-events-none"
+        imageContainerClassName="w-full flex justify-center shrink-0 mb-4"
         title="Congratulations!"
-        subtitle="Terimakasih telah mengikuti Detailing Kalbe Early Life Solutions."
-        description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
+        titleClassName="text-[28px] font-semibold text-[#C70412] tracking-tight mb-3.5 leading-tight"
+        subtitle={
+          <>
+            Terimakasih telah mengikuti
+            <br />
+            <span className="whitespace-nowrap">Detailing Kalbe Early Life Solutions.</span>
+          </>
+        }
+        subtitleClassName="text-[14.5px] sm:text-[15.5px] max-w-[325px] mb-3"
+        description="Anda telah menyelesaikan aktivitas dan mendapatkan spin wheel sebagai bentuk apresiasi atas partisipasi Anda."
+        descriptionClassName="text-[12px] font-normal text-[#4B5563] leading-relaxed max-w-[295px]"
+        bodyClassName="mb-6"
         footerContent={
-          <p className="text-[12px] font-bold text-[#D41025] text-center">
-            Silahkan Ambil Hadiah di Booth Morinaga
+          <p className="text-[12px] font-bold text-[#D41025] text-center max-w-[280px] leading-snug">
+            Anda dapat memainkan Spin Wheel di booth Kalbe Early Life Solutions!
           </p>
         }
       />
@@ -698,9 +717,10 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
+        containerClassName="max-w-[361px] h-[500px] max-h-[94%] aspect-[361/500] flex flex-col items-center justify-center px-5 pt-5 pb-8"
         imageSrc="/assets/mistery-box.png"
         imageAlt="Mystery Box Morinaga"
-        imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
+        imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle={
           <span>
@@ -711,6 +731,13 @@ export const HomePage: React.FC = () => {
         description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         buttonText="Ambil"
         onButtonClick={handleTakeMysteryBox}
+        footerNote={
+          <p className="text-[12px] font-bold text-[#D41025] text-center leading-snug">
+            Silahkan Ambil Hadiah di
+            <br />
+            Booth Morinaga
+          </p>
+        }
         cardClassName={shouldAnimateMysteryBox ? "animate-popup-scale-up" : ""}
       />
 
@@ -832,7 +859,15 @@ export const HomePage: React.FC = () => {
         onClose={() => setShowBoothMenuModal(false)}
         onStartDetailing={() => {
           setShowBoothMenuModal(false);
-          setShowBoothDrawer(true);
+          navigate("/booth-scan");
+        }}
+        onMoritalksPodcast={() => {
+          setShowBoothMenuModal(false);
+          setShowPodcastScheduleModal(true);
+        }}
+        onMoritalksAwardPresentation={() => {
+          setShowBoothMenuModal(false);
+          setShowAwardPresentationModal(true);
         }}
       />
 
@@ -863,6 +898,12 @@ export const HomePage: React.FC = () => {
       <PodcastScheduleModal
         isOpen={showPodcastScheduleModal}
         onClose={() => setShowPodcastScheduleModal(false)}
+      />
+
+      {/* 8b. MoriTalks Award Presentation Modal */}
+      <AwardPresentationModal
+        isOpen={showAwardPresentationModal}
+        onClose={() => setShowAwardPresentationModal(false)}
       />
 
       {/* 0. Welcoming Pop Up PIT IKA 2026 */}

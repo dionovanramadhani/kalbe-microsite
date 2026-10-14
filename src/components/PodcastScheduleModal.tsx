@@ -14,11 +14,11 @@ interface PodcastSession {
 const PODCAST_SESSIONS: PodcastSession[] = [
   {
     speaker: "Sesi 1 - Prof Budi",
-    time: "10.00 - 10.10 WIB",
+    time: "10.00 – 10.10 WIB",
   },
   {
     speaker: "Sesi 2 - Dr. Ariani",
-    time: "14.00 - 14.10 WIB",
+    time: "14.00 – 14.10 WIB",
   },
 ];
 
@@ -26,59 +26,113 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  if (!isOpen) return null;
+  const [isClosing, setIsClosing] = React.useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 280);
+  };
+
+  if (!isOpen && !isClosing) return null;
 
   return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Dark backdrop with blur confined to mobile viewport */}
+    <div className="absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden">
+      {/* Backdrop with smooth blur & fade */}
       <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer ${
+          isClosing ? "animate-backdrop-out" : "animate-backdrop-in"
+        }`}
       />
 
-      {/* Modal Card with futuristic frame */}
+      {/* Sliding Content Container (Close Button + White Drawer Sheet) */}
       <div
-        className="relative z-10 w-full max-w-[361px] h-[456px] max-h-[92%] aspect-[361/456] flex flex-col items-center justify-center px-5 pt-6 pb-7 drop-shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-        style={{
-          backgroundImage: `url('/assets/modal-background.png')`,
-          backgroundSize: "100% 100%",
-          backgroundRepeat: "no-repeat",
-        }}
+        className={`relative z-10 w-full flex flex-col items-center ${
+          isClosing ? "animate-drawer-down" : "animate-drawer-up"
+        }`}
       >
-        {/* Top Close Button (X in Deep Red) */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-8 p-1 rounded-full text-[#D70313] hover:bg-red-50/50 transition-all cursor-pointer active:scale-90"
-          title="Tutup Modal"
-        >
-          <X className="w-8 h-8 stroke-[3]" />
-        </button>
+        {/* Floating Red Circular Close Button right above the drawer top */}
+        <div className="w-full flex justify-end px-5 mb-2 pointer-events-none">
+          <button
+            onClick={handleClose}
+            className="pointer-events-auto w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-lg active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
+            title="Tutup"
+          >
+            <X className="w-5 h-5 stroke-[2.8]" />
+          </button>
+        </div>
 
-        {/* Centered Content Block */}
-        <div className="w-full flex flex-col items-center text-center my-auto px-2">
+        {/* Drawer Body Container */}
+        <div className="w-full bg-white rounded-t-[32px] px-5 pt-6 pb-9 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
           {/* 3D Red Clock Graphic */}
-          <div className="w-full flex justify-center shrink-0 mb-2.5">
+          <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
               src="/assets/clock-red.png"
               alt="Jadwal Podcast"
-              className="w-[145px] sm:w-[155px] h-auto object-contain drop-shadow-md pointer-events-none select-none"
+              className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
             />
           </div>
 
-          {/* Title */}
-          <h2 className="text-[24px] font-bold text-[#D41025] tracking-tight mb-3 leading-tight">
-            MoriTalks Morinaga
+          {/* Title: moritalks podcast -> #D41025 bold 20px */}
+          <h2
+            style={{
+              color: "#D41025",
+              fontSize: "20px",
+              fontWeight: "bold",
+            }}
+            className="tracking-tight text-center leading-tight mb-2"
+          >
+            Moritalks Podcast
           </h2>
 
-          {/* Session List */}
-          <div className="w-full flex flex-col items-center space-y-3">
+          {/* Subtitle: topik -> #222222 bold 16px */}
+          <p
+            style={{
+              color: "#222222",
+              fontSize: "16px",
+              fontWeight: "bold",
+            }}
+            className="tracking-tight text-center leading-tight mb-5"
+          >
+            Topik: Alergi & Gastro
+          </p>
+
+          {/* Sessions List */}
+          <div className="w-full flex flex-col items-center space-y-4">
             {PODCAST_SESSIONS.map((session, index) => (
               <div key={index} className="w-full flex flex-col items-center">
-                <span className="text-[16px] font-bold text-[#222222] mb-1.5 leading-tight">
+                {/* sesi 1.... -> #777777 medium 14px */}
+                <span
+                  style={{
+                    color: "#777777",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                  className="mb-2 text-center leading-tight"
+                >
                   {session.speaker}
                 </span>
-                <div className="w-full max-w-[225px] sm:max-w-[235px] h-[42px] sm:h-[44px] rounded-2xl border-[1.5px] border-[#D41025] bg-white flex items-center justify-center shadow-xs">
-                  <span className="text-[#D41025] font-bold text-[20px] tracking-wide leading-none">
+
+                {/* jam -> #D41025 bold 20px */}
+                <div
+                  className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs"
+                  style={{
+                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#D41025",
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                    }}
+                    className="tracking-wide leading-none"
+                  >
                     {session.time}
                   </span>
                 </div>

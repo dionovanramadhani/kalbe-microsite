@@ -268,7 +268,6 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
 
       if (activeScanType === "early-life") {
         setEarlyLifeDetailingCompleted(true);
-        unlockReward("early-life");
         setTimeout(() => {
           setIsScanned(false);
           navigate("/home", { state: { showEarlyLifeSuccessModal: true } });

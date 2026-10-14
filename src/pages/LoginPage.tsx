@@ -256,8 +256,11 @@ export const LoginPage: React.FC = () => {
       const requestHeaders: Record<string, string> = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "ngrok-skip-browser-warning": "true",
       };
+
+      if (apiBaseUrl.includes("ngrok") || (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))) {
+        requestHeaders["ngrok-skip-browser-warning"] = "true";
+      }
 
       let res: Response;
       try {

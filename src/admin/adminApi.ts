@@ -113,9 +113,12 @@ export async function apiFetch<T>(
   const token = getToken();
   const headers: Record<string, string> = {
     'Accept': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
     ...(options.headers as Record<string, string> || {}),
   };
+
+  if (BASE_URL.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
 
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
@@ -794,6 +797,77 @@ export async function updateKalbeReward(id: string, data: KalbeRewardFormValues)
 export async function deleteKalbeReward(id: string): Promise<ApiResponse<KalbeRewardResponse>> {
   return apiFetch<ApiResponse<KalbeRewardResponse>>(`/api/v1/kalbe/reward/${id}`, {
     method: 'DELETE',
+  });
+}
+
+// ─── Users List API ─────────────────────────────────────────────────────────
+
+export interface UserItemResponse {
+  id: string;
+  fullname: string;
+  email: string;
+  phone_number: string;
+  created_at: string;
+}
+
+export interface UsersResponse {
+  success: boolean;
+  data: UserItemResponse[];
+  error?: { code?: string; message?: string } | null;
+  meta?: {
+    request_id?: string;
+    timestamp?: string;
+    version?: string;
+    total: number;
+    currentPage: number;
+    lastPage: number;
+    nextPage?: number | null;
+    prevPage?: number | null;
+  };
+}
+
+export async function getUsers(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<UsersResponse> {
+  const queryParams = new URLSearchParams();
+  if (params?.search) queryParams.set('search', params.search);
+  if (params?.page) queryParams.set('page', String(params.page));
+  if (params?.limit) queryParams.set('limit', String(params.limit));
+
+  const queryStr = queryParams.toString();
+  const endpoint = `/api/v1/kalbe/users${queryStr ? `?${queryStr}` : ''}`;
+  return apiFetch<UsersResponse>(endpoint);
+}
+
+export interface RegisterKalbeUserPayload {
+  fullname: string;
+  practice_place: string;
+  practice_place_address: string;
+  email: string;
+  phone_number: string;
+  speciality: string;
+  master_doctor_id?: string;
+}
+
+export async function registerKalbeUser(data: RegisterKalbeUserPayload): Promise<ApiResponse<any>> {
+  return apiFetch<ApiResponse<any>>('/api/kalbe/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface LoginKalbeUserPayload {
+  fullname: string;
+  email: string;
+  phone_number: string;
+}
+
+export async function loginKalbeUser(data: LoginKalbeUserPayload): Promise<ApiResponse<any>> {
+  return apiFetch<ApiResponse<any>>('/api/kalbe/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
 }
 

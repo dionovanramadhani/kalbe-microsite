@@ -44,9 +44,13 @@ const loadRewardsForCurrentUser = (): RewardItem[] => {
       const stored = localStorage.getItem(key);
       if (stored) {
         const parsed: RewardItem[] = JSON.parse(stored);
-        return parsed.map((item) =>
-          item.title === "Mistery Box" ? { ...item, title: "Mystery Box" } : item,
-        );
+        return parsed
+          .map((item) =>
+            item.title === "Mistery Box" ? { ...item, title: "Mystery Box" } : item,
+          )
+          .map((item) =>
+            item.id === "early-life" ? { ...item, obtained: false, claimed: false } : item,
+          );
       }
     } catch (e) {
       console.warn("Failed to load rewards from localStorage:", e);
@@ -148,7 +152,9 @@ export const getAllRewards = (): RewardItem[] => {
  * Mendapatkan daftar reward yang telah didapatkan (obtained).
  */
 export const getObtainedRewards = (): RewardItem[] => {
-  return loadRewardsForCurrentUser().filter((r) => r.obtained);
+  return loadRewardsForCurrentUser().filter(
+    (r) => r.obtained && r.id !== "early-life",
+  );
 };
 
 /**
@@ -191,6 +197,8 @@ const formatRewardTimestamp = (dateObj: Date = new Date()): string => {
  * Jika semua 3 misi utama selesai, otomatis unlock mystery-box dengan timestamp sekarang juga.
  */
 export const unlockReward = (id: string): RewardItem | null => {
+  if (id === "early-life") return null;
+
   const currentRewards = loadRewardsForCurrentUser();
   const item = currentRewards.find((r) => r.id === id);
   if (item) {
@@ -208,7 +216,7 @@ export const unlockReward = (id: string): RewardItem | null => {
   if (
     morinagaSympo?.obtained &&
     morinagaBooth?.obtained &&
-    earlyLife?.obtained
+    (earlyLife?.obtained || isEarlyLifeDetailingCompleted())
   ) {
     const misteryBox = currentRewards.find((r) => r.id === "mistery-box");
     if (misteryBox && !misteryBox.obtained) {
@@ -269,12 +277,18 @@ export const getUnclaimedCount = (): number => {
 };
 
 /**
- * Menghitung jumlah reward non-mystery-box yang diperoleh tapi belum diclaim.
+ * Menghitung jumlah reward non-mystery-box yang diperoleh tapi belum diclaim (maksimal 2: morinaga-sympo & morinaga-booth).
  */
 export const getUnclaimedRewardsCount = (): number => {
-  return loadRewardsForCurrentUser().filter(
-    (r) => r.obtained && !r.claimed && r.id !== "mistery-box" && r.id !== "mystery-box",
+  const count = loadRewardsForCurrentUser().filter(
+    (r) =>
+      r.obtained &&
+      !r.claimed &&
+      r.id !== "mistery-box" &&
+      r.id !== "mystery-box" &&
+      r.id !== "early-life",
   ).length;
+  return Math.min(2, Math.max(0, count));
 };
 
 /**

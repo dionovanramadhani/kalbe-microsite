@@ -7,6 +7,7 @@ import {
   isPostTestCompleted,
 } from "../data/rewardStore";
 import { setSymposiumJoined } from "../data/symposiumStore";
+import { PostTestScoreModal } from "../components/PostTestScoreModal";
 
 const QUESTIONS_PER_SECTION = 3;
 
@@ -23,6 +24,7 @@ export const PostTestPage: React.FC = () => {
 
   const [currentSection, setCurrentSection] = useState(0); // 0-indexed: 0, 1, 2
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [showScoreModal, setShowScoreModal] = useState<boolean>(false);
 
   const totalSections = Math.ceil(POST_TEST_QUESTIONS.length / QUESTIONS_PER_SECTION);
 
@@ -79,18 +81,24 @@ export const PostTestPage: React.FC = () => {
       setCurrentSection((prev) => prev + 1);
       scrollToTop();
     } else {
-      // Last section -> Unlock reward, mark post test completed & redirect to /home with pop-up modal state
-      unlockReward("morinaga-sympo");
-      setPostTestCompleted(true);
-      setSymposiumJoined(true);
-      navigate("/home", {
-        state: {
-          showPostTestSuccessModal: true,
-          submittedAnswersCount: Object.keys(answers).length,
-          totalQuestionsCount: POST_TEST_QUESTIONS.length,
-        },
-      });
+      // Last section -> Tampilkan modal score terlebih dahulu
+      setShowScoreModal(true);
     }
+  };
+
+  const handleConfirmScore = () => {
+    setShowScoreModal(false);
+    // Saat OK ditekan, unlock reward, mark completed, dan navigasi ke home untuk menampilkan modal congratulation
+    unlockReward("morinaga-sympo");
+    setPostTestCompleted(true);
+    setSymposiumJoined(true);
+    navigate("/home", {
+      state: {
+        showPostTestSuccessModal: true,
+        submittedAnswersCount: Object.keys(answers).length,
+        totalQuestionsCount: POST_TEST_QUESTIONS.length,
+      },
+    });
   };
 
   return (
@@ -246,6 +254,13 @@ export const PostTestPage: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {/* Post Test Score Modal */}
+      <PostTestScoreModal
+        isOpen={showScoreModal}
+        score={80}
+        onConfirm={handleConfirmScore}
+      />
     </div>
   );
 };

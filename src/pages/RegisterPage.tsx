@@ -72,12 +72,16 @@ export const RegisterPage: React.FC = () => {
 
     try {
       const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+      const reqHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (BASE_URL.includes("ngrok") || (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))) {
+        reqHeaders["ngrok-skip-browser-warning"] = "true";
+      }
+
       const res = await fetch(`${BASE_URL}/api/kalbe/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
+        headers: reqHeaders,
         body: JSON.stringify({
           fullname: fullName.trim(),
           practice_place: practicePlace.trim(),

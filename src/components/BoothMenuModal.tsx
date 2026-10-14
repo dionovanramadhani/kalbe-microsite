@@ -5,12 +5,18 @@ export interface BoothMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStartDetailing?: () => void;
+  onMoritalksPodcast?: () => void;
+  onMoritalksAwardPresentation?: () => void;
+  onPhotoboothHighAngel?: () => void;
 }
 
 export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   isOpen,
   onClose,
   onStartDetailing,
+  onMoritalksPodcast,
+  onMoritalksAwardPresentation,
+  onPhotoboothHighAngel,
 }) => {
   if (!isOpen) return null;
 
@@ -47,19 +53,19 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
           {/* Sliced SVG Futuristic 8-Sided (Octagon) Background with Thicker Accent Corners */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 380 430"
+            viewBox="0 0 380 470"
             fill="none"
             preserveAspectRatio="none"
           >
             {/* Background Fill (#FEF9F7) */}
             <polygon
-              points="24,2 356,2 378,24 378,406 356,428 24,428 2,406 2,24"
+              points="24,2 356,2 378,24 378,446 356,468 24,468 2,446 2,24"
               fill="#FEF9F7"
             />
 
             {/* Base Red Outline (#F4233E) - Standard 2px */}
             <polygon
-              points="24,2 356,2 378,24 378,406 356,428 24,428 2,406 2,24"
+              points="24,2 356,2 378,24 378,446 356,468 24,468 2,446 2,24"
               stroke="#F4233E"
               strokeWidth="2"
               strokeLinejoin="miter"
@@ -85,7 +91,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
 
             {/* Bottom-Right Corner Thick Accent (7.5px) */}
             <polyline
-              points="378,380 378,406 356,428 330,428"
+              points="378,420 378,446 356,468 330,468"
               stroke="#F4233E"
               strokeWidth="7.5"
               strokeLinecap="square"
@@ -94,7 +100,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
 
             {/* Bottom-Left Corner Thick Accent (7.5px) */}
             <polyline
-              points="50,428 24,428 2,406 2,380"
+              points="50,468 24,468 2,446 2,420"
               stroke="#F4233E"
               strokeWidth="7.5"
               strokeLinecap="square"
@@ -102,9 +108,9 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
             />
           </svg>
 
-          {/* 1. "Tugas Utama" #940B0A 14px extra bold */}
+          {/* 1. "Tugas Utama: Lakukan Detailing di Booth" #940B0A 14px extra bold */}
           <h3 className="relative z-10 text-[14px] font-extrabold text-[#940B0A] text-center leading-snug">
-            Lakukan Detailing di Booth
+            Tugas Utama: Lakukan Detailing di Booth
           </h3>
 
           {/* 2. "selesaikan sesi" 12px regular #5A5A5A */}
@@ -130,35 +136,80 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
           {/* Dashed Horizontal Divider */}
           <div className="relative z-10 w-full border-t border-dashed border-[#B0B0B0] my-4" />
 
-          {/* 4. "Aktifitas utama..." sama seperti title "Tugas utama" (#940B0A 14px extra bold) */}
+          {/* 4. "Aktivitas lainnya" #940B0A 14px extra bold */}
           <h3 className="relative z-10 text-[14px] font-extrabold text-[#940B0A] text-center leading-snug">
             Aktivitas lainnya
           </h3>
 
-          {/* 5. "Ikuti keseruan..." sama seperti "selesaikan sesi..." (12px regular #5A5A5A) */}
+          {/* 5. "Ikuti keseruan..." 12px regular #5A5A5A */}
           <p className="relative z-10 text-[12px] font-normal text-[#5A5A5A] text-center leading-relaxed mt-1 mb-3.5">
             Ikuti keseruan aktivitas seru lainnya di booth kami!
           </p>
 
-          {/* MoriTalks Box Container */}
-          <div className="relative z-10 w-full rounded-[18px] border border-[#CCCCCC] bg-white/70 p-4 flex flex-col text-left">
-            {/* 6. "Moritalks #D41025 14px bold */}
-            <h4 className="text-[14px] font-bold text-[#D41025] mb-2 leading-none">
-              MoriTalks
-            </h4>
+          {/* Activity Buttons List */}
+          <div className="relative z-10 flex flex-col items-center gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={onMoritalksPodcast}
+              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
+              style={{
+                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <span
+                style={{
+                  color: "#FA132D",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                Moritalks Podcast
+              </span>
+            </button>
 
-            {/* 7. Point moritals #5F5F5F reguler 12px */}
-            <div className="flex flex-col space-y-1.5">
-              <div className="text-[12px] font-normal text-[#5F5F5F] leading-snug">
-                1. Podcast On Air
-              </div>
-              <div className="text-[12px] font-normal text-[#5F5F5F] leading-snug">
-                2. Moritalks Presentation
-              </div>
-              <div className="text-[12px] font-normal text-[#5F5F5F] leading-snug">
-                3. Photobooth High Angel
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={onMoritalksAwardPresentation}
+              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
+              style={{
+                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <span
+                style={{
+                  color: "#FA132D",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                Moritalks Award Presentation
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onPhotoboothHighAngel}
+              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
+              style={{
+                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <span
+                style={{
+                  color: "#FA132D",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                Photobooth High Angel
+              </span>
+            </button>
           </div>
         </div>
       </div>
