@@ -1,6 +1,8 @@
 import React from "react";
 import { X } from "lucide-react";
 
+import { useModalAnimation } from "../utils/useModalAnimation";
+
 export interface EarlyLifeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,20 +14,12 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
   onClose,
   onContinueClick,
 }) => {
-  const [isClosing, setIsClosing] = React.useState(false);
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 280);
-  };
-
-  if (!isOpen && !isClosing) return null;
+  if (!isRendered) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col justify-end overflow-hidden">
+    <div className={`absolute inset-0 z-50 flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
       {/* Backdrop with smooth blur & fade */}
       <div
         onClick={handleClose}

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "../data/dummyUser";
+import { getUserName } from "../utils/auth";
 import { RewardModal } from "../components/RewardModal";
 import { BoothDrawer } from "../components/BoothDrawer";
 import { BoothMenuModal } from "../components/BoothMenuModal";
@@ -19,25 +20,71 @@ import {
   getUnclaimedRewardsCount,
   hasUnclaimedMysteryBox as checkHasUnclaimedMysteryBox,
   hasUserMysteryBox,
-  claimReward,
   unlockReward,
   isPostTestCompleted,
+  setPostTestCompleted,
   isBoothDetailingCompleted,
+  setBoothDetailingCompleted,
   isEarlyLifeDetailingCompleted,
+  setEarlyLifeDetailingCompleted,
   isAllActivitiesCompleted,
   isMysteryBoxClaimed,
   checkAndUnlockMysteryBox,
 } from "../data/rewardStore";
+import {
+  getKalbeBoothsList,
+  getKalbeSymposiumsList,
+  getKalbeUserHistory,
+  type KalbeHistoryItemResponse,
+} from "../utils/kalbeApi";
+import type { KalbeBoothResponse, KalbeSymposiumResponse } from "../admin/adminApi";
 
 interface MissionItem {
   id: string;
+  type?: "booth-morinaga" | "symposium" | "booth-early-life";
   title: string;
   subtitle: string;
   icon: string;
   disabled?: boolean;
   isCompleted?: boolean;
+  boothData?: KalbeBoothResponse;
+  symposiumData?: KalbeSymposiumResponse;
 }
 
+const DEFAULT_BOOTH_ICON = "/assets/morinaga-booth-icon.png";
+const DEFAULT_SYMPO_ICON = "/assets/morinaga-sympo-icon.png";
+const DEFAULT_EARLY_LIFE_ICON = "/assets/kalbe-60th-icon.png";
+
+const resolveMissionIcon = (
+  rawIcon: string | null | undefined,
+  fallbackAsset: string,
+): string => {
+  if (!rawIcon || typeof rawIcon !== "string") {
+    return fallbackAsset;
+  }
+  const trimmed = rawIcon.trim();
+  if (
+    !trimmed ||
+    trimmed === "null" ||
+    trimmed === "undefined" ||
+    trimmed === "-"
+  ) {
+    return fallbackAsset;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/")) {
+    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+    return `${apiBaseUrl}${trimmed}`;
+  }
+  return trimmed;
+};
+
+// Urutan misi sesuai instruksi:
+// 1. Morinaga Booth
+// 2. Morinaga Sympo
+// 3. Kalbe Early Life Solution
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,7 +109,7 @@ export const HomePage: React.FC = () => {
     if (hasBoothSuccess) {
       unlockReward("morinaga-booth");
     }
-    return Math.min(2, getUnclaimedRewardsCount());
+    return getUnclaimedRewardsCount();
   });
   const [hasUnclaimedMysteryBoxState, setHasUnclaimedMysteryBoxState] = useState<boolean>(
     () => {
@@ -80,13 +127,100 @@ export const HomePage: React.FC = () => {
 
   // Re-sync state whenever user navigates to HomePage or switches user session
   useEffect(() => {
+    let isMounted = true;
+
+    // Initial local read for instant render
     setPostTestDone(isPostTestCompleted() || hasPostTestSuccess);
     setBoothDone(isBoothDetailingCompleted() || hasBoothSuccess);
     setEarlyLifeDone(isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess);
-    setUnclaimedRewardsCount(Math.min(2, getUnclaimedRewardsCount()));
+    setUnclaimedRewardsCount(getUnclaimedRewardsCount());
     setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
     setHasMysteryBox(hasUserMysteryBox());
     setMysteryBoxClaimed(isMysteryBoxClaimed());
+
+    // Fetch live state from backend APIs
+    Promise.all([
+      getKalbeBoothsList().catch(() => [] as KalbeBoothResponse[]),
+      getKalbeSymposiumsList().catch(() => [] as KalbeSymposiumResponse[]),
+      getKalbeUserHistory().catch(() => [] as KalbeHistoryItemResponse[]),
+    ]).then(([booths, sympos, historyList]) => {
+      if (!isMounted) return;
+      if (booths && booths.length > 0) setApiBooths(booths);
+      if (sympos && sympos.length > 0) setApiSymposiums(sympos);
+
+      // Track completed activities from API:
+      const morinagaBooth = booths.find(
+        (b) =>
+          b.name.toLowerCase().includes("morinaga") ||
+          (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early")),
+      );
+      const earlyLifeBooth = booths.find(
+        (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
+      );
+      const morinagaSympo =
+        sympos.find(
+          (s) =>
+            s.title.toLowerCase().includes("morinaga") ||
+            s.title.toLowerCase().includes("sympo"),
+        ) || sympos[0];
+
+      const hasSympoHistory = historyList.some((h) => h.reward_type === "symposium");
+      const hasMorinagaHistory = historyList.some(
+        (h) =>
+          h.reward_type === "booth" &&
+          (h.booth?.name?.toLowerCase().includes("morinaga") ||
+            h.label?.toLowerCase().includes("morinaga") ||
+            (!h.label?.toLowerCase().includes("early") && !h.booth?.name?.toLowerCase().includes("early"))),
+      );
+      const hasEarlyLifeHistory = historyList.some(
+        (h) =>
+          h.reward_type === "booth" &&
+          (h.booth?.name?.toLowerCase().includes("early") ||
+            h.label?.toLowerCase().includes("early")),
+      );
+
+      const isPostTestFinished = Boolean(
+        morinagaSympo?.is_completed || hasSympoHistory || isPostTestCompleted() || hasPostTestSuccess,
+      );
+      const isMorinagaFinished = Boolean(
+        morinagaBooth?.is_completed || hasMorinagaHistory || isBoothDetailingCompleted() || hasBoothSuccess,
+      );
+      const isEarlyLifeFinished = Boolean(
+        earlyLifeBooth?.is_completed || hasEarlyLifeHistory || isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess,
+      );
+
+      setPostTestDone(isPostTestFinished);
+      setBoothDone(isMorinagaFinished);
+      setEarlyLifeDone(isEarlyLifeFinished);
+
+      if (isPostTestFinished) setPostTestCompleted(true);
+      if (isMorinagaFinished) setBoothDetailingCompleted(true);
+      if (isEarlyLifeFinished) setEarlyLifeDetailingCompleted(true);
+
+      // Track Mystery Box from API:
+      const mysteryBoxHistory = historyList.find(
+        (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery"),
+      );
+      const allActivitiesDone = isPostTestFinished && isMorinagaFinished && isEarlyLifeFinished;
+      const userHasMysteryBox = Boolean(mysteryBoxHistory || allActivitiesDone);
+      const isMbClaimed = Boolean(mysteryBoxHistory?.is_claimed);
+
+      setHasMysteryBox(userHasMysteryBox);
+      setMysteryBoxClaimed(isMbClaimed);
+      setHasUnclaimedMysteryBoxState(userHasMysteryBox && !isMbClaimed);
+
+      // Unclaimed non-mystery rewards count:
+      const unclaimedCount = historyList.filter(
+        (h) => !h.is_claimed && h.reward_type !== "mystery_box" && !h.reward_type?.includes("mystery"),
+      ).length;
+      setUnclaimedRewardsCount(unclaimedCount);
+    }).catch((err) => {
+      console.warn("Failed to fetch user state in HomePage:", err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [
     location.pathname,
     hasPostTestSuccess,
@@ -265,45 +399,84 @@ export const HomePage: React.FC = () => {
         ? "morinaga-booth"
         : "morinaga-sympo",
   );
-  const [showPinModal, setShowPinModal] = useState(false);
   const [showRewardSuccessModal, setShowRewardSuccessModal] = useState(false);
   const [showBoothMenuModal, setShowBoothMenuModal] = useState(false);
   const [showBoothDrawer, setShowBoothDrawer] = useState(false);
   const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
-  const [pinDigits, setPinDigits] = useState<[string, string]>(["", ""]);
-  const [pinError, setPinError] = useState<string | null>(null);
 
-  // Dummy PIN crew (misal: "88")
-  const DUMMY_CREW_PIN = "88";
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>([]);
+  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>([]);
 
-  const missions: MissionItem[] = [
-    {
-      id: "morinaga-sympo",
-      title: "Morinaga Sympo",
-      subtitle: "Ikuti Symposium",
-      icon: "/assets/morinaga-sympo-icon.png",
-      disabled: postTestDone,
-      isCompleted: postTestDone,
-    },
-    {
-      id: "morinaga-booth",
-      title: "Morinaga Booth",
-      subtitle: "Detailing",
-      icon: "/assets/morinaga-booth-icon.png",
-      disabled: boothDone,
-      isCompleted: boothDone,
-    },
-    {
-      id: "early-life",
-      title: "Kalbe Early Life Solutions",
-      subtitle: "Detailing",
-      icon: "/assets/kalbe-60th-icon.png",
-      disabled: earlyLifeDone,
-      isCompleted: earlyLifeDone,
-    },
-  ];
+  // Urutan misi sesuai instruksi:
+  // 1. Morinaga Booth
+  // 2. Morinaga Sympo
+  // 3. Kalbe Early Life Solution
+  const missions: MissionItem[] = useMemo(() => {
+    const morinagaBooth = apiBooths.find(
+      (b) =>
+        b.name.toLowerCase().includes("morinaga") ||
+        (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early"))
+    );
+
+    const morinagaSympo =
+      apiSymposiums.find(
+        (s) =>
+          s.title.toLowerCase().includes("sympo") ||
+          s.title.toLowerCase().includes("morinaga")
+      ) || apiSymposiums[0];
+
+    const earlyLifeBooth = apiBooths.find(
+      (b) =>
+        b.name.toLowerCase().includes("early") ||
+        b.name.toLowerCase().includes("kalbe") ||
+        b.name.toLowerCase().includes("life")
+    );
+
+    const list: MissionItem[] = [
+      {
+        id: "morinaga-booth",
+        type: "booth-morinaga",
+        title: morinagaBooth?.name || "Morinaga Booth",
+        subtitle: "Detailing",
+        icon: resolveMissionIcon(morinagaBooth?.icon, DEFAULT_BOOTH_ICON),
+        disabled: Boolean(morinagaBooth?.is_completed || boothDone),
+        isCompleted: Boolean(morinagaBooth?.is_completed || boothDone),
+        boothData: morinagaBooth,
+      },
+      {
+        id: "morinaga-sympo",
+        type: "symposium",
+        title: morinagaSympo?.title || "Morinaga Sympo",
+        subtitle: "Ikuti Symposium",
+        icon: resolveMissionIcon(morinagaSympo?.icon, DEFAULT_SYMPO_ICON),
+        disabled: Boolean(morinagaSympo?.is_completed || postTestDone),
+        isCompleted: Boolean(morinagaSympo?.is_completed || postTestDone),
+        symposiumData: morinagaSympo,
+      },
+      {
+        id: "early-life",
+        type: "booth-early-life",
+        title: earlyLifeBooth?.name || "Kalbe Early Life Solutions",
+        subtitle: "Detailing",
+        icon: resolveMissionIcon(earlyLifeBooth?.icon, DEFAULT_EARLY_LIFE_ICON),
+        disabled: Boolean(earlyLifeBooth?.is_completed || earlyLifeDone),
+        isCompleted: Boolean(earlyLifeBooth?.is_completed || earlyLifeDone),
+        boothData: earlyLifeBooth,
+      },
+    ];
+
+    const getOrder = (title: string): number => {
+      const lower = title.toLowerCase();
+      if (lower.includes("booth") || (lower.includes("morinaga") && !lower.includes("sympo"))) return 1;
+      if (lower.includes("sympo") || lower.includes("simposium")) return 2;
+      if (lower.includes("early") || lower.includes("kalbe")) return 3;
+      return 99;
+    };
+
+    return list.sort((a, b) => getOrder(a.title) - getOrder(b.title));
+  }, [apiBooths, apiSymposiums, boothDone, postTestDone, earlyLifeDone]);
 
   useEffect(() => {
     if (
@@ -320,43 +493,30 @@ export const HomePage: React.FC = () => {
     navigate("/claim-reward");
   };
 
-  const handleConfirmPin = () => {
-    const fullPin = pinDigits.join("");
-    if (fullPin.length < 2) {
-      setPinError("Silakan masukkan PIN 2 digit.");
-      return;
-    }
-
-    if (fullPin !== DUMMY_CREW_PIN) {
-      setPinError("PIN yang Anda masukkan salah.");
-      return;
-    }
-
-    // Success PIN validation -> Mark target reward as claimed
-    claimReward(targetRewardId);
-    setUnclaimedRewardsCount(getUnclaimedRewardsCount());
-    setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
-
-    setShowPinModal(false);
-    setShowRewardSuccessModal(true);
-  };
-
   const handleEnterMission = (mission: MissionItem) => {
     if (mission.disabled) return;
-    if (mission.id === "morinaga-sympo") {
+    if (mission.id === "morinaga-sympo" || mission.type === "symposium") {
       // Jika simposium belum dimulai, tampilkan modal peringatan waktu mulai
-      if (isSymposiumUpcoming()) {
+      const sympo = mission.symposiumData;
+      if (sympo?.started_at) {
+        const now = new Date();
+        const start = new Date(sympo.started_at);
+        if (!isNaN(start.getTime()) && now < start) {
+          setShowSymposiumUpcomingModal(true);
+          return;
+        }
+      } else if (isSymposiumUpcoming()) {
         setShowSymposiumUpcomingModal(true);
         return;
       }
       navigate("/symposium");
       return;
     }
-    if (mission.id === "morinaga-booth") {
+    if (mission.id === "morinaga-booth" || mission.type === "booth-morinaga") {
       setShowBoothMenuModal(true);
       return;
     }
-    if (mission.id === "early-life") {
+    if (mission.id === "early-life" || mission.type === "booth-early-life") {
       setShowEarlyLifeDrawer(true);
       return;
     }
@@ -404,7 +564,7 @@ export const HomePage: React.FC = () => {
               Hello,
             </span>
             <span className="text-[10.5px] text-[#444444] truncate leading-tight mt-0.5">
-              {currentUser?.fullName || "dr. Ridwan Setiawan"}
+              {currentUser?.fullName || getUserName() || "Dokter"}
             </span>
           </div>
         </div>
@@ -423,7 +583,7 @@ export const HomePage: React.FC = () => {
           >
             {unclaimedRewardsCount > 0 && (
               <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
-                {Math.min(2, unclaimedRewardsCount)}
+                {unclaimedRewardsCount}
               </span>
             )}
             <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
@@ -583,6 +743,18 @@ export const HomePage: React.FC = () => {
                       src={mission.icon}
                       alt={mission.title}
                       className="w-[56px] h-[56px] object-contain drop-shadow-sm pointer-events-none"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fallback =
+                          mission.id === "morinaga-booth" || mission.type === "booth-morinaga"
+                            ? DEFAULT_BOOTH_ICON
+                            : mission.id === "morinaga-sympo" || mission.type === "symposium"
+                              ? DEFAULT_SYMPO_ICON
+                              : DEFAULT_EARLY_LIFE_ICON;
+                        if (target.src !== fallback && !target.src.endsWith(fallback)) {
+                          target.src = fallback;
+                        }
+                      }}
                     />
                   </div>
 
@@ -741,79 +913,6 @@ export const HomePage: React.FC = () => {
         cardClassName={shouldAnimateMysteryBox ? "animate-popup-scale-up" : ""}
       />
 
-      {/* 3. Enter PIN Modal */}
-      <RewardModal
-        isOpen={showPinModal}
-        onClose={() => setShowPinModal(false)}
-        title="MASUKAN PIN"
-        hideDefaultButton={true}
-      >
-        <div className="w-full flex flex-col items-center text-center px-2 my-auto">
-          <h2 className="text-[18px] font-bold text-[#C70412] tracking-wider uppercase mb-7 leading-tight">
-            MASUKAN PIN
-          </h2>
-
-          {/* 2-Digit Underline Input Fields */}
-          <div className="flex items-center justify-center gap-5 sm:gap-6 mb-7">
-            {[0, 1].map((index) => (
-              <div key={index} className="relative flex flex-col items-center">
-                <input
-                  id={`pin-input-${index}`}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={1}
-                  value={pinDigits[index]}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    const next: [string, string] = [...pinDigits];
-                    next[index] = val;
-                    setPinDigits(next);
-                    if (pinError) setPinError(null);
-
-                    if (val && index === 0) {
-                      const nextInput = document.getElementById("pin-input-1");
-                      if (nextInput) nextInput.focus();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Backspace" && !pinDigits[index] && index === 1) {
-                      const prevInput = document.getElementById("pin-input-0");
-                      if (prevInput) prevInput.focus();
-                    }
-                  }}
-                  className="w-[72px] sm:w-[84px] text-center text-[28px] font-extrabold text-[#C70412] bg-transparent outline-none pb-1 cursor-text tracking-widest font-mono"
-                />
-                <div className="w-[72px] sm:w-[84px] h-[2.5px] bg-[#C70412] rounded-full" />
-              </div>
-            ))}
-          </div>
-
-          {pinError && (
-            <p className="text-[11.5px] font-semibold text-red-600 mb-2">{pinError}</p>
-          )}
-
-          <p className="text-[15px] sm:text-[16px] font-medium text-[#555555] leading-snug max-w-[240px] mb-6">
-            Masukan PIN dari crew untuk mengambil hadiah
-          </p>
-
-          {/* OKE Button grouped in center */}
-          <button
-            onClick={handleConfirmPin}
-            className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
-            style={{
-              backgroundImage: `url('/assets/red-button.png')`,
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-            }}
-          >
-            <span className="text-white font-extrabold text-[13px] sm:text-[14px] tracking-wider uppercase drop-shadow">
-              OKE
-            </span>
-          </button>
-        </div>
-      </RewardModal>
-
       {/* 4. Reward Claimed Success Modal */}
       <RewardModal
         isOpen={showRewardSuccessModal}
@@ -897,13 +996,19 @@ export const HomePage: React.FC = () => {
       {/* 8. MoriTalks Morinaga Podcast Schedule Modal */}
       <PodcastScheduleModal
         isOpen={showPodcastScheduleModal}
-        onClose={() => setShowPodcastScheduleModal(false)}
+        onClose={() => {
+          setShowPodcastScheduleModal(false);
+          setShowBoothMenuModal(true);
+        }}
       />
 
       {/* 8b. MoriTalks Award Presentation Modal */}
       <AwardPresentationModal
         isOpen={showAwardPresentationModal}
-        onClose={() => setShowAwardPresentationModal(false)}
+        onClose={() => {
+          setShowAwardPresentationModal(false);
+          setShowBoothMenuModal(true);
+        }}
       />
 
       {/* 0. Welcoming Pop Up PIT IKA 2026 */}
@@ -923,6 +1028,25 @@ export const HomePage: React.FC = () => {
       <SymposiumUpcomingModal
         isOpen={showSymposiumUpcomingModal}
         onClose={() => setShowSymposiumUpcomingModal(false)}
+        startTimeText={
+          (() => {
+            const sympo =
+              apiSymposiums.find(
+                (s) =>
+                  s.title.toLowerCase().includes("sympo") ||
+                  s.title.toLowerCase().includes("morinaga")
+              ) || apiSymposiums[0];
+            if (sympo?.started_at) {
+              const d = new Date(sympo.started_at);
+              if (!isNaN(d.getTime())) {
+                const hh = String(d.getHours()).padStart(2, "0");
+                const mm = String(d.getMinutes()).padStart(2, "0");
+                return `Pukul ${hh}.${mm} WIB`;
+              }
+            }
+            return undefined;
+          })()
+        }
       />
     </div>
   );

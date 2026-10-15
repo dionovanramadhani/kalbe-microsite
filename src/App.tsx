@@ -5,17 +5,20 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { isRememberMeActive } from './data/dummyUser';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { isTokenValid, getToken } from './utils/auth';
+import { isTokenValid, getToken, getUserData } from './utils/auth';
 
 import { HomePage } from './pages/HomePage';
 import { SymposiumPage } from './pages/SymposiumPage';
 import { PostTestPage } from './pages/PostTestPage';
 import { ClaimRewardPage } from './pages/ClaimRewardPage';
 import { MysteryBoxPage } from './pages/MysteryBoxPage';
+import { BoothCheckInRedirectPage } from './pages/BoothCheckInRedirectPage';
 import { AdminLayout } from './admin/AdminLayout';
 
 const RootRoute = () => {
-  if (isTokenValid(getToken()) || isRememberMeActive()) {
+  const token = getToken();
+  const user = getUserData();
+  if ((token && isTokenValid(token) && user) || isRememberMeActive()) {
     return <Navigate to="/home" replace />;
   }
   return <LoginPage />;
@@ -48,6 +51,7 @@ export default function App() {
                   <Route path="/post-test" element={<PostTestPage />} />
                   <Route path="/claim-reward" element={<ClaimRewardPage />} />
                   <Route path="/mystery-box" element={<MysteryBoxPage />} />
+                  <Route path="/booth-checkin" element={<BoothCheckInRedirectPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/login" replace />} />

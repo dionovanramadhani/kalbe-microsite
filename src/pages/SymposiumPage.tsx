@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Camera, RefreshCw, X } from "lucide-react";
 import jsQR from "jsqr";
+import QRCode from "qrcode";
 import {
   isPostTestCompleted,
   isBoothDetailingCompleted,
@@ -10,77 +11,397 @@ import {
   setEarlyLifeDetailingCompleted,
   unlockReward,
 } from "../data/rewardStore";
-import { setSymposiumJoined } from "../data/symposiumStore";
+import { setSymposiumJoined, getSymposiumMasterData } from "../data/symposiumStore";
 import { Toast, type ToastType } from "../components/Toast";
+import { useModalAnimation } from "../utils/useModalAnimation";
+import {
+  getKalbeSymposiumsList,
+  getKalbeBoothsList,
+  insertKalbeBoothParticipant,
+  getCachedKalbeBooths,
+  getCachedKalbeSymposiums,
+} from "../utils/kalbeApi";
+import type { KalbeBoothResponse, KalbeSymposiumResponse } from "../admin/adminApi";
 
 export interface SymposiumPageProps {
   scanType?: "symposium" | "booth" | "early-life";
 }
 
-const isQrCodeValid = (
+export interface ParsedQrResult {
+  isValid: boolean;
+  type: "symposium" | "early-life" | "booth" | null;
+  boothId: string | null;
+  sympoId: string | null;
+  matchedBooth?: KalbeBoothResponse;
+  rawText: string;
+}
+
+export const parseQrData = (
   decodedText: string,
-  scanType: "symposium" | "booth" | "early-life",
-): boolean => {
-  if (!decodedText || typeof decodedText !== "string") return false;
+  booths: KalbeBoothResponse[] = [],
+  sympos: KalbeSymposiumResponse[] = [],
+): ParsedQrResult => {
+  if (!decodedText || typeof decodedText !== "string") {
+    return { isValid: false, type: null, boothId: null, sympoId: null, rawText: "" };
+  }
 
+  const trimmed = decodedText.trim();
+  let boothId: string | null = null;
+  let sympoId: string | null = null;
+  let detectedType: "symposium" | "early-life" | "booth" | null = null;
+
+  // 1. Try parsing as URL
   try {
-    const parsed = JSON.parse(decodedText);
-    if (typeof parsed === "object" && parsed !== null) {
-      const eventStr = String(parsed.event || "").toUpperCase();
-      const actionStr = String(parsed.action || "").toUpperCase();
-      const titleStr = String(parsed.title || "").toUpperCase();
-      const combined = `${eventStr} ${actionStr} ${titleStr}`;
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.includes("://") ||
+      trimmed.startsWith("/")
+    ) {
+      const urlObj = new URL(trimmed, window.location.origin);
 
-      if (scanType === "symposium") {
-        return (
-          combined.includes("SYMPOSIUM") ||
-          combined.includes("POST_TEST") ||
-          combined.includes("CHECKIN_POST_TEST")
-        );
+      const bId =
+        urlObj.searchParams.get("booth_id") ||
+        urlObj.searchParams.get("boothId") ||
+        urlObj.searchParams.get("booth");
+      if (bId) boothId = bId;
+
+      const sId =
+        urlObj.searchParams.get("symposium_id") ||
+        urlObj.searchParams.get("symposiumId") ||
+        urlObj.searchParams.get("sympo_id");
+      if (sId) sympoId = sId;
+
+      const typeParam = (urlObj.searchParams.get("type") || "").toLowerCase();
+      const nameParam = (urlObj.searchParams.get("name") || "").toLowerCase();
+
+      if (
+        typeParam === "early-life" ||
+        typeParam === "early_life" ||
+        nameParam.includes("early") ||
+        nameParam.includes("life")
+      ) {
+        detectedType = "early-life";
+      } else if (
+        typeParam === "morinaga" ||
+        typeParam === "booth" ||
+        nameParam.includes("morinaga")
+      ) {
+        detectedType = "booth";
+      } else if (typeParam === "symposium" || nameParam.includes("symposium")) {
+        detectedType = "symposium";
       }
 
-      if (scanType === "booth") {
-        // Harus spesifik ke Morinaga Booth, tidak boleh kecampur symposium atau early-life
-        return (
-          (combined.includes("BOOTH") || combined.includes("MORINAGA_BOOTH")) &&
-          !combined.includes("EARLY_LIFE") &&
-          !combined.includes("SYMPOSIUM")
-        );
-      }
-
-      if (scanType === "early-life") {
-        // Harus spesifik ke Early Life Solutions, tidak boleh kecampur booth biasa atau symposium
-        return (
-          (combined.includes("EARLY_LIFE") ||
-            (combined.includes("KALBE") && !combined.includes("BOOTH"))) &&
-          !combined.includes("BOOTH") &&
-          !combined.includes("SYMPOSIUM")
-        );
+      if (
+        urlObj.pathname.includes("post-test") ||
+        urlObj.pathname.includes("symposium")
+      ) {
+        detectedType = "symposium";
       }
     }
   } catch {
-    const textUpper = decodedText.toUpperCase();
-    if (scanType === "symposium") {
-      return textUpper.includes("SYMPOSIUM") || textUpper.includes("POST_TEST");
+    // Ignore URL parse error
+  }
+
+  // 2. Try parsing as JSON
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed === "object" && parsed !== null) {
+      if (parsed.booth_id || parsed.boothId || parsed.booth) {
+        boothId = String(parsed.booth_id || parsed.boothId || parsed.booth);
+      }
+      if (parsed.symposium_id || parsed.symposiumId || parsed.sympo_id) {
+        sympoId = String(parsed.symposium_id || parsed.symposiumId || parsed.sympo_id);
+      }
+
+      const pType = String(parsed.type || "").toLowerCase();
+      const pEvent = String(parsed.event || "").toUpperCase();
+      const pAction = String(parsed.action || "").toUpperCase();
+      const pTitle = String(parsed.title || "").toUpperCase();
+      const combined = `${pType} ${pEvent} ${pAction} ${pTitle}`;
+
+      if (
+        combined.includes("EARLY_LIFE") ||
+        combined.includes("EARLY-LIFE") ||
+        combined.includes("EARLY LIFE") ||
+        combined.includes("EARLY")
+      ) {
+        detectedType = "early-life";
+      } else if (
+        combined.includes("MORINAGA") ||
+        (combined.includes("BOOTH") && !combined.includes("EARLY"))
+      ) {
+        detectedType = "booth";
+      } else if (
+        combined.includes("SYMPOSIUM") ||
+        combined.includes("POST_TEST") ||
+        combined.includes("POST-TEST") ||
+        combined.includes("SYMPO")
+      ) {
+        detectedType = "symposium";
+      }
     }
-    if (scanType === "booth") {
-      return (
-        textUpper.includes("BOOTH") &&
-        !textUpper.includes("EARLY_LIFE") &&
-        !textUpper.includes("SYMPOSIUM")
-      );
-    }
-    if (scanType === "early-life") {
-      return (
-        (textUpper.includes("EARLY_LIFE") ||
-          (textUpper.includes("KALBE") && !textUpper.includes("BOOTH"))) &&
-        !textUpper.includes("BOOTH") &&
-        !textUpper.includes("SYMPOSIUM")
-      );
+  } catch {
+    // Ignore JSON parse error
+  }
+
+  // 3. Check for UUID regex if boothId or sympoId not yet detected
+  const uuidMatch = trimmed.match(
+    /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/,
+  );
+  if (uuidMatch) {
+    const uuid = uuidMatch[0];
+    if (!boothId && !sympoId) {
+      const matchedB = booths.find((b) => b.id.toLowerCase() === uuid.toLowerCase());
+      if (matchedB) {
+        boothId = matchedB.id;
+        const bName = matchedB.name.toLowerCase();
+        if (bName.includes("early") || bName.includes("life")) {
+          detectedType = "early-life";
+        } else {
+          detectedType = "booth";
+        }
+      } else {
+        const matchedS = sympos.find((s) => s.id.toLowerCase() === uuid.toLowerCase());
+        if (matchedS) {
+          sympoId = matchedS.id;
+          detectedType = "symposium";
+        }
+      }
     }
   }
 
-  return false;
+  // 4. Resolve booth from boothId against booths list
+  let matchedBooth: KalbeBoothResponse | undefined;
+  if (boothId) {
+    matchedBooth = booths.find((b) => b.id.toLowerCase() === boothId!.toLowerCase());
+    if (matchedBooth) {
+      const bName = matchedBooth.name.toLowerCase();
+      if (bName.includes("early") || bName.includes("life")) {
+        detectedType = "early-life";
+      } else {
+        detectedType = "booth";
+      }
+    }
+  }
+
+  // 5. Determine final classification from text content if still not determined
+  if (!detectedType) {
+    const upper = trimmed.toUpperCase();
+    if (
+      upper.includes("EARLY_LIFE") ||
+      upper.includes("EARLY-LIFE") ||
+      upper.includes("EARLY LIFE") ||
+      upper.includes("KALBE_EARLY_LIFE") ||
+      (upper.includes("EARLY") && !upper.includes("SYMPOSIUM"))
+    ) {
+      detectedType = "early-life";
+    } else if (
+      upper.includes("MORINAGA_BOOTH") ||
+      upper.includes("MORINAGA") ||
+      (upper.includes("BOOTH") && !upper.includes("EARLY") && !upper.includes("SYMPOSIUM"))
+    ) {
+      detectedType = "booth";
+    } else if (
+      upper.includes("SYMPOSIUM") ||
+      upper.includes("POST_TEST") ||
+      upper.includes("POST-TEST") ||
+      upper.includes("SYMPO")
+    ) {
+      detectedType = "symposium";
+    } else if (boothId) {
+      if (boothId.toLowerCase().includes("early") || boothId.toLowerCase().includes("life")) {
+        detectedType = "early-life";
+      } else if (boothId.toLowerCase().includes("morinaga") || boothId.toLowerCase().includes("booth")) {
+        detectedType = "booth";
+      }
+    } else if (sympoId) {
+      detectedType = "symposium";
+    }
+  }
+
+  // 6. Validity check
+  const isValid = Boolean(detectedType || boothId || sympoId);
+
+  return {
+    isValid,
+    type: detectedType,
+    boothId,
+    sympoId,
+    matchedBooth,
+    rawText: trimmed,
+  };
+};
+
+interface SampleQrModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeScanType: "symposium" | "booth" | "early-life";
+  onManualScan: (scannedData?: string) => void;
+}
+
+const SampleQrModal: React.FC<SampleQrModalProps> = ({
+  isOpen,
+  onClose,
+  activeScanType,
+  onManualScan,
+}) => {
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [modalTitle, setModalTitle] = useState<string>("");
+  const [targetUrl, setTargetUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        let url = "";
+        let title = "";
+
+        if (activeScanType === "symposium") {
+          const list = await getKalbeSymposiumsList().catch(() => []);
+          if (list && list.length > 0) {
+            const activeSympo = list.find((s) => s.is_active) || list[0];
+            title = activeSympo.title;
+            url = `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(activeSympo.id)}`;
+          } else {
+            const master = getSymposiumMasterData();
+            title = master.name || "Morinaga Symposium";
+            url = `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(master.id || "kalbe-symposium-2026")}`;
+          }
+        } else {
+          const booths = await getKalbeBoothsList().catch(() => []);
+          const isEarly = activeScanType === "early-life";
+          const target = booths.find((b) =>
+            isEarly
+              ? b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life")
+              : b.name.toLowerCase().includes("morinaga") ||
+                (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
+          );
+
+          if (target) {
+            title = target.name;
+            const typeStr = isEarly ? "early-life" : "morinaga";
+            url = `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=${typeStr}&name=${encodeURIComponent(target.name)}`;
+          } else {
+            title = isEarly ? "Kalbe Early Life Solutions" : "Morinaga Booth";
+            url = `${window.location.origin}/booth-checkin?booth_id=dummy-${isEarly ? "early-life" : "booth"}&type=${isEarly ? "early-life" : "morinaga"}`;
+          }
+        }
+
+        if (url) {
+          const generatedQr = await QRCode.toDataURL(url, {
+            width: 300,
+            margin: 2,
+            color: {
+              dark: "#1e1e1e",
+              light: "#ffffff",
+            },
+          });
+
+          if (isMounted) {
+            setQrDataUrl(generatedQr);
+            setModalTitle(title);
+            setTargetUrl(url);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to generate QR for user demo modal:", e);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, activeScanType]);
+
+  if (!isRendered) return null;
+
+  return (
+    <div className={`absolute inset-0 z-50 flex items-center justify-center p-5 ${isClosing ? "pointer-events-none" : ""}`}>
+      {/* Dark backdrop */}
+      <div
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${
+          isClosing ? "animate-backdrop-out" : "animate-backdrop-in"
+        }`}
+      />
+
+      {/* Modal Card */}
+      <div
+        className={`relative z-10 bg-white rounded-2xl p-5 max-w-[300px] w-full flex flex-col items-center text-center shadow-2xl border border-red-100 ${
+          isClosing ? "animate-modal-out" : "animate-modal-in"
+        }`}
+      >
+        <button
+          onClick={handleClose}
+          className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 cursor-pointer transition"
+          title="Tutup Modal"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <h3 className="text-[15px] font-bold text-[#8E000A] mb-1">
+          {activeScanType === "early-life"
+            ? "QR Code Kalbe Early Life Solutions"
+            : activeScanType === "booth"
+              ? "QR Code Morinaga Booth"
+              : "QR Code Simposium (Post-Test)"}
+        </h3>
+        {modalTitle ? (
+          <p className="text-[12px] font-semibold text-gray-800 mb-1 line-clamp-1 px-2">
+            {modalTitle}
+          </p>
+        ) : null}
+        <p className="text-[11px] text-gray-500 mb-4 leading-snug">
+          Arahkan kamera smartphone lain ke QR ini, atau gunakan tombol di bawah untuk
+          test instant.
+        </p>
+
+        <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-inner mb-4 flex flex-col items-center">
+          {qrDataUrl ? (
+            <img
+              src={qrDataUrl}
+              alt="Activity QR Code"
+              className="w-[180px] h-[180px] object-contain"
+            />
+          ) : (
+            <img
+              src={
+                activeScanType === "early-life"
+                  ? "/assets/sample-qr-early-life.png"
+                  : activeScanType === "booth"
+                    ? "/assets/sample-qr-booth.png"
+                    : "/assets/sample-qr-symposium.png"
+              }
+              alt="Sample QR Code"
+              className="w-[180px] h-[180px] object-contain"
+            />
+          )}
+          {targetUrl && (
+            <span className="text-[10px] text-gray-400 mt-1.5 break-all max-w-[200px] truncate">
+              {targetUrl.replace(/^https?:\/\/[^/]+/, "")}
+            </span>
+          )}
+        </div>
+
+        <button
+          onClick={() => {
+            handleClose();
+            onManualScan(targetUrl || undefined);
+          }}
+          style={{
+            background: "linear-gradient(90deg, #C70412 0%, #8E000A 100%)",
+          }}
+          className="w-full py-2.5 rounded-lg text-white font-bold text-[12px] uppercase tracking-wide cursor-pointer active:scale-95 transition"
+        >
+          Simulasikan Scan Sukses
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
@@ -94,6 +415,32 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       : location.pathname === "/booth-scan" || location.state?.type === "booth"
         ? "booth"
         : "symposium");
+
+  const apiBoothsRef = useRef<KalbeBoothResponse[]>(getCachedKalbeBooths());
+  const apiSymposRef = useRef<KalbeSymposiumResponse[]>(getCachedKalbeSymposiums());
+
+  useEffect(() => {
+    let isMounted = true;
+    getKalbeBoothsList()
+      .then((data) => {
+        if (isMounted && data) {
+          apiBoothsRef.current = data;
+        }
+      })
+      .catch((e) => console.warn("Failed to preload booths:", e));
+
+    getKalbeSymposiumsList()
+      .then((data) => {
+        if (isMounted && data) {
+          apiSymposRef.current = data;
+        }
+      })
+      .catch((e) => console.warn("Failed to preload symposiums:", e));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -221,28 +568,52 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
   }, [playSynthesizedTone]);
 
   const onScanSuccess = useCallback(
-    (decodedText: string): boolean => {
+    async (decodedText: string): Promise<boolean> => {
       if (isNavigatingRef.current || isProcessingScanRef.current) return false;
       isProcessingScanRef.current = true;
 
-      // Validasi QR code: jika QR yang discan salah, user tidak bisa lanjut
-      const isValid = isQrCodeValid(decodedText, activeScanType);
+      // Pastikan data master booth & symposium termuat
+      let currentBooths = apiBoothsRef.current;
+      if (!currentBooths || currentBooths.length === 0) {
+        currentBooths = getCachedKalbeBooths();
+        if (currentBooths.length === 0) {
+          currentBooths = await getKalbeBoothsList().catch(() => []);
+        }
+        apiBoothsRef.current = currentBooths;
+      }
 
-      if (!isValid) {
+      let currentSympos = apiSymposRef.current;
+      if (!currentSympos || currentSympos.length === 0) {
+        currentSympos = getCachedKalbeSymposiums();
+        if (currentSympos.length === 0) {
+          currentSympos = await getKalbeSymposiumsList().catch(() => []);
+        }
+        apiSymposRef.current = currentSympos;
+      }
+
+      // Smart parse QR Code with dynamic booth & symposium resolution
+      const qrResult = parseQrData(
+        decodedText,
+        currentBooths,
+        currentSympos,
+      );
+
+      // Validasi ketat: QR harus valid dan jenisnya HARUS COCOK dengan scanner saat ini!
+      const isCorrectScan = qrResult.isValid && qrResult.type === activeScanType;
+
+      if (!isCorrectScan) {
         // Play failed scan audio feedback
         playScanSound(false);
 
         const errorMsg =
           activeScanType === "early-life"
-            ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Kalbe Early Life Solutions."
+            ? "QR Code tidak sesuai! Pastikan Anda memindai QR Code untuk Kalbe Early Life Solutions."
             : activeScanType === "booth"
-              ? "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Morinaga Booth."
-              : "QR Code tidak valid! Pastikan Anda memindai QR Code untuk Symposium Morinaga.";
-        
-        // Show floating toaster instead of native browser alert
+              ? "QR Code tidak sesuai! Pastikan Anda memindai QR Code untuk Morinaga Booth."
+              : "QR Code tidak sesuai! Pastikan Anda memindai QR Code untuk Symposium Morinaga.";
+
         showToast("error", errorMsg);
 
-        // Resume scanning loop after short delay
         setTimeout(() => {
           isProcessingScanRef.current = false;
           if (!isNavigatingRef.current && scanFrameRef.current) {
@@ -255,6 +626,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         return false;
       }
 
+      // QR Code benar dan cocok dengan aktivitas yang dipilih
       isNavigatingRef.current = true;
 
       // Play successful scanner beep audio feedback
@@ -267,12 +639,52 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       stopCameraHardware();
 
       if (activeScanType === "early-life") {
+        let detectedBoothId = qrResult.boothId;
+        if (!detectedBoothId) {
+          const target = currentBooths.find(
+            (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
+          );
+          if (target) detectedBoothId = target.id;
+        }
+
+        if (detectedBoothId) {
+          try {
+            await insertKalbeBoothParticipant(detectedBoothId);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (!msg.toLowerCase().includes("already")) {
+              console.warn("Insert booth participant error:", err);
+            }
+          }
+        }
+
         setEarlyLifeDetailingCompleted(true);
         setTimeout(() => {
           setIsScanned(false);
           navigate("/home", { state: { showEarlyLifeSuccessModal: true } });
         }, 350);
       } else if (activeScanType === "booth") {
+        let detectedBoothId = qrResult.boothId;
+        if (!detectedBoothId) {
+          const target = currentBooths.find(
+            (b) =>
+              b.name.toLowerCase().includes("morinaga") ||
+              (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
+          );
+          if (target) detectedBoothId = target.id;
+        }
+
+        if (detectedBoothId) {
+          try {
+            await insertKalbeBoothParticipant(detectedBoothId);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (!msg.toLowerCase().includes("already")) {
+              console.warn("Insert booth participant error:", err);
+            }
+          }
+        }
+
         setBoothDetailingCompleted(true);
         unlockReward("morinaga-booth");
         setTimeout(() => {
@@ -280,10 +692,15 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           navigate("/home", { state: { showBoothSuccessModal: true } });
         }, 350);
       } else {
+        // activeScanType === "symposium"
         setSymposiumJoined(true);
+        let targetPath = "/post-test";
+        if (qrResult.sympoId) {
+          targetPath = `/post-test?symposium_id=${encodeURIComponent(qrResult.sympoId)}`;
+        }
         setTimeout(() => {
           setIsScanned(false);
-          navigate("/post-test", { state: { scannedData: decodedText } });
+          navigate(targetPath, { state: { scannedData: decodedText } });
         }, 450);
       }
 
@@ -333,7 +750,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
             // Hardware-accelerated browser QR detector (Instant & 0 CPU overhead)
             const barcodes = await barcodeDetector.detect(video);
             if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-              const handled = onScanSuccess(barcodes[0].rawValue);
+              const handled = await onScanSuccess(barcodes[0].rawValue);
               if (handled) return;
             }
           }
@@ -362,7 +779,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           });
 
           if (code && code.data) {
-            const handled = onScanSuccess(code.data);
+            const handled = await onScanSuccess(code.data);
             if (handled) return;
           }
         }
@@ -434,31 +851,54 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
     setRetryCount((prev) => prev + 1);
   };
 
-  const handleManualScan = () => {
+  const handleManualScan = (scannedText?: string) => {
+    if (scannedText) {
+      onScanSuccess(scannedText);
+      return;
+    }
+
     if (activeScanType === "early-life") {
-      onScanSuccess(
-        JSON.stringify({
-          event: "KALBE_EARLY_LIFE",
-          action: "DETAILING_SCAN",
-          title: "Kalbe Early Life Solutions Detailing",
-        }),
+      const target = apiBoothsRef.current.find(
+        (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
       );
+      if (target) {
+        onScanSuccess(
+          `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=early-life&name=${encodeURIComponent(target.name)}`,
+        );
+      } else {
+        onScanSuccess(
+          JSON.stringify({
+            event: "KALBE_EARLY_LIFE",
+            action: "DETAILING_SCAN",
+            title: "Kalbe Early Life Solutions Detailing",
+          }),
+        );
+      }
     } else if (activeScanType === "booth") {
-      onScanSuccess(
-        JSON.stringify({
-          event: "MORINAGA_BOOTH_2026",
-          action: "DETAILING_BOOTH",
-          title: "Morinaga Booth Detailing",
-        }),
+      const target = apiBoothsRef.current.find(
+        (b) =>
+          b.name.toLowerCase().includes("morinaga") ||
+          (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
       );
+      if (target) {
+        onScanSuccess(
+          `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=morinaga&name=${encodeURIComponent(target.name)}`,
+        );
+      } else {
+        onScanSuccess(
+          JSON.stringify({
+            event: "MORINAGA_BOOTH_2026",
+            action: "DETAILING_BOOTH",
+            title: "Morinaga Booth Detailing",
+          }),
+        );
+      }
     } else {
-      onScanSuccess(
-        JSON.stringify({
-          event: "MORINAGA_SYMPOSIUM_2026",
-          action: "CHECKIN_POST_TEST",
-          redirectUrl: "/post-test",
-        }),
-      );
+      const activeSympo = apiSymposRef.current.find((s) => s.is_active);
+      const master = getSymposiumMasterData();
+      const sympoId = activeSympo?.id || master.id || "kalbe-symposium-2026";
+      const directUrl = `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(sympoId)}`;
+      onScanSuccess(directUrl);
     }
   };
 
@@ -600,57 +1040,12 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       </div>
 
       {/* Sample QR Modal for Easy Testing */}
-      {showQrModal && (
-        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5">
-          <div className="relative bg-white rounded-2xl p-5 max-w-[300px] w-full flex flex-col items-center text-center shadow-2xl border border-red-100">
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="absolute top-3 right-3 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 cursor-pointer transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <h3 className="text-[15px] font-bold text-[#8E000A] mb-1">
-              {activeScanType === "early-life"
-                ? "QR Code Dummy Kalbe Early Life Solutions"
-                : activeScanType === "booth"
-                  ? "QR Code Dummy Morinaga Booth"
-                  : "QR Code Dummy Symposium"}
-            </h3>
-            <p className="text-[11px] text-gray-500 mb-4 leading-snug">
-              Arahkan kamera smartphone lain ke QR ini, atau gunakan tombol di bawah untuk
-              test instant.
-            </p>
-
-            <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-inner mb-4">
-              <img
-                src={
-                  activeScanType === "early-life"
-                    ? "/assets/sample-qr-early-life.png"
-                    : activeScanType === "booth"
-                      ? "/assets/sample-qr-booth.png"
-                      : "/assets/sample-qr-symposium.png"
-                }
-                alt="Sample QR Code"
-                className="w-[180px] h-[180px] object-contain"
-              />
-            </div>
-
-            <button
-              onClick={() => {
-                setShowQrModal(false);
-                handleManualScan();
-              }}
-              style={{
-                background: "linear-gradient(90deg, #C70412 0%, #8E000A 100%)",
-              }}
-              className="w-full py-2.5 rounded-lg text-white font-bold text-[12px] uppercase tracking-wide cursor-pointer active:scale-95 transition"
-            >
-              Simulasikan Scan Sukses
-            </button>
-          </div>
-        </div>
-      )}
+      <SampleQrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        activeScanType={activeScanType}
+        onManualScan={handleManualScan}
+      />
 
       {/* Floating Toast Notification for Scan Failures */}
       <Toast

@@ -1,6 +1,8 @@
 import React from "react";
 import { X } from "lucide-react";
 
+import { useModalAnimation } from "../utils/useModalAnimation";
+
 export interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,22 +12,30 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  if (!isOpen) return null;
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
+
+  if (!isRendered) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
       {/* Dark backdrop with blur confined strictly to mobile viewport */}
       <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/65 backdrop-blur-sm animate-backdrop-in"
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/65 backdrop-blur-sm ${
+          isClosing ? "animate-backdrop-out" : "animate-backdrop-in"
+        }`}
       />
 
       {/* Floating Modal Content Wrapper (max-width: 297px) */}
-      <div className="relative z-10 w-full max-w-[297px] flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+      <div
+        className={`relative z-10 w-full max-w-[297px] flex flex-col items-center ${
+          isClosing ? "animate-modal-out" : "animate-modal-in"
+        }`}
+      >
         {/* Floating Red Circular Close Button (aligned right with spacing above card) */}
         <div className="w-full flex justify-end mb-3 pointer-events-none">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="pointer-events-auto w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
             title="Tutup Modal"
           >

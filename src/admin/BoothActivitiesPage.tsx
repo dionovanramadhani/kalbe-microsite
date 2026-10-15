@@ -9,6 +9,7 @@ import {
   createKalbeBoothPodcast,
   updateKalbeBoothPodcast,
   deleteKalbeBoothPodcast,
+  uploadKalbeMedia,
   isBrandUser,
   type KalbeBoothResponse,
   type KalbeBoothActivityResponse,
@@ -21,6 +22,13 @@ import { useToast } from '../context/ToastContext';
 interface ActivityItemDraft {
   name: string;
   order: number;
+  description: string;
+  activity_image: string;
+  imageFile?: File | null;
+  imagePreview?: string;
+  speaker: string;
+  start_at: string;
+  end_at: string;
 }
 
 interface PodcastSessionDraft {
@@ -154,13 +162,40 @@ export function BoothActivitiesPage() {
     });
   }, [podcasts, podcastSearch, selectedBoothFilter, boothMap]);
 
+  // Helper to convert ISO string to datetime-local string (YYYY-MM-DDTHH:mm)
+  const toLocalInputValue = (isoStr?: string) => {
+    if (!isoStr) return '';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      const pad = (n: number) => (n < 10 ? '0' + n : n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+        d.getHours()
+      )}:${pad(d.getMinutes())}`;
+    } catch {
+      return '';
+    }
+  };
+
   // ─── Activity Handlers ──────────────────────────────────────────────────────
 
   const openCreateActivity = () => {
     setEditingActivity(null);
     setActivityName('');
     setActivityRefId(booths.length > 0 ? booths[0].id : '');
-    setActivityItems([{ name: '', order: 1 }]);
+    setActivityItems([
+      {
+        name: '',
+        order: 1,
+        description: '',
+        activity_image: '',
+        imageFile: null,
+        imagePreview: '',
+        speaker: '',
+        start_at: '',
+        end_at: '',
+      },
+    ]);
     setActivityModalOpen(true);
   };
 
@@ -173,23 +208,83 @@ export function BoothActivitiesPage() {
         ? act.activity_items.map((item, idx) => ({
             name: item.name,
             order: item.order || idx + 1,
+            description: item.description || '',
+            activity_image: item.activity_image || '',
+            imageFile: null,
+            imagePreview: item.activity_image || '',
+            speaker: item.speaker || '',
+            start_at: toLocalInputValue(item.start_at || ''),
+            end_at: toLocalInputValue(item.end_at || ''),
           }))
-        : [{ name: '', order: 1 }]
+        : [
+            {
+              name: '',
+              order: 1,
+              description: '',
+              activity_image: '',
+              imageFile: null,
+              imagePreview: '',
+              speaker: '',
+              start_at: '',
+              end_at: '',
+            },
+          ]
     );
     setActivityModalOpen(true);
   };
 
   const handleAddActivityItem = () => {
-    setActivityItems((prev) => [...prev, { name: '', order: prev.length + 1 }]);
+    setActivityItems((prev) => [
+      ...prev,
+      {
+        name: '',
+        order: prev.length + 1,
+        description: '',
+        activity_image: '',
+        imageFile: null,
+        imagePreview: '',
+        speaker: '',
+        start_at: '',
+        end_at: '',
+      },
+    ]);
   };
 
   const handleRemoveActivityItem = (index: number) => {
     setActivityItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpdateActivityItemName = (index: number, val: string) => {
+  const handleItemFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const preview = URL.createObjectURL(file);
+      setActivityItems((prev) =>
+        prev.map((item, i) =>
+          i === index
+            ? { ...item, imageFile: file, imagePreview: preview }
+            : item
+        )
+      );
+    }
+  };
+
+  const handleRemoveItemFile = (index: number) => {
     setActivityItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, name: val } : item))
+      prev.map((item, i) =>
+        i === index
+          ? { ...item, imageFile: null, imagePreview: '', activity_image: '' }
+          : item
+      )
+    );
+  };
+
+  const handleUpdateActivityItem = (
+    index: number,
+    field: keyof ActivityItemDraft,
+    val: string | number
+  ) => {
+    setActivityItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: val } : item))
     );
   };
 
@@ -204,21 +299,43 @@ export function BoothActivitiesPage() {
       return;
     }
 
-    const validItems = activityItems
-      .filter((it) => it.name.trim() !== '')
-      .map((it, idx) => ({
-        name: it.name.trim(),
-        order: it.order || idx + 1,
-      }));
-
-    const payload: KalbeBoothActivityRequest = {
-      name: activityName.trim(),
-      ref_id: activityRefId,
-      activity_items: validItems,
-    };
-
     setSavingActivity(true);
     try {
+      // Upload any new image files first
+      const itemsWithUploadedImages = await Promise.all(
+        activityItems.map(async (item) => {
+          let imageUrl = item.activity_image;
+          if (item.imageFile) {
+            const uploadRes = await uploadKalbeMedia(item.imageFile);
+            if (uploadRes.data?.url) {
+              imageUrl = uploadRes.data.url;
+            }
+          }
+          return {
+            ...item,
+            activity_image: imageUrl,
+          };
+        })
+      );
+
+      const validItems = itemsWithUploadedImages
+        .filter((it) => it.name.trim() !== '')
+        .map((it, idx) => ({
+          name: it.name.trim(),
+          order: it.order || idx + 1,
+          description: it.description.trim() ? it.description.trim() : null,
+          activity_image: it.activity_image && it.activity_image.trim() ? it.activity_image.trim() : null,
+          speaker: it.speaker.trim() ? it.speaker.trim() : null,
+          start_at: it.start_at ? new Date(it.start_at).toISOString() : null,
+          end_at: it.end_at ? new Date(it.end_at).toISOString() : null,
+        }));
+
+      const payload: KalbeBoothActivityRequest = {
+        name: activityName.trim(),
+        ref_id: activityRefId,
+        activity_items: validItems,
+      };
+
       if (editingActivity) {
         await updateKalbeBoothActivity(editingActivity.id, payload);
         showToast('success', 'Booth Activity berhasil diperbarui');
@@ -239,21 +356,6 @@ export function BoothActivitiesPage() {
   };
 
   // ─── Podcast Handlers ───────────────────────────────────────────────────────
-
-  // Helper to convert ISO string to datetime-local string (YYYY-MM-DDTHH:mm)
-  const toLocalInputValue = (isoStr?: string) => {
-    if (!isoStr) return '';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return '';
-      const pad = (n: number) => (n < 10 ? '0' + n : n);
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-        d.getHours()
-      )}:${pad(d.getMinutes())}`;
-    } catch {
-      return '';
-    }
-  };
 
   const openCreatePodcast = () => {
     setEditingPodcast(null);
@@ -545,27 +647,87 @@ export function BoothActivitiesPage() {
                         </td>
                         <td>
                           {act.activity_items && act.activity_items.length > 0 ? (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200, maxWidth: 360 }}>
                               {act.activity_items.map((it, i) => (
-                                <span
-                                key={it.id || i}
-                                style={{
-                                  fontSize: 12,
-                                  background: 'rgba(255, 255, 255, 0.05)',
-                                  border: '1px solid var(--admin-border)',
-                                  padding: '3px 8px',
-                                  borderRadius: 4,
-                                  color: 'var(--admin-text-secondary)',
-                                }}
-                              >
-                                {it.order ? `${it.order}. ` : ''}{it.name}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>- Tidak ada sub-item -</span>
-                        )}
-                      </td>
+                                <div
+                                  key={it.id || i}
+                                  style={{
+                                    fontSize: 12,
+                                    background: 'rgba(255, 255, 255, 0.04)',
+                                    border: '1px solid var(--admin-border)',
+                                    padding: '6px 10px',
+                                    borderRadius: 6,
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                    <div style={{ fontWeight: 600, color: 'var(--admin-text)' }}>
+                                      {it.order ? `${it.order}. ` : ''}{it.name}
+                                    </div>
+                                    {it.activity_image && (
+                                      <a
+                                        href={it.activity_image}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="Buka gambar banner"
+                                        style={{ display: 'inline-flex' }}
+                                      >
+                                        <img
+                                          src={it.activity_image}
+                                          alt={it.name}
+                                          style={{
+                                            height: 24,
+                                            width: 32,
+                                            objectFit: 'cover',
+                                            borderRadius: 3,
+                                            border: '1px solid var(--admin-border)',
+                                            flexShrink: 0,
+                                          }}
+                                        />
+                                      </a>
+                                    )}
+                                  </div>
+                                  {it.speaker && (
+                                    <div style={{ color: 'var(--admin-primary-light)', fontSize: 11, marginTop: 2 }}>
+                                      👨‍⚕️ {it.speaker}
+                                    </div>
+                                  )}
+                                  {(it.start_at || it.end_at) && (
+                                    <div style={{ color: 'var(--admin-text-muted)', fontSize: 11, marginTop: 2 }}>
+                                      🕒{' '}
+                                      {it.start_at
+                                        ? new Date(it.start_at).toLocaleTimeString('id-ID', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          })
+                                        : '-'}{' '}
+                                      -{' '}
+                                      {it.end_at
+                                        ? new Date(it.end_at).toLocaleTimeString('id-ID', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          })
+                                        : '-'}
+                                    </div>
+                                  )}
+                                  {it.description && (
+                                    <div
+                                      style={{
+                                        color: 'var(--admin-text-secondary)',
+                                        fontSize: 11,
+                                        marginTop: 2,
+                                        lineHeight: 1.3,
+                                      }}
+                                    >
+                                      {it.description}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>- Tidak ada sub-item -</span>
+                          )}
+                        </td>
                       <td style={{ fontSize: 12.5, color: 'var(--admin-text-secondary)' }}>
                         {new Date(act.created_at).toLocaleDateString('id-ID', {
                           day: 'numeric',
@@ -816,29 +978,177 @@ export function BoothActivitiesPage() {
                     </button>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {activityItems.map((item, idx) => (
-                      <div key={idx} className="admin-dynamic-row">
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--admin-text-muted)', minWidth: 24 }}>
-                          #{idx + 1}
-                        </span>
-                        <input
-                          className="admin-input"
-                          style={{ padding: '8px 12px', fontSize: 13 }}
-                          placeholder={`Langkah ${idx + 1} (Contoh: Scan QR & Jawab Pertanyaan)`}
-                          value={item.name}
-                          onChange={(e) => handleUpdateActivityItemName(idx, e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-sm admin-btn-danger"
-                          onClick={() => handleRemoveActivityItem(idx)}
-                          disabled={activityItems.length === 1}
-                          title="Hapus baris"
-                        >
-                          ×
-                        </button>
+                      <div
+                        key={idx}
+                        style={{
+                          background: 'var(--admin-surface)',
+                          border: '1px solid var(--admin-border)',
+                          borderRadius: 'var(--admin-radius)',
+                          padding: 12,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--admin-primary-light)' }}>
+                            Item #{idx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-sm admin-btn-danger"
+                            onClick={() => handleRemoveActivityItem(idx)}
+                            disabled={activityItems.length === 1}
+                            style={{ padding: '2px 8px' }}
+                            title="Hapus baris"
+                          >
+                            Hapus Item
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12 }}>
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>
+                              Nama Aktivitas / Misi <span className="required">*</span>
+                            </label>
+                            <input
+                              className="admin-input"
+                              style={{ padding: '8px 12px', fontSize: 13 }}
+                              placeholder="Contoh: Scan QR & Jawab Pertanyaan"
+                              value={item.name}
+                              onChange={(e) => handleUpdateActivityItem(idx, 'name', e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>Urutan</label>
+                            <input
+                              type="number"
+                              className="admin-input"
+                              style={{ padding: '8px 12px', fontSize: 13 }}
+                              value={item.order}
+                              onChange={(e) =>
+                                handleUpdateActivityItem(idx, 'order', parseInt(e.target.value) || idx + 1)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <div className="admin-field">
+                          <label style={{ fontSize: 12 }}>Deskripsi (Opsional)</label>
+                          <textarea
+                            className="admin-input"
+                            rows={2}
+                            style={{ padding: '8px 12px', fontSize: 13, resize: 'vertical' }}
+                            placeholder="Deskripsi detail kegiatan atau petunjuk untuk peserta"
+                            value={item.description}
+                            onChange={(e) => handleUpdateActivityItem(idx, 'description', e.target.value)}
+                          />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>Speaker / Narasumber (Opsional)</label>
+                            <input
+                              className="admin-input"
+                              style={{ padding: '8px 12px', fontSize: 13 }}
+                              placeholder="Contoh: dr. Amanda, Sp.GK"
+                              value={item.speaker}
+                              onChange={(e) => handleUpdateActivityItem(idx, 'speaker', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>Banner / Gambar Aktivitas (Opsional)</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="admin-input"
+                                style={{ padding: '6px 10px', fontSize: 12 }}
+                                onChange={(e) => handleItemFileChange(idx, e)}
+                              />
+                              {item.imagePreview && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    background: 'rgba(255, 255, 255, 0.04)',
+                                    border: '1px solid var(--admin-border)',
+                                    borderRadius: 6,
+                                    padding: '6px 10px',
+                                  }}
+                                >
+                                  <img
+                                    src={item.imagePreview}
+                                    alt="Preview"
+                                    style={{
+                                      height: 38,
+                                      width: 52,
+                                      objectFit: 'cover',
+                                      borderRadius: 4,
+                                      border: '1px solid var(--admin-border)',
+                                    }}
+                                  />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                      style={{
+                                        fontSize: 11.5,
+                                        color: 'var(--admin-text)',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                    >
+                                      {item.imageFile ? item.imageFile.name : 'Gambar saat ini'}
+                                    </div>
+                                    <div style={{ fontSize: 10.5, color: 'var(--admin-text-muted)' }}>
+                                      {item.imageFile
+                                        ? `${(item.imageFile.size / 1024).toFixed(1)} KB`
+                                        : 'Tersimpan'}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="admin-btn admin-btn-sm admin-btn-danger"
+                                    style={{ padding: '2px 8px', fontSize: 11 }}
+                                    onClick={() => handleRemoveItemFile(idx)}
+                                    title="Hapus gambar"
+                                  >
+                                    Hapus
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>Waktu Mulai (Opsional)</label>
+                            <input
+                              type="datetime-local"
+                              className="admin-input"
+                              style={{ padding: '8px 12px', fontSize: 13 }}
+                              value={item.start_at}
+                              onChange={(e) => handleUpdateActivityItem(idx, 'start_at', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="admin-field">
+                            <label style={{ fontSize: 12 }}>Waktu Selesai (Opsional)</label>
+                            <input
+                              type="datetime-local"
+                              className="admin-input"
+                              style={{ padding: '8px 12px', fontSize: 13 }}
+                              value={item.end_at}
+                              onChange={(e) => handleUpdateActivityItem(idx, 'end_at', e.target.value)}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

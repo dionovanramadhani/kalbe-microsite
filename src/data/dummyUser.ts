@@ -188,13 +188,40 @@ export const getCurrentUser = (): User | null => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_AUTH) || localStorage.getItem('user');
     if (stored) {
-      return JSON.parse(stored) as User;
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === 'object') {
+        const fullName = (
+          parsed.fullName ||
+          parsed.fullname ||
+          parsed.nama ||
+          parsed.name ||
+          ''
+        ).trim();
+        const email = (parsed.email || '').trim();
+        const phone = (
+          parsed.phone ||
+          parsed.phone_number ||
+          parsed.phoneNumber ||
+          parsed.no_handphone ||
+          ''
+        ).trim();
+
+        return {
+          id: String(parsed.id || ''),
+          fullName: fullName,
+          phone: phone,
+          email: email,
+          speciality: parsed.speciality || '',
+          practicePlace: parsed.practicePlace || parsed.practice_place || '',
+          practiceAddress: parsed.practiceAddress || parsed.practice_place_address || '',
+          avatar: parsed.avatar || '/assets/docter-avatar.png',
+        };
+      }
     }
   } catch (err) {
     console.error('Failed to read current user:', err);
   }
-  // Default fallback user matching the mockup if none logged in
-  return DUMMY_USERS[0];
+  return null;
 };
 
 export const logoutUser = (): void => {

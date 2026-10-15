@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { isTokenValid, setAuthSession } from "../utils/auth";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { isTokenValid, setAuthSession, getToken, getUserData, logout } from "../utils/auth";
+import { Toast, type ToastType } from "../components/Toast";
 
 export interface MasterDoctorItem {
   id: string;
@@ -10,6 +11,7 @@ export interface MasterDoctorItem {
   phoneNumber?: string | null;
   clinicLocation?: string | null;
   clinicAddress?: string | null;
+  speciality?: string | null;
   micrositeId?: string | null;
 }
 
@@ -56,6 +58,13 @@ const MailFilledIcon = () => (
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const regState = location.state as {
+    registrationSuccess?: boolean;
+    toastMessage?: string;
+  } | null;
+
+  // Keep fields empty as requested
   const [fullName, setFullName] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState<MasterDoctorItem | null>(null);
   const [doctorResults, setDoctorResults] = useState<MasterDoctorItem[]>([]);
@@ -68,11 +77,29 @@ export const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: ToastType;
+    message: string;
+  }>({
+    show: Boolean(regState?.registrationSuccess),
+    type: "success",
+    message:
+      regState?.toastMessage ||
+      "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
+  });
 
-  // ── Redirect to /home if user is already logged in with valid token ───────────
+  // ── Redirect to /home if user is already logged in with valid token AND session ──
   useEffect(() => {
-    if (isTokenValid()) {
-      navigate("/home", { replace: true });
+    const token = getToken();
+    const user = getUserData();
+    if (token && isTokenValid(token)) {
+      if (user) {
+        navigate("/home", { replace: true });
+      } else {
+        // Orphaned token without user session -> clean it to prevent false redirect
+        logout();
+      }
     }
   }, [navigate]);
 
@@ -299,19 +326,25 @@ export const LoginPage: React.FC = () => {
       }
 
       const respData = json.data || {};
+      const finalFullName = (respData.fullname || cleanFullName || selectedDoctor?.fullName || "").trim();
+      const finalPhone = (respData.phone_number || cleanPhone || "").trim();
+      const finalEmail = (respData.email || cleanEmail || "").trim();
+
       const userData = {
         ...respData,
         id: respData.id,
-        fullname: respData.fullname || cleanFullName,
-        fullName: respData.fullname || cleanFullName,
-        email: respData.email || cleanEmail,
-        phone_number: respData.phone_number || cleanPhone,
-        phoneNumber: respData.phone_number || cleanPhone,
-        phone: respData.phone_number || cleanPhone,
-        practicePlace: respData.practice_place || selectedDoctor?.clinicLocation,
-        practiceAddress: respData.practice_place_address || selectedDoctor?.clinicAddress,
-        speciality: respData.speciality,
-        master_doctor_id: respData.master_doctor_id || selectedDoctor?.id,
+        fullname: finalFullName,
+        fullName: finalFullName,
+        nama: finalFullName,
+        name: finalFullName,
+        email: finalEmail,
+        phone_number: finalPhone,
+        phoneNumber: finalPhone,
+        phone: finalPhone,
+        practicePlace: respData.practice_place || selectedDoctor?.clinicLocation || "",
+        practiceAddress: respData.practice_place_address || selectedDoctor?.clinicAddress || "",
+        speciality: respData.speciality || selectedDoctor?.speciality || "",
+        master_doctor_id: respData.master_doctor_id || selectedDoctor?.id || "",
         role: respData.role || "user",
         avatar: "/assets/docter-avatar.png",
       };
@@ -339,6 +372,14 @@ export const LoginPage: React.FC = () => {
       className="relative h-full w-full flex flex-col justify-between bg-cover bg-top select-none overflow-hidden"
       style={{ backgroundImage: `url('/assets/tower-background.png')` }}
     >
+      {/* Top Floating Toast Notification */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+      />
+
       {/* Top Banner with Morinaga Tower & Kalbe Universe Logo */}
       <div className="relative h-[220px] sm:h-[240px] w-full shrink-0">
         <div className="absolute top-[68px] right-[16px] w-[172px]">

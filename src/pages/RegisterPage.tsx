@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { saveRegisteredUser, type User } from "../data/dummyUser";
+import { logout } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
 
 const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
@@ -118,11 +119,8 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
-      // Also persist to local registered user cache for offline/demo compatibility
-      const token = json?.data?.access_token || json?.access_token;
-      if (token) {
-        localStorage.setItem("kalbe_token", token);
-      }
+      // Ensure any existing tokens are cleared so user is not falsely auto-logged-in
+      logout();
 
       const userData: User = {
         id: json?.data?.id || `user-${Date.now()}`,
@@ -144,7 +142,13 @@ export const RegisterPage: React.FC = () => {
 
       // Redirect to login after brief delay so user sees toast
       setTimeout(() => {
-        navigate("/login");
+        navigate("/login", {
+          state: {
+            registrationSuccess: true,
+            toastMessage:
+              "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
+          },
+        });
       }, 1600);
     } catch (err: unknown) {
       console.error("Registration request error:", err);

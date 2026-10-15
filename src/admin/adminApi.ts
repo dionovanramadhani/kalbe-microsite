@@ -338,6 +338,11 @@ export interface KalbeBoothActivityItem {
   id?: string;
   name: string;
   order: number;
+  description?: string | null;
+  activity_image?: string | null;
+  speaker?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
   activity_id?: string;
   created_at?: string;
   updated_at?: string;
@@ -359,6 +364,11 @@ export interface KalbeBoothActivityRequest {
   activity_items?: Array<{
     name: string;
     order: number;
+    description?: string | null;
+    activity_image?: string | null;
+    speaker?: string | null;
+    start_at?: string | null;
+    end_at?: string | null;
   }>;
 }
 
@@ -401,6 +411,15 @@ export async function updateKalbeBoothActivity(id: string, data: KalbeBoothActiv
 export async function deleteKalbeBoothActivity(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiFetch<ApiResponse<{ message: string }>>(`/api/v1/kalbe/booth-activity/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export async function uploadKalbeMedia(file: File): Promise<ApiResponse<{ url: string }>> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiFetch<ApiResponse<{ url: string }>>('/api/v1/kalbe/upload', {
+    method: 'POST',
+    body: formData,
   });
 }
 
@@ -711,18 +730,21 @@ export interface KalbeRewardResponse {
   name: string;
   reward_type: KalbeRewardType | string;
   symposium_id?: string | null;
+  booth_id?: string | null;
   stock: number;
   picture?: string | null;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
   symposium?: KalbeSymposiumResponse | null;
+  booth?: KalbeBoothResponse | null;
 }
 
 export interface KalbeRewardFormValues {
   name: string;
   reward_type: KalbeRewardType | string;
   symposium_id?: string | null;
+  booth_id?: string | null;
   stock: number;
   pictureFile?: File | null;
   pictureUrl?: string;
@@ -760,6 +782,10 @@ export async function createKalbeReward(data: KalbeRewardFormValues): Promise<Ap
     formData.append('symposium_id', data.symposium_id);
   }
 
+  if (data.reward_type === 'booth' && data.booth_id) {
+    formData.append('booth_id', data.booth_id);
+  }
+
   if (data.pictureFile) {
     formData.append('picture', data.pictureFile);
   } else if (data.pictureUrl) {
@@ -778,8 +804,16 @@ export async function updateKalbeReward(id: string, data: KalbeRewardFormValues)
   formData.append('reward_type', data.reward_type.trim());
   formData.append('stock', data.stock.toString());
 
-  if (data.reward_type === 'symposium' && data.symposium_id) {
-    formData.append('symposium_id', data.symposium_id);
+  if (data.reward_type === 'symposium') {
+    if (data.symposium_id) {
+      formData.append('symposium_id', data.symposium_id);
+    }
+  }
+
+  if (data.reward_type === 'booth') {
+    if (data.booth_id) {
+      formData.append('booth_id', data.booth_id);
+    }
   }
 
   if (data.pictureFile) {
@@ -797,6 +831,28 @@ export async function updateKalbeReward(id: string, data: KalbeRewardFormValues)
 export async function deleteKalbeReward(id: string): Promise<ApiResponse<KalbeRewardResponse>> {
   return apiFetch<ApiResponse<KalbeRewardResponse>>(`/api/v1/kalbe/reward/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export async function createKalbeMysteryBoxReward(data: {
+  name: string;
+  stock: number;
+  pictureFile?: File | null;
+  pictureUrl?: string;
+}): Promise<ApiResponse<KalbeRewardResponse>> {
+  const formData = new FormData();
+  formData.append('name', data.name.trim());
+  formData.append('stock', data.stock.toString());
+
+  if (data.pictureFile) {
+    formData.append('picture', data.pictureFile);
+  } else if (data.pictureUrl) {
+    formData.append('picture', data.pictureUrl);
+  }
+
+  return apiFetch<ApiResponse<KalbeRewardResponse>>('/api/v1/kalbe/reward/mystery-box', {
+    method: 'POST',
+    body: formData,
   });
 }
 
@@ -869,6 +925,122 @@ export async function loginKalbeUser(data: LoginKalbeUserPayload): Promise<ApiRe
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+// ─── Symposium Participant Check-In API ─────────────────────────────────────
+
+export interface CheckInParticipantSymposiumPayload {
+  symposium_id: string;
+  user_id: string;
+}
+
+export interface KalbeParticipantCheckInResponse {
+  id: string;
+  user_id: string;
+  symposium_id: string;
+  created_at: string;
+}
+
+export async function checkInParticipantSymposium(
+  data: CheckInParticipantSymposiumPayload
+): Promise<ApiResponse<KalbeParticipantCheckInResponse>> {
+  return apiFetch<ApiResponse<KalbeParticipantCheckInResponse>>(
+    '/api/v1/admin/kalbe/participant/symposium',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+// ─── Booth Participant Check-In API ─────────────────────────────────────────
+
+export interface CheckInParticipantBoothPayload {
+  booth_id: string;
+  user_id: string;
+}
+
+export interface KalbeBoothParticipantCheckInResponse {
+  id: string;
+  user_id: string;
+  booth_id: string;
+  created_at: string;
+}
+
+export async function checkInParticipantBooth(
+  data: CheckInParticipantBoothPayload
+): Promise<ApiResponse<KalbeBoothParticipantCheckInResponse>> {
+  return apiFetch<ApiResponse<KalbeBoothParticipantCheckInResponse>>(
+    '/api/v1/admin/kalbe/participant/booth',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+// ─── Kalbe History / Reward Claim Admin API ─────────────────────────────────
+
+export interface KalbeAdminHistoryUser {
+  id: string;
+  fullname: string;
+  email: string;
+  phone_number: string;
+  practice_place?: string;
+  speciality?: string;
+}
+
+export interface KalbeAdminHistoryItem {
+  id: string;
+  user_id: string;
+  reward_type: string;
+  symposium_id?: string;
+  booth_id?: string;
+  label?: string;
+  description?: string;
+  pin: string;
+  is_claimed: boolean;
+  claimed_at?: string;
+  created_at: string;
+  symposium?: {
+    id: string;
+    title: string;
+    description: string;
+  };
+  booth?: {
+    id: string;
+    name: string;
+  };
+  reward?: KalbeRewardResponse;
+  user?: KalbeAdminHistoryUser;
+}
+
+export interface GetAdminHistoriesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  reward_type?: string;
+  is_claimed?: boolean;
+  symposium_id?: string;
+  booth_id?: string;
+}
+
+export async function getKalbeAdminHistories(
+  params?: GetAdminHistoriesParams
+): Promise<ApiResponse<KalbeAdminHistoryItem[]>> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', String(params.page));
+  if (params?.limit) query.append('limit', String(params.limit));
+  if (params?.search) query.append('search', params.search);
+  if (params?.reward_type) query.append('reward_type', params.reward_type);
+  if (params?.is_claimed !== undefined) query.append('is_claimed', String(params.is_claimed));
+  if (params?.symposium_id) query.append('symposium_id', params.symposium_id);
+  if (params?.booth_id) query.append('booth_id', params.booth_id);
+
+  const qs = query.toString();
+  return apiFetch<ApiResponse<KalbeAdminHistoryItem[]>>(
+    `/api/v1/kalbe/histories${qs ? `?${qs}` : ''}`
+  );
 }
 
 

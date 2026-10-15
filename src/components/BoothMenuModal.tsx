@@ -1,6 +1,8 @@
 import React from "react";
 import { X } from "lucide-react";
 
+import { useModalAnimation } from "../utils/useModalAnimation";
+
 export interface BoothMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,21 +20,29 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   onMoritalksAwardPresentation,
   onPhotoboothHighAngel,
 }) => {
-  if (!isOpen) return null;
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
+
+  if (!isRendered) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
       {/* Dark backdrop with blur */}
       <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/65 backdrop-blur-sm animate-backdrop-in"
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/65 backdrop-blur-sm ${
+          isClosing ? "animate-backdrop-out" : "animate-backdrop-in"
+        }`}
       />
 
       {/* Modal Wrapper */}
-      <div className="relative z-10 w-full max-w-[345px] sm:max-w-[355px] flex flex-col items-center animate-in fade-in zoom-in-95 duration-200 pt-28">
+      <div
+        className={`relative z-10 w-full max-w-[345px] sm:max-w-[355px] flex flex-col items-center pt-28 ${
+          isClosing ? "animate-modal-out" : "animate-modal-in"
+        }`}
+      >
         {/* Floating Red Circular Close Button (welcoming pop-up style) */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-2 right-1 z-20 w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
           title="Tutup Modal"
         >

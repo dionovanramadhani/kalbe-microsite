@@ -7,7 +7,11 @@ import { BoothActivitiesPage } from "./BoothActivitiesPage";
 import { SymposiumsPage } from "./SymposiumsPage";
 import { PostTestsPage } from "./PostTestsPage";
 import { RewardsPage } from "./RewardsPage";
+import { MysteryBoxPage } from "./MysteryBoxPage";
 import { UsersListPage } from "./UsersListPage";
+import { SymposiumCheckInPage } from "./SymposiumCheckInPage";
+import { BoothCheckInPage } from "./BoothCheckInPage";
+import { RewardClaimPage } from "./RewardClaimPage";
 import { ToastProvider } from "../context/ToastContext";
 import "./admin.css";
 
@@ -51,24 +55,24 @@ function IconUsers() {
   );
 }
 
-function IconUserPlus() {
-  return (
-    <svg
-      className="nav-icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="8.5" cy="7" r="4" />
-      <line x1="20" y1="8" x2="20" y2="14" />
-      <line x1="17" y1="11" x2="23" y2="11" />
-    </svg>
-  );
-}
+// function IconUserPlus() {
+//   return (
+//     <svg
+//       className="nav-icon"
+//       viewBox="0 0 24 24"
+//       fill="none"
+//       stroke="currentColor"
+//       strokeWidth="2"
+//       strokeLinecap="round"
+//       strokeLinejoin="round"
+//     >
+//       <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+//       <circle cx="8.5" cy="7" r="4" />
+//       <line x1="20" y1="8" x2="20" y2="14" />
+//       <line x1="17" y1="11" x2="23" y2="11" />
+//     </svg>
+//   );
+// }
 
 function IconUserCheck() {
   return (
@@ -265,7 +269,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: <IconGrid />, section: "Overview" },
   { id: "users", label: "Daftar Users", icon: <IconUsers />, section: "Operations" },
-  { id: "register-user", label: "Registrasi User", icon: <IconUserPlus />, section: "Operations" },
+  // { id: "register-user", label: "Registrasi User", icon: <IconUserPlus />, section: "Operations" },
   { id: "visitors", label: "Data Visitor", icon: <IconUsers />, section: "Operations" },
   {
     id: "symposium-checkin",
@@ -274,15 +278,15 @@ const navItems: NavItem[] = [
     section: "Operations",
   },
   {
-    id: "claim-reward",
-    label: "Scanner Klaim Reward",
-    icon: <IconGift />,
+    id: "visit-booth",
+    label: "Check-In Booth",
+    icon: <IconQrCode />,
     section: "Operations",
   },
   {
-    id: "visit-booth",
-    label: "Scanner Visit Booth",
-    icon: <IconQrCode />,
+    id: "claim-reward",
+    label: "Reward Claim",
+    icon: <IconGift />,
     section: "Operations",
   },
 
@@ -406,8 +410,8 @@ export function AdminLayout() {
     "register-user": "Registrasi User Manual",
     visitors: "Data Visitor (Booth & Symposium)",
     "symposium-checkin": "Symposium Check-In",
-    "claim-reward": "Scanner Klaim Reward",
-    "visit-booth": "Scanner Visit Booth",
+    "visit-booth": "Check-In Booth (QR & Manual)",
+    "claim-reward": "Reward Claim",
     booths: "Booths Management",
     "booth-activities": "Booth Activities & Podcast",
     symposiums: "Symposiums Management",
@@ -424,6 +428,9 @@ export function AdminLayout() {
     "users",
     "register-user",
     "visitors",
+    "symposium-checkin",
+    "visit-booth",
+    "claim-reward",
     "booths",
     "booth-activities",
     "symposiums",
@@ -475,26 +482,11 @@ export function AdminLayout() {
           />
         );
       case "symposium-checkin":
-        return (
-          <UnderDevelopmentPage
-            title="Symposium Check-In"
-            description="Validasi kehadiran peserta simposium"
-          />
-        );
-      case "claim-reward":
-        return (
-          <UnderDevelopmentPage
-            title="Scanner Klaim Reward"
-            description="Validasi penukaran hadiah merchandise dan mystery box"
-          />
-        );
+        return <SymposiumCheckInPage />;
       case "visit-booth":
-        return (
-          <UnderDevelopmentPage
-            title="Scanner Visit Booth"
-            description="Catat check-in pengunjung booth"
-          />
-        );
+        return <BoothCheckInPage />;
+      case "claim-reward":
+        return <RewardClaimPage />;
       case "booths":
         return <BoothsPage />;
       case "booth-activities":
@@ -506,12 +498,7 @@ export function AdminLayout() {
       case "rewards":
         return <RewardsPage />;
       case "mystery-box":
-        return (
-          <UnderDevelopmentPage
-            title="Mystery Box Management"
-            description="Kelola reward khusus mystery box untuk pengunjung yang menyelesaikan semua booth & simposium aktif"
-          />
-        );
+        return <MysteryBoxPage />;
       default:
         return <DashboardPage />;
     }

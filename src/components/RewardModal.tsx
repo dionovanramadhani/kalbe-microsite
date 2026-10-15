@@ -1,6 +1,8 @@
 import React from "react";
 import { X } from "lucide-react";
 
+import { useModalAnimation } from "../utils/useModalAnimation";
+
 export interface RewardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,19 +50,27 @@ export const RewardModal: React.FC<RewardModalProps> = ({
   cardClassName,
   containerClassName,
 }) => {
-  if (!isOpen) return null;
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
+
+  if (!isRendered) return null;
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
+      {/* Dark backdrop with blur */}
       <div
-        className={`relative w-full drop-shadow-2xl ${
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/65 backdrop-blur-sm ${
+          isClosing ? "animate-backdrop-out" : "animate-backdrop-in"
+        }`}
+      />
+
+      <div
+        className={`relative z-10 w-full drop-shadow-2xl ${
           containerClassName ||
           "max-w-[361px] h-[456px] max-h-[92%] aspect-[361/456] flex flex-col items-center justify-center px-5 pt-6 pb-7"
         } ${
-          cardClassName !== undefined
-            ? cardClassName
-            : "animate-in fade-in zoom-in-95 duration-200"
-        }`}
+          isClosing ? "animate-modal-out" : "animate-modal-in"
+        } ${cardClassName || ""}`}
         style={{
           backgroundImage: `url('/assets/modal-background.png')`,
           backgroundSize: "100% 100%",
@@ -69,7 +79,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
       >
         {/* Top Close Button (X in Deep Red) */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-5 right-8 p-1 rounded-full text-[#D70313] hover:bg-red-50/50 transition-all cursor-pointer active:scale-90"
           title="Tutup Modal"
         >

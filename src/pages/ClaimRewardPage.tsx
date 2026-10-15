@@ -1,61 +1,267 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar } from "lucide-react";
 import { RewardModal } from "../components/RewardModal";
+import { claimReward as claimRewardInStore } from "../data/rewardStore";
 import {
-  getObtainedRewards,
-  claimReward as claimRewardInStore,
-  type RewardItem,
-} from "../data/rewardStore";
+  getKalbeUserHistory,
+  claimKalbeHistoryReward,
+  type KalbeHistoryItemResponse,
+} from "../utils/kalbeApi";
 
-const DUMMY_CREW_PIN = "88";
+export interface HistoryRewardItem {
+  id: string;
+  historyId?: string;
+  title: string;
+  subtitle: string;
+  date: string;
+  claimed: boolean;
+  pin?: string;
+  icon: string;
+  rewardImage: string;
+  rewardName: string;
+  rewardType?: string;
+  booth?: { name?: string; icon?: string | null };
+  symposium?: { title?: string; icon?: string | null };
+}
+
+const formatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return "26 Okt 2026";
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const day = d.getDate();
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agt",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+      ];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const mins = String(d.getMinutes()).padStart(2, "0");
+      return `${day} ${month} ${year}, ${hours}.${mins} WIB`;
+    }
+  } catch {
+    // ignore
+  }
+  return "26 Okt 2026";
+};
+
+const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardItem => {
+  let title = "Reward Hadiah";
+  let subtitle: string;
+  let icon = "/assets/morinaga-sympo-icon.png";
+  let rewardImage = "/assets/reward-box.png";
+  let rewardName = "Special Reward";
+
+  const type = (item.reward_type || "").toLowerCase();
+
+  if (type === "symposium") {
+    const sympoName = item.symposium?.title || "Morinaga Symposium";
+    title = sympoName;
+    subtitle = `Mengikuti ${sympoName}`;
+    icon =
+      item.symposium?.icon || item.symposium?.logo || "/assets/morinaga-sympo-icon.png";
+    rewardImage = "/assets/reward-box.png";
+    rewardName = "Paket Spesial Morinaga";
+  } else if (type === "booth") {
+    const boothName =
+      item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
+    title = boothName;
+    subtitle = `Mengikuti ${boothName}`;
+    icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon.png";
+    rewardImage = "/assets/morinaga-booth-reward.png";
+    rewardName = "Hadiah Booth Morinaga";
+  } else if (type.includes("early") || type.includes("life")) {
+    const earlyLifeName =
+      item.booth?.name ||
+      item.booth?.detailing_title ||
+      "Kalbe Early Life Solutions";
+    title = earlyLifeName;
+    subtitle = `Mengikuti ${earlyLifeName}`;
+    icon = "/assets/kalbe-early-life-icon.png";
+    rewardImage = "/assets/spin-wheel-reward.png";
+    rewardName = "Kesempatan Spin Wheel";
+  } else if (type.includes("mystery")) {
+    title = "Mystery Box";
+    subtitle = "Mengikuti semua booth dan symposium";
+    icon = "/assets/mistery-box.png";
+    rewardImage = "/assets/mystery-box-reward.png";
+    rewardName = "Hadiah Eksklusif Mystery Box";
+  } else {
+    const defaultName =
+      item.symposium?.title ||
+      item.booth?.name ||
+      item.booth?.detailing_title ||
+      "Acara";
+    title = defaultName;
+    subtitle = `Mengikuti ${defaultName}`;
+  }
+
+  // Override with actual reward configuration if available from backend
+  if (item.reward?.name) {
+    rewardName = item.reward.name;
+  }
+  if (item.reward?.picture) {
+    rewardImage = item.reward.picture;
+  }
+
+  return {
+    id: item.id,
+    historyId: item.id,
+    title,
+    subtitle,
+    date: formatDate(item.claimed_at || item.created_at),
+    claimed: item.is_claimed,
+    pin: item.pin,
+    icon,
+    rewardImage,
+    rewardName,
+    rewardType: item.reward_type,
+    booth: item.booth ? { name: item.booth.name, icon: item.booth.icon } : undefined,
+    symposium: item.symposium ? { title: item.symposium.title } : undefined,
+  };
+};
 
 export const ClaimRewardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [rewards, setRewards] = useState<RewardItem[]>(() =>
-    getObtainedRewards().filter(
-      (r) => r.id !== "mistery-box" && r.id !== "mystery-box",
-    ),
-  );
-  const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [rewards, setRewards] = useState<HistoryRewardItem[]>([]);
+  const [selectedReward, setSelectedReward] = useState<HistoryRewardItem | null>(null);
+  const [claimedRewardInfo, setClaimedRewardInfo] = useState<{
+    name: string;
+    image: string;
+  } | null>(null);
 
   // Modal States
   const [showPinModal, setShowPinModal] = useState(false);
   const [showRewardSuccessModal, setShowRewardSuccessModal] = useState(false);
   const [pinDigits, setPinDigits] = useState<[string, string]>(["", ""]);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [submittingPin, setSubmittingPin] = useState(false);
 
-  const handleOpenClaim = (reward: RewardItem) => {
+  const fetchHistoryList = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch all history records (both claimed and unclaimed) from API
+      const historyList = await getKalbeUserHistory();
+      if (historyList) {
+        // Exclude mystery box from regular reward claim list (as it has its own page)
+        const nonMystery = historyList.filter(
+          (h) => h.reward_type !== "mystery_box" && !h.reward_type?.includes("mystery"),
+        );
+        setRewards(nonMystery.map(mapHistoryToRewardItem));
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch user history from API:", e);
+    }
+
+    setRewards([]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchHistoryList();
+  }, [fetchHistoryList]);
+
+  const handleOpenClaim = (reward: HistoryRewardItem) => {
     setSelectedReward(reward);
     setPinDigits(["", ""]);
     setPinError(null);
     setShowPinModal(true);
   };
 
-  const handleConfirmPin = () => {
+  const handleConfirmPin = async () => {
     const fullPin = pinDigits.join("");
     if (fullPin.length < 2) {
       setPinError("Silakan masukkan PIN 2 digit.");
       return;
     }
 
-    if (fullPin !== DUMMY_CREW_PIN) {
-      setPinError("PIN yang Anda masukkan salah.");
-      return;
-    }
+    if (!selectedReward) return;
 
-    // Mark reward as claimed in store and in state
-    if (selectedReward) {
+    setSubmittingPin(true);
+    setPinError(null);
+
+    try {
+      let claimedName = selectedReward.rewardName;
+      let claimedImg = selectedReward.rewardImage;
+
+      // If history item came from backend API, submit claim to backend API
+      if (selectedReward.historyId) {
+        const claimRes = await claimKalbeHistoryReward(selectedReward.historyId, fullPin);
+        if (claimRes?.reward) {
+          if (claimRes.reward.name) {
+            claimedName = claimRes.reward.name;
+          }
+          if (claimRes.reward.picture) {
+            claimedImg = claimRes.reward.picture;
+          }
+        }
+      } else {
+        // Fallback local store check
+        if (fullPin !== selectedReward.pin) {
+          setPinError("PIN yang Anda masukkan salah.");
+          setSubmittingPin(false);
+          return;
+        }
+      }
+
+      setClaimedRewardInfo({
+        name: claimedName,
+        image: claimedImg,
+      });
+
+      // Mark reward as claimed in store and in state
       claimRewardInStore(selectedReward.id);
       setRewards((prev) =>
         prev.map((item) =>
-          item.id === selectedReward.id ? { ...item, claimed: true } : item,
+          item.id === selectedReward.id
+            ? { ...item, claimed: true, rewardName: claimedName, rewardImage: claimedImg }
+            : item,
         ),
       );
-    }
 
-    setShowPinModal(false);
-    setShowRewardSuccessModal(true);
+      // Also update selectedReward
+      setSelectedReward((prev) =>
+        prev
+          ? {
+              ...prev,
+              claimed: true,
+              rewardName: claimedName,
+              rewardImage: claimedImg,
+            }
+          : null,
+      );
+
+      setShowPinModal(false);
+      setShowRewardSuccessModal(true);
+    } catch (err: unknown) {
+      console.warn("Claim reward failed:", err);
+      const errMsg = err instanceof Error ? err.message : "";
+      if (
+        errMsg.toLowerCase().includes("pin") ||
+        errMsg.toLowerCase().includes("invalid")
+      ) {
+        setPinError("PIN yang Anda masukkan salah.");
+      } else {
+        setPinError(errMsg || "Gagal mengklaim reward. Silakan coba lagi.");
+      }
+    } finally {
+      setSubmittingPin(false);
+    }
   };
 
   return (
@@ -99,66 +305,85 @@ export const ClaimRewardPage: React.FC = () => {
             }}
           >
             {/* Rewards List Container */}
-            <div className="w-full flex-1 overflow-y-auto pr-0.5 space-y-3 pt-1 pb-2 scrollbar-none flex flex-col">
-              {rewards.length === 0 ? (
-                <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
-                  <img
-                    src="/assets/reward-box.png"
-                    alt="Belum Ada Hadiah"
-                    className="w-[100px] h-auto object-contain mb-3 opacity-60 grayscale"
-                  />
-                  <h3 className="text-[14px] font-bold text-[#4B5563] mb-1">
-                    Belum Ada Hadiah
-                  </h3>
-                  <p className="text-[11.5px] text-gray-400 max-w-[220px] leading-relaxed">
-                    Selesaikan misi dan post test untuk mendapatkan reward Anda!
-                  </p>
-                </div>
-              ) : (
-                rewards.map((item) => (
-                  <div
-                    key={item.id}
-                    className="w-full bg-white rounded-[14px] border border-gray-200/90 p-3 flex items-center justify-between gap-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-red-200 transition-colors"
-                  >
-                    {/* Left: Futuristic Hex Icon Container */}
-                    <div className="w-[46px] h-[46px] shrink-0 flex items-center justify-center">
-                      <img
-                        src={item.icon}
-                        alt={item.title}
-                        className="w-full h-full object-contain drop-shadow-sm"
-                      />
-                    </div>
-
-                    {/* Center: Info text */}
-                    <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
-                      <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight">
-                        {item.title}
-                      </h3>
-                      <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5">
-                        {item.subtitle}
-                      </p>
-                      <div className="flex items-center gap-1 text-[8px] text-[#83939A] mt-1">
-                        <Calendar className="w-2.5 h-2.5 text-gray-400" />
-                        <span>{item.date}</span>
-                      </div>
-                    </div>
-
-                    {/* Right: Pill Claim Button */}
-                    <button
-                      onClick={() => handleOpenClaim(item)}
-                      disabled={item.claimed}
-                      className={`h-[28px] px-4 rounded-full text-white font-bold text-[11.5px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
-                        item.claimed
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-[#E50014] hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
-                      }`}
-                    >
-                      {item.claimed ? "Claimed" : "Claim"}
-                    </button>
+            {loading ? (
+              <div className="w-full flex-1 flex flex-col items-center justify-center py-12 gap-3">
+                <div className="w-8 h-8 border-3 border-[#C70412] border-t-transparent rounded-full animate-spin" />
+                <span className="text-[12px] text-gray-500 font-medium">
+                  Memuat riwayat hadiah...
+                </span>
+              </div>
+            ) : (
+              <div className="w-full flex-1 overflow-y-auto pr-0.5 space-y-3 pt-1 pb-2 scrollbar-none flex flex-col">
+                {rewards.length === 0 ? (
+                  <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
+                    <img
+                      src="/assets/reward-box.png"
+                      alt="Belum Ada Hadiah"
+                      className="w-[100px] h-auto object-contain mb-3 opacity-60 grayscale"
+                    />
+                    <h3 className="text-[14px] font-bold text-[#4B5563] mb-1">
+                      Belum Ada Hadiah
+                    </h3>
+                    <p className="text-[11.5px] text-gray-400 max-w-[220px] leading-relaxed">
+                      Selesaikan misi dan post test untuk mendapatkan reward Anda!
+                    </p>
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  rewards.map((item) => (
+                    <div
+                      key={item.id}
+                      className="w-full bg-white rounded-[14px] border border-gray-200/90 p-3 flex items-center justify-between gap-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-red-200 transition-colors"
+                    >
+                      {/* Left: Futuristic Hex Icon Container */}
+                      <div className="w-[46px] h-[46px] shrink-0 flex items-center justify-center">
+                        <img
+                          src={item.icon}
+                          alt={item.title}
+                          className="w-full h-full object-contain drop-shadow-sm"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              item.rewardType === "booth"
+                                ? "/assets/morinaga-booth-icon.png"
+                                : "/assets/morinaga-sympo-icon.png";
+                          }}
+                        />
+                      </div>
+
+                      {/* Center: Info text */}
+                      <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
+                        <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight truncate">
+                          {item.rewardType === "booth"
+                            ? (item.booth?.name || item.title)
+                            : item.rewardType === "symposium"
+                            ? (item.symposium?.title || item.title)
+                            : item.title}
+                        </h3>
+                        <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5 line-clamp-2">
+                          {item.subtitle}
+                        </p>
+                        <div className="flex items-center gap-1 text-[8px] text-[#83939A] mt-1">
+                          <Calendar className="w-2.5 h-2.5 text-gray-400 shrink-0" />
+                          <span className="truncate">{item.date}</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Pill Claim Button */}
+                      <button
+                        onClick={() => handleOpenClaim(item)}
+                        disabled={item.claimed}
+                        className={`h-[28px] px-4 rounded-full text-white font-bold text-[11.5px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
+                          item.claimed
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-[#E50014] hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
+                        }`}
+                      >
+                        {item.claimed ? "Claimed" : "Claim"}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {/* Futuristic Red Camera Overlay Frame */}
@@ -235,7 +460,10 @@ export const ClaimRewardPage: React.FC = () => {
           {/* OKE Button grouped in center */}
           <button
             onClick={handleConfirmPin}
-            className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
+            disabled={submittingPin}
+            className={`relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center transition-transform duration-150 active:scale-95 hover:brightness-105 ${
+              submittingPin ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+            }`}
             style={{
               backgroundImage: `url('/assets/red-button.png')`,
               backgroundSize: "100% 100%",
@@ -243,7 +471,7 @@ export const ClaimRewardPage: React.FC = () => {
             }}
           >
             <span className="text-white font-extrabold text-[13px] sm:text-[14px] tracking-wider uppercase drop-shadow">
-              OKE
+              {submittingPin ? "MEMPROSES..." : "OKE"}
             </span>
           </button>
         </div>
@@ -253,18 +481,25 @@ export const ClaimRewardPage: React.FC = () => {
       {selectedReward && (
         <RewardModal
           isOpen={showRewardSuccessModal}
-          onClose={() => setShowRewardSuccessModal(false)}
-          imageSrc={selectedReward.rewardImage}
-          imageAlt={selectedReward.rewardName}
+          onClose={() => {
+            setShowRewardSuccessModal(false);
+            setClaimedRewardInfo(null);
+          }}
+          imageSrc={claimedRewardInfo?.image || selectedReward.rewardImage}
+          imageAlt={claimedRewardInfo?.name || selectedReward.rewardName}
+          imageClassName="max-w-[170px] max-h-[145px] w-auto h-auto object-contain pointer-events-none drop-shadow-md"
           title="Congratulations!"
           subtitle={
             <span>
               Anda mendapatkan <br />
-              {selectedReward.rewardName}
+              {claimedRewardInfo?.name || selectedReward.rewardName}
             </span>
           }
           buttonText="OKE"
-          onButtonClick={() => setShowRewardSuccessModal(false)}
+          onButtonClick={() => {
+            setShowRewardSuccessModal(false);
+            setClaimedRewardInfo(null);
+          }}
         />
       )}
     </div>
