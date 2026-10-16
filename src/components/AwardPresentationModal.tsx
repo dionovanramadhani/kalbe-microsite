@@ -2,19 +2,40 @@ import React from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
+import { formatTimeRangeWIB, type KalbeBoothActivityItem } from "../utils/kalbeApi";
 
 export interface AwardPresentationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  activityItem?: KalbeBoothActivityItem | null;
 }
 
 export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
   isOpen,
   onClose,
+  activityItem,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
   if (!isRendered) return null;
+
+  const title = activityItem?.name || "Moritalks Award Presentation";
+  const speaker = activityItem ? activityItem.speaker : "Prof Hegar & Prof Wawan";
+  const formattedTime = activityItem
+    ? formatTimeRangeWIB(activityItem.start_at, activityItem.end_at)
+    : "13.30 – 13.45 WIB";
+  const image = activityItem
+    ? activityItem.activity_image ||
+      (activityItem.name.toLowerCase().includes("award") || activityItem.name.toLowerCase().includes("presentation")
+        ? "/assets/grand-final-title.png"
+        : null)
+    : "/assets/grand-final-title.png";
+  const description =
+    activityItem?.description &&
+    activityItem.description.trim() !== "" &&
+    activityItem.description.trim() !== "-"
+      ? activityItem.description.trim()
+      : null;
 
   return (
     <div className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
@@ -49,7 +70,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
           <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
               src="/assets/clock-red.png"
-              alt="Jadwal Award Presentation"
+              alt="Jadwal Aktivitas"
               className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
             />
           </div>
@@ -63,54 +84,70 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
             }}
             className="tracking-tight text-center leading-tight mb-3"
           >
-            Moritalks Award Presentation
+            {title}
           </h2>
 
-          {/* GRAND FINAL Graphic Badge */}
-          <div className="w-full flex justify-center shrink-0 mb-5">
-            <img
-              src="/assets/grand-final-title.png"
-              alt="Grand Final"
-              className="w-[240px] sm:w-[255px] h-auto object-contain pointer-events-none select-none"
-            />
-          </div>
-
-          {/* Presenter / Speaker: prof... -> #777777 14px medium */}
-          <div className="w-full flex flex-col items-center">
-            <span
-              style={{
-                color: "#777777",
-                fontSize: "14px",
-                fontWeight: 500,
-              }}
-              className="mb-2 text-center leading-tight"
-            >
-              Prof Hegar & Prof Wawan
-            </span>
-
-            {/* Time: jam -> #D41025 20px bold */}
-            <div
-              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs"
-              style={{
-                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span
-                style={{
-                  color: "#D41025",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
-                className="tracking-wide leading-none"
-              >
-                13.30 – 13.45 WIB
-              </span>
+          {/* Graphic Badge */}
+          {image && (
+            <div className="w-full flex justify-center shrink-0 mb-5">
+              <img
+                src={image}
+                alt={title}
+                className="w-[240px] sm:w-[255px] max-h-[140px] object-contain pointer-events-none select-none"
+              />
             </div>
-          </div>
+          )}
+
+          {/* Presenter / Speaker & Time */}
+          {(speaker || formattedTime) && (
+            <div className="w-full flex flex-col items-center">
+              {speaker && (
+                <span
+                  style={{
+                    color: "#777777",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                  className="mb-2 text-center leading-tight"
+                >
+                  {speaker}
+                </span>
+              )}
+
+              {/* Time: jam -> #D41025 20px bold */}
+              {formattedTime && (
+                <div
+                  className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
+                  style={{
+                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#D41025",
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                    }}
+                    className="tracking-wide leading-none"
+                  >
+                    {formattedTime}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Optional Description */}
+          {description && (
+            <p className="mt-3 text-[13px] text-[#555] text-center px-4 leading-relaxed">
+              {description}
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 };
+

@@ -1,13 +1,24 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
+import {
+  getKalbeBoothPodcastByRefID,
+  getKalbeBoothActivityByRefID,
+  isSessionToday,
+  type KalbeBoothPodcastResponse,
+  type KalbeBoothPodcastSession,
+  type KalbeBoothActivityResponse,
+  type KalbeBoothActivityItem,
+} from "../utils/kalbeApi";
 
 export interface BoothMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
+  boothId?: string;
   onStartDetailing?: () => void;
-  onMoritalksPodcast?: () => void;
+  onMoritalksPodcast?: (podcast: KalbeBoothPodcastResponse, todaySessions: KalbeBoothPodcastSession[]) => void;
+  onSelectActivity?: (activityItem: KalbeBoothActivityItem) => void;
   onMoritalksAwardPresentation?: () => void;
   onPhotoboothHighAngel?: () => void;
 }
@@ -15,12 +26,55 @@ export interface BoothMenuModalProps {
 export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   isOpen,
   onClose,
+  boothId,
   onStartDetailing,
   onMoritalksPodcast,
+  onSelectActivity,
   onMoritalksAwardPresentation,
   onPhotoboothHighAngel,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
+
+  const [podcast, setPodcast] = useState<KalbeBoothPodcastResponse | null>(null);
+  const [activity, setActivity] = useState<KalbeBoothActivityResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOpen || !boothId) return;
+
+    let isMounted = true;
+    setIsLoading(true);
+
+    Promise.allSettled([
+      getKalbeBoothPodcastByRefID(boothId),
+      getKalbeBoothActivityByRefID(boothId),
+    ])
+      .then(([podcastRes, activityRes]) => {
+        if (!isMounted) return;
+        if (podcastRes.status === "fulfilled") {
+          setPodcast(podcastRes.value);
+        }
+        if (activityRes.status === "fulfilled") {
+          setActivity(activityRes.value);
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, boothId]);
+
+  const todaySessions = useMemo(() => {
+    return (podcast?.sessions || []).filter((s) => isSessionToday(s.start_at, s.end_at));
+  }, [podcast]);
+
+  const sortedActivities = useMemo(() => {
+    return [...(activity?.activity_items || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [activity]);
 
   if (!isRendered) return null;
 
@@ -157,69 +211,145 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
           </p>
 
           {/* Activity Buttons List */}
-          <div className="relative z-10 flex flex-col items-center gap-2.5 w-full">
-            <button
-              type="button"
-              onClick={onMoritalksPodcast}
-              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
-              style={{
-                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span
-                style={{
-                  color: "#FA132D",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                }}
-              >
-                Moritalks Podcast
-              </span>
-            </button>
+          <div className="relative z-10 flex flex-col items-center gap-2.5 w-full max-h-[220px] overflow-y-auto no-scrollbar">
+            {isLoading && !podcast && !activity ? (
+              <div className="py-4 text-xs text-gray-400 font-medium animate-pulse">
+                Memuat aktivitas...
+              </div>
+            ) : (
+              <>
+                {/* 1. Podcast Button: Tampilkan hanya jika ada sesi podcast hari ini */}
+                {todaySessions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onMoritalksPodcast && podcast) {
+                        onMoritalksPodcast(podcast, todaySessions);
+                      }
+                    }}
+                    className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                    style={{
+                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#FA132D",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                      }}
+                      className="truncate text-center w-full"
+                    >
+                      {podcast?.name || "Moritalks Podcast"}
+                    </span>
+                  </button>
+                )}
 
-            <button
-              type="button"
-              onClick={onMoritalksAwardPresentation}
-              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
-              style={{
-                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span
-                style={{
-                  color: "#FA132D",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                }}
-              >
-                Moritalks Award Presentation
-              </span>
-            </button>
+                {/* 2. List Aktifitas dari Booth Activity API */}
+                {sortedActivities.map((item) => (
+                  <button
+                    key={item.id || item.name}
+                    type="button"
+                    onClick={() => {
+                      if (onSelectActivity) {
+                        onSelectActivity(item);
+                      } else if (item.name.toLowerCase().includes("award") && onMoritalksAwardPresentation) {
+                        onMoritalksAwardPresentation();
+                      } else if (onPhotoboothHighAngel) {
+                        onPhotoboothHighAngel();
+                      }
+                    }}
+                    className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                    style={{
+                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#FA132D",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                      }}
+                      className="truncate text-center w-full"
+                    >
+                      {item.name}
+                    </span>
+                  </button>
+                ))}
 
-            <button
-              type="button"
-              onClick={onPhotoboothHighAngel}
-              className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
-              style={{
-                backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <span
-                style={{
-                  color: "#FA132D",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                }}
-              >
-                Photobooth High Angel
-              </span>
-            </button>
+                {/* Fallback jika boothId belum tersedia atau kedua API tidak memiliki data sama sekali */}
+                {!boothId && todaySessions.length === 0 && sortedActivities.length === 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onMoritalksPodcast && onMoritalksPodcast({ id: "", name: "Moritalks Podcast", ref_id: "", created_at: "", updated_at: "" }, [])}
+                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                      style={{
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#FA132D",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Moritalks Podcast
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={onMoritalksAwardPresentation}
+                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                      style={{
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#FA132D",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Moritalks Award Presentation
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={onPhotoboothHighAngel}
+                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                      style={{
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#FA132D",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Photobooth High Angel
+                      </span>
+                    </button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

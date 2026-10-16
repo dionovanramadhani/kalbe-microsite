@@ -34,8 +34,12 @@ import {
 import {
   getKalbeBoothsList,
   getKalbeSymposiumsList,
+  getCachedKalbeBooths,
+  getCachedKalbeSymposiums,
   getKalbeUserHistory,
   type KalbeHistoryItemResponse,
+  type KalbeBoothPodcastSession,
+  type KalbeBoothActivityItem,
 } from "../utils/kalbeApi";
 import type { KalbeBoothResponse, KalbeSymposiumResponse } from "../admin/adminApi";
 
@@ -123,8 +127,8 @@ export const HomePage: React.FC = () => {
     return isMysteryBoxClaimed();
   });
 
-  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>([]);
-  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>([]);
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() => getCachedKalbeBooths());
+  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>(() => getCachedKalbeSymposiums());
 
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
 
@@ -409,31 +413,38 @@ export const HomePage: React.FC = () => {
   const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
+  const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
+  const [podcastTitle, setPodcastTitle] = useState<string>("Moritalks Podcast");
+  const [selectedActivityItem, setSelectedActivityItem] = useState<KalbeBoothActivityItem | null>(null);
+
+  const morinagaBooth = useMemo(() => {
+    return apiBooths.find(
+      (b) =>
+        b.name.toLowerCase().includes("morinaga") ||
+        (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early"))
+    );
+  }, [apiBooths]);
+
+  const earlyLifeBooth = useMemo(() => {
+    return apiBooths.find(
+      (b) =>
+        b.name.toLowerCase().includes("early") ||
+        b.name.toLowerCase().includes("kalbe") ||
+        b.name.toLowerCase().includes("life")
+    );
+  }, [apiBooths]);
 
   // Urutan misi sesuai instruksi:
   // 1. Morinaga Booth
   // 2. Morinaga Sympo
   // 3. Kalbe Early Life Solution
   const missions: MissionItem[] = useMemo(() => {
-    const morinagaBooth = apiBooths.find(
-      (b) =>
-        b.name.toLowerCase().includes("morinaga") ||
-        (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early"))
-    );
-
     const morinagaSympo =
       apiSymposiums.find(
         (s) =>
           s.title.toLowerCase().includes("sympo") ||
           s.title.toLowerCase().includes("morinaga")
       ) || apiSymposiums[0];
-
-    const earlyLifeBooth = apiBooths.find(
-      (b) =>
-        b.name.toLowerCase().includes("early") ||
-        b.name.toLowerCase().includes("kalbe") ||
-        b.name.toLowerCase().includes("life")
-    );
 
     const list: MissionItem[] = [
       {
@@ -477,7 +488,7 @@ export const HomePage: React.FC = () => {
     };
 
     return list.sort((a, b) => getOrder(a.title) - getOrder(b.title));
-  }, [apiBooths, apiSymposiums, boothDone, postTestDone, earlyLifeDone]);
+  }, [apiSymposiums, boothDone, postTestDone, earlyLifeDone, morinagaBooth, earlyLifeBooth]);
 
   useEffect(() => {
     if (
@@ -957,15 +968,24 @@ export const HomePage: React.FC = () => {
       <BoothMenuModal
         isOpen={showBoothMenuModal}
         onClose={() => setShowBoothMenuModal(false)}
+        boothId={morinagaBooth?.id}
         onStartDetailing={() => {
           setShowBoothMenuModal(false);
           navigate("/booth-scan");
         }}
-        onMoritalksPodcast={() => {
+        onMoritalksPodcast={(_podcast, sessions) => {
+          setPodcastSessions(sessions);
+          setPodcastTitle(_podcast.name || "Moritalks Podcast");
           setShowBoothMenuModal(false);
           setShowPodcastScheduleModal(true);
         }}
+        onSelectActivity={(item) => {
+          setSelectedActivityItem(item);
+          setShowBoothMenuModal(false);
+          setShowAwardPresentationModal(true);
+        }}
         onMoritalksAwardPresentation={() => {
+          setSelectedActivityItem(null);
           setShowBoothMenuModal(false);
           setShowAwardPresentationModal(true);
         }}
@@ -987,6 +1007,7 @@ export const HomePage: React.FC = () => {
       {/* 7. Kalbe Early Life Solutions Detailing Bottom Drawer */}
       <EarlyLifeDrawer
         isOpen={showEarlyLifeDrawer}
+        boothData={earlyLifeBooth}
         onClose={() => setShowEarlyLifeDrawer(false)}
         onContinueClick={() => {
           setShowEarlyLifeDrawer(false);
@@ -997,6 +1018,8 @@ export const HomePage: React.FC = () => {
       {/* 8. MoriTalks Morinaga Podcast Schedule Modal */}
       <PodcastScheduleModal
         isOpen={showPodcastScheduleModal}
+        podcastTitle={podcastTitle}
+        sessions={podcastSessions}
         onClose={() => {
           setShowPodcastScheduleModal(false);
           setShowBoothMenuModal(true);
@@ -1006,6 +1029,7 @@ export const HomePage: React.FC = () => {
       {/* 8b. MoriTalks Award Presentation Modal */}
       <AwardPresentationModal
         isOpen={showAwardPresentationModal}
+        activityItem={selectedActivityItem}
         onClose={() => {
           setShowAwardPresentationModal(false);
           setShowBoothMenuModal(true);

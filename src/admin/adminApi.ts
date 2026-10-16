@@ -233,6 +233,63 @@ export async function login(data: AdminLoginRequest): Promise<ApiResponse<AuthRe
 
 // ─── Participant / Aggregate Stats API ─────────────────────────────────────
 
+export interface KalbeParticipantUser {
+  id: string;
+  fullname: string;
+  email: string;
+  phone_number: string;
+  speciality?: string;
+}
+
+export interface KalbeParticipantSymposium {
+  id: string;
+  title: string;
+}
+
+export interface KalbeParticipantBooth {
+  id: string;
+  name: string;
+}
+
+export interface KalbeParticipantItem {
+  id: string;
+  user_id: string;
+  type: 'booths' | 'symposiums' | string;
+  symposium_id?: string | null;
+  booth_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: KalbeParticipantUser;
+  symposium?: KalbeParticipantSymposium | null;
+  booth?: KalbeParticipantBooth | null;
+}
+
+export interface GetParticipantsParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  symposium_id?: string;
+  booth_id?: string;
+  search?: string;
+}
+
+export async function getKalbeParticipants(
+  params?: GetParticipantsParams
+): Promise<ApiResponse<KalbeParticipantItem[]>> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', String(params.page));
+  if (params?.limit) query.append('limit', String(params.limit));
+  if (params?.type && params.type !== 'all') query.append('type', params.type);
+  if (params?.symposium_id) query.append('symposium_id', params.symposium_id);
+  if (params?.booth_id) query.append('booth_id', params.booth_id);
+  if (params?.search) query.append('search', params.search);
+
+  const qs = query.toString();
+  return apiFetch<ApiResponse<KalbeParticipantItem[]>>(
+    `/api/v1/kalbe/participants${qs ? `?${qs}` : ''}`
+  );
+}
+
 export async function getParticipantCounts(): Promise<ApiResponse<ParticipantAggregateResponse>> {
   return apiFetch<ApiResponse<ParticipantAggregateResponse>>('/api/v1/kalbe/participants/count');
 }

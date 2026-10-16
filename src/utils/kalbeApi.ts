@@ -1,5 +1,19 @@
 import { getToken, getUserData } from './auth';
-import type { KalbeBoothResponse, KalbeSymposiumResponse } from '../admin/adminApi';
+import type {
+  KalbeBoothResponse,
+  KalbeSymposiumResponse,
+  KalbeBoothPodcastResponse,
+  KalbeBoothPodcastSession,
+  KalbeBoothActivityResponse,
+  KalbeBoothActivityItem,
+} from '../admin/adminApi';
+
+export type {
+  KalbeBoothPodcastResponse,
+  KalbeBoothPodcastSession,
+  KalbeBoothActivityResponse,
+  KalbeBoothActivityItem,
+};
 
 const getBaseUrl = (): string => (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -475,5 +489,136 @@ export async function claimKalbeMysteryBox(
   return json.data;
 }
 
+// ─── Booth Podcast & Activity Public API Helpers ───────────────────────────
 
+/**
+ * Fetch Booth Podcast details by booth ref_id
+ */
+export async function getKalbeBoothPodcastByRefID(refId: string): Promise<KalbeBoothPodcastResponse | null> {
+  const baseUrl = getBaseUrl();
+  const token = getToken();
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
 
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  const res = await fetch(`${baseUrl}/api/v1/kalbe/booth-podcast/ref/${encodeURIComponent(refId)}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return null;
+    }
+    throw new Error(`Failed to fetch booth podcast: status ${res.status}`);
+  }
+
+  const json = await res.json();
+  return json.data || null;
+}
+
+/**
+ * Fetch Booth Activity details by booth ref_id
+ */
+export async function getKalbeBoothActivityByRefID(refId: string): Promise<KalbeBoothActivityResponse | null> {
+  const baseUrl = getBaseUrl();
+  const token = getToken();
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  const res = await fetch(`${baseUrl}/api/v1/kalbe/booth-activity/ref/${encodeURIComponent(refId)}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return null;
+    }
+    throw new Error(`Failed to fetch booth activity: status ${res.status}`);
+  }
+
+  const json = await res.json();
+  return json.data || null;
+}
+
+/**
+ * Format ISO datetime strings to Indonesian time format "HH.mm – HH.mm WIB"
+ */
+export function formatTimeRangeWIB(startAt?: string | null, endAt?: string | null): string {
+  if (!startAt && !endAt) return '';
+
+  const formatSingle = (iso?: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+        .format(d)
+        .replace(':', '.');
+    } catch {
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      return `${h}.${m}`;
+    }
+  };
+
+  const start = formatSingle(startAt);
+  const end = formatSingle(endAt);
+
+  if (start && end) return `${start} – ${end} WIB`;
+  if (start) return `${start} WIB`;
+  return '';
+}
+
+/**
+ * Check if a session starts or ends today in Asia/Jakarta timezone
+ */
+export function isSessionToday(startAt?: string | null, endAt?: string | null): boolean {
+  const getDayStr = (iso?: string | null) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    try {
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+    } catch {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+  };
+
+  const todayStr = (() => {
+    const now = new Date();
+    try {
+      return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+    } catch {
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+  })();
+
+  const startDay = getDayStr(startAt);
+  const endDay = getDayStr(endAt);
+
+  return startDay === todayStr || endDay === todayStr;
+}

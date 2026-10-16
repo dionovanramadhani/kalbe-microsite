@@ -2,21 +2,31 @@ import React from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
+import type { KalbeBoothResponse } from "../admin/adminApi";
 
 export interface EarlyLifeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onContinueClick?: () => void;
+  boothData?: KalbeBoothResponse | null;
 }
 
 export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
   isOpen,
   onClose,
   onContinueClick,
+  boothData,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
   if (!isRendered) return null;
+
+  const headerImage = boothData?.image_title || "/assets/kalbe-early-life-solution-title-image.png";
+  const bannerImage = boothData?.detailing_banner || "/assets/kalbe-early-life-booth-image.png";
+  const title = boothData?.detailing_title || boothData?.name || "Kalbe Early Life Solutions";
+  const description =
+    boothData?.detailing_description ||
+    "Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai topik seputar nutrisi, tumbuh kembang, dan kesehatan anak, dikemas dalam obrolan yang ringan, informatif, dan mudah dipahami";
 
   return (
     <div className={`absolute inset-0 z-50 flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
@@ -50,17 +60,17 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
           {/* Top Header Badge: Futuristic KALBE EARLY LIFE SOLUTIONS Plate */}
           <div className="mb-4 w-[240px] sm:w-[255px] shrink-0 flex items-center justify-center drop-shadow-sm">
             <img
-              src="/assets/kalbe-early-life-solution-title-image.png"
-              alt="Kalbe Early Life Solutions"
-              className="w-full h-auto object-contain pointer-events-none select-none"
+              src={headerImage}
+              alt={boothData?.name || "Kalbe Early Life Solutions"}
+              className="w-full h-auto object-contain pointer-events-none select-none max-h-[60px]"
             />
           </div>
 
           {/* Booth 3D Visual Artwork */}
           <div className="w-[270px] sm:w-[280px] rounded-2xl overflow-hidden bg-black/5 shadow-sm mb-4 border border-gray-100 flex justify-center">
             <img
-              src="/assets/kalbe-early-life-booth-image.png"
-              alt="Kalbe Early Life Solutions Booth"
+              src={bannerImage}
+              alt={title}
               className="w-full h-auto object-cover pointer-events-none select-none"
             />
           </div>
@@ -68,12 +78,10 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
           {/* Content Heading & Description */}
           <div className="w-full text-left mb-5">
             <h3 className="text-[16px] font-extrabold text-[#111111] leading-tight mb-2 tracking-tight">
-              Kalbe Early Life Solutions
+              {title}
             </h3>
             <p className="text-[14px] font-normal text-[#222222B2] leading-relaxed">
-              Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai
-              topik seputar nutrisi, tumbuh kembang, dan kesehatan anak, dikemas dalam
-              obrolan yang ringan, informatif, dan mudah dipahami
+              {description}
             </p>
           </div>
 

@@ -2,18 +2,22 @@ import React from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
+import { formatTimeRangeWIB, type KalbeBoothPodcastSession } from "../utils/kalbeApi";
 
 export interface PodcastScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
+  podcastTitle?: string;
+  topic?: string;
+  sessions?: KalbeBoothPodcastSession[];
 }
 
-interface PodcastSession {
+interface PodcastSessionItem {
   speaker: string;
   time: string;
 }
 
-const PODCAST_SESSIONS: PodcastSession[] = [
+const DEFAULT_PODCAST_SESSIONS: PodcastSessionItem[] = [
   {
     speaker: "Sesi 1 - Prof Budi",
     time: "10.00 – 10.10 WIB",
@@ -27,6 +31,9 @@ const PODCAST_SESSIONS: PodcastSession[] = [
 export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
   isOpen,
   onClose,
+  podcastTitle,
+  topic,
+  sessions,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
@@ -79,7 +86,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
             }}
             className="tracking-tight text-center leading-tight mb-2"
           >
-            Moritalks Podcast
+            {podcastTitle || "Moritalks Podcast"}
           </h2>
 
           {/* Subtitle: topik -> #222222 bold 16px */}
@@ -91,47 +98,92 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
             }}
             className="tracking-tight text-center leading-tight mb-5"
           >
-            Topik: Alergi & Gastro
+            Topik: {topic || "Alergi & Gastro"}
           </p>
 
           {/* Sessions List */}
-          <div className="w-full flex flex-col items-center space-y-4">
-            {PODCAST_SESSIONS.map((session, index) => (
-              <div key={index} className="w-full flex flex-col items-center">
-                {/* sesi 1.... -> #777777 medium 14px */}
-                <span
-                  style={{
-                    color: "#777777",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                  }}
-                  className="mb-2 text-center leading-tight"
-                >
-                  {session.speaker}
-                </span>
+          <div className="w-full flex flex-col items-center space-y-4 max-h-[260px] overflow-y-auto no-scrollbar">
+            {sessions && sessions.length > 0
+              ? sessions.map((session, index) => {
+                  const speakerLabel = session.speaker.toLowerCase().startsWith("sesi")
+                    ? session.speaker
+                    : `Sesi ${index + 1} - ${session.speaker}`;
+                  const formattedTime =
+                    formatTimeRangeWIB(session.start_at, session.end_at) || "10.00 – 10.10 WIB";
 
-                {/* jam -> #D41025 bold 20px */}
-                <div
-                  className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs"
-                  style={{
-                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
-                    backgroundSize: "100% 100%",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "#D41025",
-                      fontSize: "20px",
-                      fontWeight: "bold",
-                    }}
-                    className="tracking-wide leading-none"
-                  >
-                    {session.time}
-                  </span>
-                </div>
-              </div>
-            ))}
+                  return (
+                    <div key={session.id || index} className="w-full flex flex-col items-center">
+                      {/* sesi 1.... -> #777777 medium 14px */}
+                      <span
+                        style={{
+                          color: "#777777",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                        }}
+                        className="mb-2 text-center leading-tight"
+                      >
+                        {speakerLabel}
+                      </span>
+
+                      {/* jam -> #D41025 bold 20px */}
+                      <div
+                        className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
+                        style={{
+                          backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                          backgroundSize: "100% 100%",
+                          backgroundRepeat: "no-repeat",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#D41025",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                          }}
+                          className="tracking-wide leading-none"
+                        >
+                          {formattedTime}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              : DEFAULT_PODCAST_SESSIONS.map((session, index) => (
+                  <div key={index} className="w-full flex flex-col items-center">
+                    {/* sesi 1.... -> #777777 medium 14px */}
+                    <span
+                      style={{
+                        color: "#777777",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                      className="mb-2 text-center leading-tight"
+                    >
+                      {session.speaker}
+                    </span>
+
+                    {/* jam -> #D41025 bold 20px */}
+                    <div
+                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
+                      style={{
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#D41025",
+                          fontSize: "20px",
+                          fontWeight: "bold",
+                        }}
+                        className="tracking-wide leading-none"
+                      >
+                        {session.time}
+                      </span>
+                    </div>
+                  </div>
+                ))}
           </div>
         </div>
       </div>

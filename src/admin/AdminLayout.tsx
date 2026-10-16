@@ -9,6 +9,7 @@ import { PostTestsPage } from "./PostTestsPage";
 import { RewardsPage } from "./RewardsPage";
 import { MysteryBoxPage } from "./MysteryBoxPage";
 import { UsersListPage } from "./UsersListPage";
+import { VisitorsPage } from "./VisitorsPage";
 import { SymposiumCheckInPage } from "./SymposiumCheckInPage";
 import { BoothCheckInPage } from "./BoothCheckInPage";
 import { RewardClaimPage } from "./RewardClaimPage";
@@ -475,12 +476,7 @@ export function AdminLayout() {
       case "register-user":
         return <UsersListPage initialOpenRegister={true} />;
       case "visitors":
-        return (
-          <UnderDevelopmentPage
-            title="Data Visitor"
-            description="Rekap kunjungan peserta ke booth dan simposium"
-          />
-        );
+        return <VisitorsPage />;
       case "symposium-checkin":
         return <SymposiumCheckInPage />;
       case "visit-booth":
