@@ -128,6 +128,7 @@ export function BoothActivitiesPage() {
     fetchBooths();
     fetchActivities();
     fetchPodcasts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Booth lookup map for quick name resolution

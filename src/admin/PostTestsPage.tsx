@@ -104,6 +104,7 @@ export function PostTestsPage() {
   useEffect(() => {
     fetchPostTests();
     fetchSymposiums();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filtered List

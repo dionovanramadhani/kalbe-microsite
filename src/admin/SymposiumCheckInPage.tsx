@@ -401,20 +401,24 @@ export const SymposiumCheckInPage: React.FC = () => {
   // Generate QR Code image for modal when opened
   useEffect(() => {
     if (qrModalItem) {
-      const targetUrl = getSymposiumPostTestUrl(qrModalItem.id);
-      QRCode.toDataURL(targetUrl, {
-        width: 300,
-        margin: 1,
-        color: {
-          dark: '#940B0A',
-          light: '#ffffff',
-        },
-      })
-        .then((url) => setQrModalDataUrl(url))
-        .catch((err) => {
-          console.error('Failed to generate modal QR:', err);
-          setQrModalDataUrl('');
-        });
+      if (qrModalItem.qr_code) {
+        setQrModalDataUrl(qrModalItem.qr_code);
+      } else {
+        const targetUrl = getSymposiumPostTestUrl(qrModalItem.id);
+        QRCode.toDataURL(targetUrl, {
+          width: 300,
+          margin: 1,
+          color: {
+            dark: '#940B0A',
+            light: '#ffffff',
+          },
+        })
+          .then((url) => setQrModalDataUrl(url))
+          .catch((err) => {
+            console.error('Failed to generate modal QR:', err);
+            setQrModalDataUrl('');
+          });
+      }
     } else {
       setQrModalDataUrl('');
     }
@@ -464,88 +468,101 @@ export const SymposiumCheckInPage: React.FC = () => {
   // Generate styled downloadable card for QR Code
   const generateSymposiumQRDataUrl = (item: KalbeSymposiumResponse): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const postTestUrl = getSymposiumPostTestUrl(item.id);
+      const getQrSource = item.qr_code
+        ? Promise.resolve(item.qr_code)
+        : QRCode.toDataURL(getSymposiumPostTestUrl(item.id), {
+            width: 320,
+            margin: 1,
+            color: {
+              dark: '#1E1E1E',
+              light: '#ffffff',
+            },
+          });
 
-      QRCode.toDataURL(postTestUrl, {
-        width: 320,
-        margin: 1,
-        color: {
-          dark: '#1E1E1E',
-          light: '#ffffff',
-        },
-      })
+      getQrSource
         .then((qrDataUrl) => {
           const img = new Image();
+          img.crossOrigin = 'anonymous';
           img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              reject(new Error('Canvas context not available'));
-              return;
-            }
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                resolve(qrDataUrl);
+                return;
+              }
 
-            const width = 450;
-            const height = 580;
-            canvas.width = width;
-            canvas.height = height;
+              const width = 450;
+              const height = 580;
+              canvas.width = width;
+              canvas.height = height;
 
-            // Background
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, width, height);
+              // Background
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, width, height);
 
-            // Header Banner: Kalbe Red gradient
-            const grad = ctx.createLinearGradient(0, 0, width, 0);
-            grad.addColorStop(0, '#C70412');
-            grad.addColorStop(1, '#8E000A');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, width, 85);
+              // Header Banner: Kalbe Red gradient
+              const grad = ctx.createLinearGradient(0, 0, width, 0);
+              grad.addColorStop(0, '#C70412');
+              grad.addColorStop(1, '#8E000A');
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, width, 85);
 
-            // Header Title
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 20px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Kalbe Universe QR Code', width / 2, 40);
-
-            // Header Subtitle
-            ctx.fillStyle = '#fecaca';
-            ctx.font = '500 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Symposium Detailing & Post-Test Check-In', width / 2, 65);
-
-            // Draw QR Code
-            ctx.drawImage(img, (width - 280) / 2, 110, 280, 280);
-
-            // Symposium Title
-            ctx.fillStyle = '#1e1e1e';
-            ctx.font = 'bold 15px sans-serif';
-            ctx.textAlign = 'center';
-            const displayTitle = item.title.length > 55 ? item.title.substring(0, 52) + '...' : item.title;
-            ctx.fillText(displayTitle, width / 2, 425);
-
-            // Description
-            if (item.description) {
-              ctx.fillStyle = '#4b5563';
-              ctx.font = '500 13px sans-serif';
+              // Header Title
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 20px sans-serif';
               ctx.textAlign = 'center';
-              const displayDesc = item.description.length > 50 ? item.description.substring(0, 47) + '...' : item.description;
-              ctx.fillText(displayDesc, width / 2, 455);
+              ctx.fillText('Kalbe Universe QR Code', width / 2, 40);
+
+              // Header Subtitle
+              ctx.fillStyle = '#fecaca';
+              ctx.font = '500 12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('Symposium Detailing & Post-Test Check-In', width / 2, 65);
+
+              // Draw QR Code
+              ctx.drawImage(img, (width - 280) / 2, 110, 280, 280);
+
+              // Symposium Title
+              ctx.fillStyle = '#1e1e1e';
+              ctx.font = 'bold 15px sans-serif';
+              ctx.textAlign = 'center';
+              const displayTitle = item.title.length > 55 ? item.title.substring(0, 52) + '...' : item.title;
+              ctx.fillText(displayTitle, width / 2, 425);
+
+              // Description
+              if (item.description) {
+                ctx.fillStyle = '#4b5563';
+                ctx.font = '500 13px sans-serif';
+                ctx.textAlign = 'center';
+                const displayDesc = item.description.length > 50 ? item.description.substring(0, 47) + '...' : item.description;
+                ctx.fillText(displayDesc, width / 2, 455);
+              }
+
+              // Target URL info
+              ctx.fillStyle = '#C70412';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(`Target: /post-test?symposium_id=${item.id.slice(0, 8)}...`, width / 2, 490);
+
+              // Instruction Footer
+              ctx.fillStyle = '#6b7280';
+              ctx.font = '11.5px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('Scan QR Code untuk langsung ke halaman Post-Test Simposium', width / 2, 530);
+
+              resolve(canvas.toDataURL('image/png'));
+            } catch {
+              resolve(qrDataUrl);
             }
-
-            // Target URL info
-            ctx.fillStyle = '#C70412';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Target: /post-test?symposium_id=${item.id.slice(0, 8)}...`, width / 2, 490);
-
-            // Instruction Footer
-            ctx.fillStyle = '#6b7280';
-            ctx.font = '11.5px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Scan QR Code untuk langsung ke halaman Post-Test Simposium', width / 2, 530);
-
-            resolve(canvas.toDataURL('image/png'));
           };
-          img.onerror = () => reject(new Error('Failed to load QR image'));
+          img.onerror = () => {
+            if (item.qr_code) {
+              resolve(item.qr_code);
+            } else {
+              reject(new Error('Failed to load QR image'));
+            }
+          };
           img.src = qrDataUrl;
         })
         .catch(reject);
@@ -557,8 +574,17 @@ export const SymposiumCheckInPage: React.FC = () => {
       const dataUrl = await generateSymposiumQRDataUrl(item);
       const link = document.createElement('a');
       link.download = `QR_Symposium_${item.title.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-      link.href = dataUrl;
-      link.click();
+      if (dataUrl.startsWith('data:')) {
+        link.href = dataUrl;
+        link.click();
+      } else {
+        const resp = await fetch(dataUrl);
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        link.href = objUrl;
+        link.click();
+        URL.revokeObjectURL(objUrl);
+      }
       showToast('success', `QR Code "${item.title}" berhasil diunduh!`);
     } catch {
       showToast('error', 'Gagal mengunduh QR Code');
@@ -587,10 +613,16 @@ export const SymposiumCheckInPage: React.FC = () => {
       for (let i = 0; i < itemsToDownload.length; i++) {
         const item = itemsToDownload[i];
         const dataUrl = await generateSymposiumQRDataUrl(item);
-        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
         const sanitizedTitle = item.title.replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `QR_Symposium_${sanitizedTitle}_${item.id}.png`;
-        zip.file(fileName, base64Data, { base64: true });
+        if (dataUrl.startsWith('data:')) {
+          const base64Data = dataUrl.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+          zip.file(fileName, base64Data, { base64: true });
+        } else {
+          const resp = await fetch(dataUrl);
+          const blob = await resp.blob();
+          zip.file(fileName, blob);
+        }
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -754,8 +786,8 @@ export const SymposiumCheckInPage: React.FC = () => {
                 <th>Description</th>
                 <th>Start</th>
                 <th>End</th>
-                <th>Icon / Logo</th>
-                <th style={{ width: 160, textAlign: 'center' }}>Action</th>
+                <th style={{ width: 140 }}>QR Code</th>
+                <th style={{ width: 150, textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -782,17 +814,23 @@ export const SymposiumCheckInPage: React.FC = () => {
                     <td className="admin-truncate-md">{renderDateTime(item.started_at)}</td>
                     <td className="admin-truncate-md">{renderDateTime(item.ended_at)}</td>
                     <td>
-                      {item.logo || item.icon ? (
-                        <img
-                          src={item.logo || item.icon || ''}
-                          alt={item.title}
-                          style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'contain', background: 'var(--admin-surface)' }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                      {item.qr_code ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <img
+                            src={item.qr_code}
+                            alt="QR Code"
+                            title="Klik untuk melihat QR Code"
+                            onClick={() => setQrModalItem(item)}
+                            style={{ width: 38, height: 38, borderRadius: 6, objectFit: 'contain', background: '#fff', padding: 2, border: '1px solid var(--admin-border)', cursor: 'pointer' }}
+                          />
+                          <span className="admin-badge admin-badge-success" style={{ fontSize: 10, padding: '2px 5px' }}>
+                            Manual
+                          </span>
+                        </div>
                       ) : (
-                        <span style={{ color: 'var(--admin-text-muted)' }}>—</span>
+                        <span className="admin-badge admin-badge-secondary" style={{ fontSize: 10 }}>
+                          Auto (URL)
+                        </span>
                       )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -834,6 +872,11 @@ export const SymposiumCheckInPage: React.FC = () => {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--admin-text)', marginBottom: 4 }}>
                     {qrModalItem.title}
+                    {qrModalItem.qr_code && (
+                      <span className="admin-badge admin-badge-success" style={{ fontSize: 11, marginLeft: 8 }}>
+                        QR Manual
+                      </span>
+                    )}
                   </div>
                   {qrModalItem.description && (
                     <div style={{ fontSize: 13, color: 'var(--admin-text-secondary)', marginTop: 2 }}>

@@ -55,6 +55,7 @@ export function MysteryBoxPage() {
       fetchMysteryBoxRewards();
     }, 250);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter]);
 
   const openCreate = () => {

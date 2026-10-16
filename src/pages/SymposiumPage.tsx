@@ -36,7 +36,7 @@ export interface ParsedQrResult {
   rawText: string;
 }
 
-export const parseQrData = (
+const parseQrData = (
   decodedText: string,
   booths: KalbeBoothResponse[] = [],
   sympos: KalbeSymposiumResponse[] = [],
@@ -49,6 +49,28 @@ export const parseQrData = (
   let boothId: string | null = null;
   let sympoId: string | null = null;
   let detectedType: "symposium" | "early-life" | "booth" | null = null;
+
+  // 0. Check if scanned content directly matches an uploaded booth or symposium QR code content or URL
+  const boothByQr = booths.find(
+    (b) =>
+      (b.qr_code_content && (b.qr_code_content.trim() === trimmed || b.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
+      (b.qr_code && b.qr_code.trim() === trimmed)
+  );
+  if (boothByQr) {
+    boothId = boothByQr.id;
+    const bName = boothByQr.name.toLowerCase();
+    detectedType = bName.includes("early") || bName.includes("life") ? "early-life" : "booth";
+  }
+
+  const sympoByQr = sympos.find(
+    (s) =>
+      (s.qr_code_content && (s.qr_code_content.trim() === trimmed || s.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
+      (s.qr_code && s.qr_code.trim() === trimmed)
+  );
+  if (sympoByQr) {
+    sympoId = sympoByQr.id;
+    detectedType = "symposium";
+  }
 
   // 1. Try parsing as URL
   try {
@@ -265,6 +287,14 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
           if (list && list.length > 0) {
             const activeSympo = list.find((s) => s.is_active) || list[0];
             title = activeSympo.title;
+            if (activeSympo.qr_code) {
+              if (isMounted) {
+                setQrDataUrl(activeSympo.qr_code);
+                setModalTitle(title);
+                setTargetUrl(`${window.location.origin}/post-test?symposium_id=${encodeURIComponent(activeSympo.id)}`);
+              }
+              return;
+            }
             url = `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(activeSympo.id)}`;
           } else {
             const master = getSymposiumMasterData();
@@ -283,6 +313,15 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
 
           if (target) {
             title = target.name;
+            if (target.qr_code) {
+              if (isMounted) {
+                setQrDataUrl(target.qr_code);
+                setModalTitle(title);
+                const typeStr = isEarly ? "early-life" : "morinaga";
+                setTargetUrl(`${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=${typeStr}&name=${encodeURIComponent(target.name)}`);
+              }
+              return;
+            }
             const typeStr = isEarly ? "early-life" : "morinaga";
             url = `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=${typeStr}&name=${encodeURIComponent(target.name)}`;
           } else {

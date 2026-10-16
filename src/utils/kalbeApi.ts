@@ -258,6 +258,7 @@ export interface KalbeHistoryItemResponse {
   description?: string | null;
   pin: string;
   is_claimed: boolean;
+  is_claimable: boolean;
   claimed_at?: string | null;
   created_at: string;
   symposium?: KalbeSymposiumResponse | null;

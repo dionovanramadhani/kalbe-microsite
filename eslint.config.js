@@ -22,7 +22,7 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'no-empty': 'off',
-      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
     },

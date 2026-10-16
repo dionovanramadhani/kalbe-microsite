@@ -16,6 +16,7 @@ export interface HistoryRewardItem {
   subtitle: string;
   date: string;
   claimed: boolean;
+  isClaimable: boolean;
   pin?: string;
   icon: string;
   rewardImage: string;
@@ -58,7 +59,7 @@ const formatDate = (dateStr?: string | null): string => {
 };
 
 const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardItem => {
-  let title = "Reward Hadiah";
+  let title: string;
   let subtitle: string;
   let icon = "/assets/morinaga-sympo-icon.png";
   let rewardImage = "/assets/reward-box.png";
@@ -123,6 +124,7 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     subtitle,
     date: formatDate(item.claimed_at || item.created_at),
     claimed: item.is_claimed,
+    isClaimable: item.is_claimable !== false,
     pin: item.pin,
     icon,
     rewardImage,
@@ -177,6 +179,7 @@ export const ClaimRewardPage: React.FC = () => {
   }, [fetchHistoryList]);
 
   const handleOpenClaim = (reward: HistoryRewardItem) => {
+    if (reward.claimed || !reward.isClaimable) return;
     setSelectedReward(reward);
     setPinDigits(["", ""]);
     setPinError(null);
@@ -370,14 +373,23 @@ export const ClaimRewardPage: React.FC = () => {
                       {/* Right: Pill Claim Button */}
                       <button
                         onClick={() => handleOpenClaim(item)}
-                        disabled={item.claimed}
-                        className={`h-[28px] px-4 rounded-full text-white font-bold text-[11.5px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
+                        disabled={item.claimed || !item.isClaimable}
+                        className={`h-[28px] px-3.5 rounded-full font-bold text-[11px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
                           item.claimed
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-[#E50014] hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
+                            : !item.isClaimable
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
+                            : "bg-[#E50014] text-white hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
                         }`}
+                        title={
+                          item.claimed
+                            ? "Hadiah sudah diklaim"
+                            : !item.isClaimable
+                            ? "Reward belum tersedia dari admin"
+                            : "Klaim reward hadiah ini"
+                        }
                       >
-                        {item.claimed ? "Claimed" : "Claim"}
+                        {item.claimed ? "Claimed" : !item.isClaimable ? "Belum Tersedia" : "Claim"}
                       </button>
                     </div>
                   ))

@@ -169,7 +169,7 @@ export function RewardClaimPage() {
       `"${(h.label || h.description || '').replace(/"/g, '""')}"`,
       `"${h.reward_type || ''}"`,
       `"${h.pin || ''}"`,
-      `"${h.is_claimed ? 'Sudah Diklaim' : 'Belum Diklaim'}"`,
+      `"${h.is_claimed ? 'Sudah Diklaim' : h.is_claimable !== false ? 'Belum Diklaim (Dapat Diklaim)' : 'Belum Diklaim (Reward Belum Dibuat)'}"`,
       `"${h.claimed_at ? formatDate(h.claimed_at) : '-'}"`,
       `"${formatDate(h.created_at)}"`,
     ]);
@@ -586,6 +586,16 @@ export function RewardClaimPage() {
                           >
                             {item.is_claimed ? 'Sudah Diklaim' : 'Belum Diklaim'}
                           </span>
+                          {!item.is_claimed && (
+                            <span
+                              className={`admin-badge ${
+                                item.is_claimable !== false ? 'admin-badge-info' : 'admin-badge-neutral'
+                              }`}
+                              style={{ display: 'inline-block', width: 'fit-content', fontSize: '10px' }}
+                            >
+                              {item.is_claimable !== false ? 'Dapat Diklaim' : 'Reward Belum Dibuat'}
+                            </span>
+                          )}
                           {item.is_claimed && item.claimed_at && (
                             <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>
                               {formatDate(item.claimed_at)}

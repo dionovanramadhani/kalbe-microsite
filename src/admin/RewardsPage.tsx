@@ -92,6 +92,7 @@ export function RewardsPage() {
       fetchRewards();
     }, 250);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, typeFilter, statusFilter]);
 
   const openCreate = () => {

@@ -123,6 +123,9 @@ export const HomePage: React.FC = () => {
     return isMysteryBoxClaimed();
   });
 
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>([]);
+  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>([]);
+
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
 
   // Re-sync state whenever user navigates to HomePage or switches user session
@@ -205,13 +208,14 @@ export const HomePage: React.FC = () => {
       const userHasMysteryBox = Boolean(mysteryBoxHistory || allActivitiesDone);
       const isMbClaimed = Boolean(mysteryBoxHistory?.is_claimed);
 
+      const isMbClaimable = mysteryBoxHistory ? mysteryBoxHistory.is_claimable !== false : true;
       setHasMysteryBox(userHasMysteryBox);
       setMysteryBoxClaimed(isMbClaimed);
-      setHasUnclaimedMysteryBoxState(userHasMysteryBox && !isMbClaimed);
+      setHasUnclaimedMysteryBoxState(userHasMysteryBox && !isMbClaimed && isMbClaimable);
 
       // Unclaimed non-mystery rewards count:
       const unclaimedCount = historyList.filter(
-        (h) => !h.is_claimed && h.reward_type !== "mystery_box" && !h.reward_type?.includes("mystery"),
+        (h) => !h.is_claimed && (h.is_claimable !== false) && h.reward_type !== "mystery_box" && !h.reward_type?.includes("mystery"),
       ).length;
       setUnclaimedRewardsCount(unclaimedCount);
     }).catch((err) => {
@@ -405,9 +409,6 @@ export const HomePage: React.FC = () => {
   const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
-
-  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>([]);
-  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>([]);
 
   // Urutan misi sesuai instruksi:
   // 1. Morinaga Booth

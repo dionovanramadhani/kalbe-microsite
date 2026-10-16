@@ -9,6 +9,7 @@ import {
   type KalbeSymposiumFormValues,
 } from './adminApi';
 import { useToast } from '../context/ToastContext';
+import { decodeQrFromFile } from '../utils/qrDecoder';
 
 export function SymposiumsPage() {
   const { showToast } = useToast();
@@ -34,6 +35,10 @@ export function SymposiumsPage() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
+
+  const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
+  const [qrCodePreview, setQrCodePreview] = useState<string>('');
+  const [qrCodeContent, setQrCodeContent] = useState<string>('');
 
   const [saving, setSaving] = useState(false);
 
@@ -65,7 +70,7 @@ export function SymposiumsPage() {
         setSymposiums(res.data);
       }
     } catch {
-      showToast('error', 'Gagal memuat data symposium');
+      showToast('error', 'Gagal memuat data simposium');
     } finally {
       setLoading(false);
     }
@@ -73,6 +78,7 @@ export function SymposiumsPage() {
 
   useEffect(() => {
     fetchSymposiums();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filtered symposium list
@@ -103,6 +109,9 @@ export function SymposiumsPage() {
     setIconPreview('');
     setLogoFile(null);
     setLogoPreview('');
+    setQrCodeFile(null);
+    setQrCodePreview('');
+    setQrCodeContent('');
     const now = new Date();
     const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     setStartedAt(toLocalInputValue(now.toISOString()));
@@ -120,6 +129,9 @@ export function SymposiumsPage() {
     setIconPreview(sym.icon || '');
     setLogoFile(null);
     setLogoPreview(sym.logo || '');
+    setQrCodeFile(null);
+    setQrCodePreview(sym.qr_code || '');
+    setQrCodeContent(sym.qr_code_content || '');
     setStartedAt(toLocalInputValue(sym.started_at));
     setEndedAt(toLocalInputValue(sym.ended_at));
     setIsActive(sym.is_active);
@@ -135,6 +147,18 @@ export function SymposiumsPage() {
       const file = e.target.files[0];
       setFile(file);
       setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleQrFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setQrCodeFile(file);
+      setQrCodePreview(URL.createObjectURL(file));
+      const decoded = await decodeQrFromFile(file);
+      if (decoded) {
+        setQrCodeContent(decoded);
+      }
     }
   };
 
@@ -168,8 +192,11 @@ export function SymposiumsPage() {
       is_active: isActive,
       iconFile,
       logoFile,
+      qrCodeFile,
+      qr_code_content: qrCodeContent || (editing ? (editing.qr_code_content || undefined) : undefined),
       iconUrl: !iconFile && editing ? (editing.icon || '') : undefined,
       logoUrl: !logoFile && editing ? (editing.logo || '') : undefined,
+      qrCodeUrl: !qrCodeFile && editing ? (editing.qr_code || '') : undefined,
     };
 
     setSaving(true);
@@ -566,8 +593,8 @@ export function SymposiumsPage() {
                   </div>
                 </div>
 
-                {/* Media Icon & Logo */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
+                {/* Media Icon, Logo & QR Code */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
                   {/* Icon Image */}
                   <div className="admin-field">
                     <label>Icon Simposium</label>
@@ -606,6 +633,35 @@ export function SymposiumsPage() {
                           alt="Logo Preview"
                           style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
                         />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* QR Code Image */}
+                  <div className="admin-field">
+                    <label>QR Code (Manual)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={handleQrFileChange}
+                    />
+                    {qrCodePreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={qrCodePreview}
+                          alt="QR Code Preview"
+                          style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                        {qrCodeContent && (
+                          <div style={{ marginTop: 6, fontSize: 11, color: '#38bdf8' }}>
+                            <span>Isi QR: </span>
+                            <code style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace' }}>
+                              {qrCodeContent}
+                            </code>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

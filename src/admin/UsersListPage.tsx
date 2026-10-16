@@ -140,7 +140,7 @@ export function UsersListPage({ initialOpenRegister = false }: { initialOpenRegi
           }
         );
       } else {
-        const msg = (res.error as any)?.message || 'Gagal memuat daftar user';
+        const msg = res.error?.message || 'Gagal memuat daftar user';
         setError(msg);
         showToast('error', msg);
       }
@@ -221,7 +221,7 @@ export function UsersListPage({ initialOpenRegister = false }: { initialOpenRegi
       });
 
       if (!res.success) {
-        const msg = (res.error as any)?.message || 'Gagal mendaftarkan user';
+        const msg = res.error?.message || 'Gagal mendaftarkan user';
         throw new Error(msg);
       }
 
@@ -320,11 +320,13 @@ export function UsersListPage({ initialOpenRegister = false }: { initialOpenRegi
       });
 
       if (!json || json.success === false) {
+        const errObj = json?.error as { message?: string; details?: unknown } | undefined;
+        const detailsStr = typeof errObj?.details === 'string' ? errObj.details : null;
         const message =
-          (json?.error as any)?.message ||
-          (json?.error as any)?.details ||
+          errObj?.message ||
+          detailsStr ||
           'Login gagal. Silakan periksa kembali data Anda.';
-        throw new Error(typeof message === 'string' ? message : 'Login gagal.');
+        throw new Error(message);
       }
 
       // Store auth response token & user

@@ -9,6 +9,7 @@ import {
   type KalbeBoothFormValues,
 } from './adminApi';
 import { useToast } from '../context/ToastContext';
+import { decodeQrFromFile } from '../utils/qrDecoder';
 
 export function BoothsPage() {
   const { showToast } = useToast();
@@ -29,6 +30,7 @@ export function BoothsPage() {
   const [detailingTitle, setDetailingTitle] = useState('');
   const [detailingDescription, setDetailingDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isRecordHistory, setIsRecordHistory] = useState(true);
 
   // File uploads & previews
   const [iconFile, setIconFile] = useState<File | null>(null);
@@ -42,6 +44,10 @@ export function BoothsPage() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
+
+  const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
+  const [qrCodePreview, setQrCodePreview] = useState<string>('');
+  const [qrCodeContent, setQrCodeContent] = useState<string>('');
 
   const fetchBooths = async () => {
     setLoading(true);
@@ -65,6 +71,7 @@ export function BoothsPage() {
       fetchBooths();
     }, 250);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter]);
 
   const openCreate = () => {
@@ -74,6 +81,7 @@ export function BoothsPage() {
     setDetailingTitle('');
     setDetailingDescription('');
     setIsActive(true);
+    setIsRecordHistory(true);
 
     setIconFile(null);
     setIconPreview('');
@@ -83,6 +91,9 @@ export function BoothsPage() {
     setBannerPreview('');
     setLogoFile(null);
     setLogoPreview('');
+    setQrCodeFile(null);
+    setQrCodePreview('');
+    setQrCodeContent('');
 
     setModalOpen(true);
   };
@@ -94,6 +105,7 @@ export function BoothsPage() {
     setDetailingTitle(booth.detailing_title);
     setDetailingDescription(booth.detailing_description);
     setIsActive(booth.is_active);
+    setIsRecordHistory(booth.is_record_history !== false);
 
     setIconFile(null);
     setIconPreview(booth.icon || '');
@@ -103,6 +115,9 @@ export function BoothsPage() {
     setBannerPreview(booth.detailing_banner || '');
     setLogoFile(null);
     setLogoPreview(booth.logo || '');
+    setQrCodeFile(null);
+    setQrCodePreview(booth.qr_code || '');
+    setQrCodeContent(booth.qr_code_content || '');
 
     setModalOpen(true);
   };
@@ -121,6 +136,18 @@ export function BoothsPage() {
       const file = e.target.files[0];
       setFile(file);
       setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleQrFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setQrCodeFile(file);
+      setQrCodePreview(URL.createObjectURL(file));
+      const decoded = await decodeQrFromFile(file);
+      if (decoded) {
+        setQrCodeContent(decoded);
+      }
     }
   };
 
@@ -148,14 +175,18 @@ export function BoothsPage() {
         detailing_title: detailingTitle.trim(),
         detailing_description: detailingDescription.trim(),
         is_active: isActive,
+        is_record_history: isRecordHistory,
         iconFile,
         imageTitleFile,
         detailingBannerFile: bannerFile,
         logoFile,
+        qrCodeFile,
+        qr_code_content: qrCodeContent || (editing ? (editing.qr_code_content || undefined) : undefined),
         iconUrl: !iconFile && editing ? (editing.icon || '') : undefined,
         imageTitleUrl: !imageTitleFile && editing ? (editing.image_title || '') : undefined,
         detailingBannerUrl: !bannerFile && editing ? (editing.detailing_banner || '') : undefined,
         logoUrl: !logoFile && editing ? (editing.logo || '') : undefined,
+        qrCodeUrl: !qrCodeFile && editing ? (editing.qr_code || '') : undefined,
       };
 
       if (editing) {
@@ -308,6 +339,7 @@ export function BoothsPage() {
                 <th>Nama Booth</th>
                 <th>Detailing Title</th>
                 <th>Status</th>
+                <th>Record History</th>
                 <th>Dibuat Pada</th>
                 {!isBrand && <th style={{ width: 120, textAlign: 'center' }}>Aksi</th>}
               </tr>
@@ -315,7 +347,7 @@ export function BoothsPage() {
             <tbody>
               {booths.length === 0 ? (
                 <tr>
-                  <td colSpan={isBrand ? 5 : 6} className="admin-table-empty">
+                  <td colSpan={isBrand ? 6 : 7} className="admin-table-empty">
                     <div className="admin-table-empty-icon">🏪</div>
                     <div className="admin-table-empty-text">
                       {search ? 'Tidak ada booth yang cocok dengan pencarian' : 'Belum ada booth yang terdaftar.'}
@@ -367,6 +399,13 @@ export function BoothsPage() {
                         <span className="admin-badge admin-badge-success">Aktif</span>
                       ) : (
                         <span className="admin-badge admin-badge-neutral">Nonaktif</span>
+                      )}
+                    </td>
+                    <td>
+                      {booth.is_record_history !== false ? (
+                        <span className="admin-badge admin-badge-success" title="Mencatat history dan reward saat check-in">Ya</span>
+                      ) : (
+                        <span className="admin-badge admin-badge-neutral" title="Tidak mencatat riwayat perolehan reward">Tidak</span>
                       )}
                     </td>
                     <td style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>
@@ -421,8 +460,8 @@ export function BoothsPage() {
 
             <form onSubmit={handleSubmit}>
               <div className="admin-modal-body">
-                {/* Booth Name & Is Active */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+                {/* Booth Name, Is Active & Record History */}
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
                   <div className="admin-field">
                     <label>
                       Nama Booth <span className="required">*</span>
@@ -448,6 +487,22 @@ export function BoothsPage() {
                       />
                       <label htmlFor="is_active_checkbox" style={{ cursor: 'pointer', margin: 0 }}>
                         {isActive ? 'Aktif' : 'Nonaktif'}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="admin-field">
+                    <label title="Apakah kunjungan ke booth ini dicatat ke riwayat user untuk klaim reward">Record History</label>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 10 }}>
+                      <input
+                        type="checkbox"
+                        id="is_record_history_checkbox"
+                        checked={isRecordHistory}
+                        onChange={(e) => setIsRecordHistory(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: 'var(--admin-primary-light)', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="is_record_history_checkbox" style={{ cursor: 'pointer', margin: 0 }}>
+                        {isRecordHistory ? 'Ya' : 'Tidak'}
                       </label>
                     </div>
                   </div>
@@ -564,6 +619,35 @@ export function BoothsPage() {
                           alt="Banner Preview"
                           style={{ height: 48, borderRadius: 6, objectFit: 'cover', width: '100%' }}
                         />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* QR Code Manual */}
+                  <div className="admin-field">
+                    <label>QR Code (Upload Gambar Manual)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={handleQrFileChange}
+                    />
+                    {qrCodePreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={qrCodePreview}
+                          alt="QR Code Preview"
+                          style={{ height: 64, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                        {qrCodeContent && (
+                          <div style={{ marginTop: 6, fontSize: 11, color: '#38bdf8' }}>
+                            <span>Isi QR: </span>
+                            <code style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace' }}>
+                              {qrCodeContent}
+                            </code>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

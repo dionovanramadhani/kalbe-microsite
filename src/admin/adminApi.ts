@@ -194,8 +194,11 @@ export interface KalbeBoothResponse {
   image_title?: string | null;
   detailing_description: string;
   detailing_banner?: string | null;
+  qr_code?: string | null;
+  qr_code_content?: string | null;
   is_active: boolean;
   is_completed?: boolean;
+  is_record_history?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -205,14 +208,18 @@ export interface KalbeBoothFormValues {
   detailing_title: string;
   detailing_description: string;
   is_active: boolean;
+  is_record_history?: boolean;
   iconFile?: File | null;
   imageTitleFile?: File | null;
   detailingBannerFile?: File | null;
   logoFile?: File | null;
+  qrCodeFile?: File | null;
+  qr_code_content?: string | null;
   iconUrl?: string;
   imageTitleUrl?: string;
   detailingBannerUrl?: string;
   logoUrl?: string;
+  qrCodeUrl?: string;
 }
 
 // ─── Auth API ───────────────────────────────────────────────────────────────
@@ -258,6 +265,9 @@ export async function createKalbeBooth(values: KalbeBoothFormValues): Promise<Ap
   formData.append('detailing_title', values.detailing_title.trim());
   formData.append('detailing_description', values.detailing_description.trim());
   formData.append('is_active', values.is_active ? 'true' : 'false');
+  if (values.is_record_history !== undefined) {
+    formData.append('is_record_history', values.is_record_history ? 'true' : 'false');
+  }
 
   if (values.iconFile) {
     formData.append('icon', values.iconFile);
@@ -281,6 +291,16 @@ export async function createKalbeBooth(values: KalbeBoothFormValues): Promise<Ap
     formData.append('logo', values.logoFile);
   } else if (values.logoUrl) {
     formData.append('logo', values.logoUrl);
+  }
+
+  if (values.qrCodeFile) {
+    formData.append('qr_code', values.qrCodeFile);
+  } else if (values.qrCodeUrl !== undefined) {
+    formData.append('qr_code', values.qrCodeUrl || '');
+  }
+
+  if (values.qr_code_content !== undefined && values.qr_code_content !== null) {
+    formData.append('qr_code_content', values.qr_code_content);
   }
 
   return apiFetch<ApiResponse<KalbeBoothResponse>>('/api/v1/kalbe/booth', {
@@ -295,6 +315,9 @@ export async function updateKalbeBooth(id: string, values: KalbeBoothFormValues)
   formData.append('detailing_title', values.detailing_title.trim());
   formData.append('detailing_description', values.detailing_description.trim());
   formData.append('is_active', values.is_active ? 'true' : 'false');
+  if (values.is_record_history !== undefined) {
+    formData.append('is_record_history', values.is_record_history ? 'true' : 'false');
+  }
 
   if (values.iconFile) {
     formData.append('icon', values.iconFile);
@@ -318,6 +341,16 @@ export async function updateKalbeBooth(id: string, values: KalbeBoothFormValues)
     formData.append('logo', values.logoFile);
   } else if (values.logoUrl) {
     formData.append('logo', values.logoUrl);
+  }
+
+  if (values.qrCodeFile) {
+    formData.append('qr_code', values.qrCodeFile);
+  } else if (values.qrCodeUrl !== undefined) {
+    formData.append('qr_code', values.qrCodeUrl || '');
+  }
+
+  if (values.qr_code_content !== undefined && values.qr_code_content !== null) {
+    formData.append('qr_code_content', values.qr_code_content);
   }
 
   return apiFetch<ApiResponse<KalbeBoothResponse>>(`/api/v1/kalbe/booth/${id}`, {
@@ -508,6 +541,9 @@ export interface KalbeSymposiumResponse {
   is_active: boolean;
   icon?: string | null;
   logo?: string | null;
+  qr_code?: string | null;
+  qr_code_content?: string | null;
+  category?: string | null;
   is_completed?: boolean;
   created_at: string;
   updated_at: string;
@@ -521,6 +557,8 @@ export interface KalbeSymposiumRequest {
   is_active?: boolean;
   icon?: string | null;
   logo?: string | null;
+  qr_code?: string | null;
+  qr_code_content?: string | null;
 }
 
 export interface KalbeSymposiumFormValues {
@@ -531,8 +569,11 @@ export interface KalbeSymposiumFormValues {
   is_active: boolean;
   iconFile?: File | null;
   logoFile?: File | null;
+  qrCodeFile?: File | null;
+  qr_code_content?: string | null;
   iconUrl?: string;
   logoUrl?: string;
+  qrCodeUrl?: string;
 }
 
 export async function getKalbeSymposiums(params?: {
@@ -559,7 +600,14 @@ export async function getKalbeSymposiumByID(id: string, userId?: string): Promis
 }
 
 export async function createKalbeSymposium(data: KalbeSymposiumFormValues | KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
-  if ('iconFile' in data || 'logoFile' in data || 'iconUrl' in data || 'logoUrl' in data) {
+  if (
+    'iconFile' in data ||
+    'logoFile' in data ||
+    'qrCodeFile' in data ||
+    'iconUrl' in data ||
+    'logoUrl' in data ||
+    'qrCodeUrl' in data
+  ) {
     const formData = new FormData();
     formData.append('title', data.title.trim());
     formData.append('description', data.description.trim());
@@ -577,6 +625,16 @@ export async function createKalbeSymposium(data: KalbeSymposiumFormValues | Kalb
       formData.append('logo', data.logoFile);
     } else if (data.logoUrl) {
       formData.append('logo', data.logoUrl);
+    }
+
+    if (data.qrCodeFile) {
+      formData.append('qr_code', data.qrCodeFile);
+    } else if (data.qrCodeUrl !== undefined) {
+      formData.append('qr_code', data.qrCodeUrl || '');
+    }
+
+    if (data.qr_code_content !== undefined && data.qr_code_content !== null) {
+      formData.append('qr_code_content', data.qr_code_content);
     }
 
     return apiFetch<ApiResponse<KalbeSymposiumResponse>>('/api/v1/kalbe/symposium', {
@@ -592,7 +650,14 @@ export async function createKalbeSymposium(data: KalbeSymposiumFormValues | Kalb
 }
 
 export async function updateKalbeSymposium(id: string, data: KalbeSymposiumFormValues | KalbeSymposiumRequest): Promise<ApiResponse<KalbeSymposiumResponse>> {
-  if ('iconFile' in data || 'logoFile' in data || 'iconUrl' in data || 'logoUrl' in data) {
+  if (
+    'iconFile' in data ||
+    'logoFile' in data ||
+    'qrCodeFile' in data ||
+    'iconUrl' in data ||
+    'logoUrl' in data ||
+    'qrCodeUrl' in data
+  ) {
     const formData = new FormData();
     formData.append('title', data.title.trim());
     formData.append('description', data.description.trim());
@@ -610,6 +675,16 @@ export async function updateKalbeSymposium(id: string, data: KalbeSymposiumFormV
       formData.append('logo', data.logoFile);
     } else if (data.logoUrl) {
       formData.append('logo', data.logoUrl);
+    }
+
+    if (data.qrCodeFile) {
+      formData.append('qr_code', data.qrCodeFile);
+    } else if (data.qrCodeUrl !== undefined) {
+      formData.append('qr_code', data.qrCodeUrl || '');
+    }
+
+    if (data.qr_code_content !== undefined && data.qr_code_content !== null) {
+      formData.append('qr_code_content', data.qr_code_content);
     }
 
     return apiFetch<ApiResponse<KalbeSymposiumResponse>>(`/api/v1/kalbe/symposium/${id}`, {
@@ -1000,6 +1075,7 @@ export interface KalbeAdminHistoryItem {
   description?: string;
   pin: string;
   is_claimed: boolean;
+  is_claimable: boolean;
   claimed_at?: string;
   created_at: string;
   symposium?: {
