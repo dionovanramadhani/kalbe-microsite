@@ -15,7 +15,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
   onClose,
   activityItem,
 }) => {
-  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, {
+    duration: 280,
+  });
 
   if (!isRendered) return null;
 
@@ -26,7 +28,8 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
     : "13.30 – 13.45 WIB";
   const image = activityItem
     ? activityItem.activity_image ||
-      (activityItem.name.toLowerCase().includes("award") || activityItem.name.toLowerCase().includes("presentation")
+      (activityItem.name.toLowerCase().includes("award") ||
+      activityItem.name.toLowerCase().includes("presentation")
         ? "/assets/grand-final-title.webp"
         : null)
     : "/assets/grand-final-title.webp";
@@ -37,8 +40,14 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
       ? activityItem.description.trim()
       : null;
 
+  const isPhotobooth =
+    title.toLowerCase().includes("photobooth") ||
+    (!activityItem?.speaker && !activityItem?.start_at && description);
+
   return (
-    <div className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Backdrop with smooth blur & fade */}
       <div
         onClick={handleClose}
@@ -65,89 +74,138 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         </div>
 
         {/* Drawer Body Container */}
-        <div className="w-full bg-white rounded-t-[32px] px-5 pt-6 pb-9 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
-          {/* 3D Red Clock Graphic */}
-          <div className="w-full flex justify-center shrink-0 mb-3.5">
-            <img
-              src="/assets/clock-red.webp"
-              alt="Jadwal Aktivitas"
-              className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
-            />
+        {isPhotobooth ? (
+          <div className="w-full bg-white rounded-t-[32px] px-5 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
+            {/* Top Banner / Image (Rounded Corners) */}
+            {image && (
+              <div className="w-full rounded-[20px] overflow-hidden bg-black/5 mb-4 shadow-sm flex items-center justify-center border border-gray-100">
+                <img
+                  src={image}
+                  alt={title}
+                  className="w-full h-auto max-h-[260px] object-cover pointer-events-none select-none"
+                />
+              </div>
+            )}
+
+            {/* Title: Photobooth High Angel -> #D41025 bold 20px */}
+            <h2
+              style={{
+                color: "#D41025",
+                fontSize: "20px",
+                fontWeight: "bold",
+              }}
+              className="tracking-tight text-center leading-tight mb-3"
+            >
+              {title}
+            </h2>
+
+            {/* Description (Text Justify) */}
+            {description && (
+              <p
+                style={{
+                  color: "#333333",
+                  fontSize: "14px",
+                  textAlign: "justify",
+                }}
+                className="leading-relaxed px-1 font-normal"
+              >
+                {description}
+              </p>
+            )}
           </div>
+        ) : (
+          <div className="w-full bg-white rounded-t-[32px] px-5 pt-6 pb-9 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
+            {/* 3D Red Clock Graphic */}
+            {activityItem?.start_at && (
+              <div className="w-full flex justify-center shrink-0 mb-3.5">
+                <img
+                  src="/assets/clock-red.webp"
+                  alt="Jadwal Aktivitas"
+                  className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
+                />
+              </div>
+            )}
 
-          {/* Title: moritalks award -> #D41025 20px bold */}
-          <h2
-            style={{
-              color: "#D41025",
-              fontSize: "20px",
-              fontWeight: "bold",
-            }}
-            className="tracking-tight text-center leading-tight mb-3"
-          >
-            {title}
-          </h2>
+            {/* Title: moritalks award -> #D41025 20px bold */}
+            <h2
+              style={{
+                color: "#D41025",
+                fontSize: "20px",
+                fontWeight: "bold",
+              }}
+              className="tracking-tight text-center leading-tight mb-3"
+            >
+              {title}
+            </h2>
 
-          {/* Graphic Badge */}
-          {image && (
-            <div className="w-full flex justify-center shrink-0 mb-5">
-              <img
-                src={image}
-                alt={title}
-                className="w-[240px] sm:w-[255px] max-h-[140px] object-contain pointer-events-none select-none"
-              />
-            </div>
-          )}
+            {/* Graphic Badge */}
+            {image && (
+              <div className="w-full flex justify-center shrink-0 mb-5">
+                <img
+                  src={image}
+                  alt={title}
+                  className="w-[240px] sm:w-[255px] max-h-[140px] object-contain pointer-events-none select-none"
+                />
+              </div>
+            )}
 
-          {/* Presenter / Speaker & Time */}
-          {(speaker || formattedTime) && (
-            <div className="w-full flex flex-col items-center">
-              {speaker && (
-                <span
-                  style={{
-                    color: "#777777",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                  }}
-                  className="mb-2 text-center leading-tight"
-                >
-                  {speaker}
-                </span>
-              )}
-
-              {/* Time: jam -> #D41025 20px bold */}
-              {formattedTime && (
-                <div
-                  className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
-                  style={{
-                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                    backgroundSize: "100% 100%",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
+            {/* Presenter / Speaker & Time */}
+            {(speaker || formattedTime) && (
+              <div className="w-full flex flex-col items-center">
+                {speaker && (
                   <span
                     style={{
-                      color: "#D41025",
-                      fontSize: "20px",
-                      fontWeight: "bold",
+                      color: "#777777",
+                      fontSize: "14px",
+                      fontWeight: 500,
                     }}
-                    className="tracking-wide leading-none"
+                    className="mb-2 text-center leading-tight"
                   >
-                    {formattedTime}
+                    {speaker}
                   </span>
-                </div>
-              )}
-            </div>
-          )}
+                )}
 
-          {/* Optional Description */}
-          {description && (
-            <p className="mt-3 text-[13px] text-[#555] text-center px-4 leading-relaxed">
-              {description}
-            </p>
-          )}
-        </div>
+                {/* Time: jam -> #D41025 20px bold */}
+                {formattedTime && (
+                  <div
+                    className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
+                    style={{
+                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#D41025",
+                        fontSize: "20px",
+                        fontWeight: "bold",
+                      }}
+                      className="tracking-wide leading-none"
+                    >
+                      {formattedTime}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Optional Description (Text Justify) */}
+            {description && (
+              <p
+                style={{
+                  color: "#333333",
+                  fontSize: "14px",
+                  textAlign: "justify",
+                }}
+                className="mt-3 leading-relaxed px-4"
+              >
+                {description}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
-

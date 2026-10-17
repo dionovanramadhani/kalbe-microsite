@@ -98,7 +98,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
             }}
             className="tracking-tight text-center leading-tight mb-5"
           >
-            Topik: {topic || "Alergi & Gastro"}
+            Topik: {topic?.trim() ? topic.trim().replace(/^topik:\s*/i, "") : "Alergi & Gastro"}
           </p>
 
           {/* Sessions List */}

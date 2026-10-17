@@ -201,6 +201,8 @@ export interface KalbeBoothResponse {
   is_record_history?: boolean;
   created_at: string;
   updated_at: string;
+  podcast?: KalbeBoothPodcastResponse;
+  activity?: KalbeBoothActivityResponse;
 }
 
 export interface KalbeBoothFormValues {
@@ -528,6 +530,7 @@ export interface KalbeBoothPodcastSession {
 export interface KalbeBoothPodcastResponse {
   id: string;
   name: string;
+  topic?: string;
   ref_id: string; // Booth ID
   created_at: string;
   updated_at: string;
@@ -537,6 +540,7 @@ export interface KalbeBoothPodcastResponse {
 
 export interface KalbeBoothPodcastRequest {
   name: string;
+  topic: string;
   ref_id: string; // Booth ID
   sessions?: Array<{
     speaker: string;
@@ -852,6 +856,71 @@ export async function deleteKalbePostTest(id: string): Promise<ApiResponse<Kalbe
     method: 'DELETE',
   });
 }
+
+export interface KalbePostTestQuestionAnswerItem {
+  question_id: string;
+  pertanyaan: string;
+  question_type?: string;
+  answer: string;
+  correct_answer: string;
+  is_correct: boolean;
+}
+
+export interface KalbePostTestRespondentItem {
+  response_id: string;
+  user_id: string;
+  nama: string;
+  email: string;
+  handphone: string;
+  nik?: string;
+  profesi?: string;
+  institusi?: string;
+  alamat_institusi?: string;
+  tanggal_submit: string;
+  total_questions: number;
+  total_correct: number;
+  total_incorrect: number;
+  score: number;
+  answers: KalbePostTestQuestionAnswerItem[];
+}
+
+export interface KalbePostTestRespondentGroup {
+  post_test_id: string;
+  nama_post_test: string;
+  symposium_id?: string;
+  nama_symposium: string;
+  tanggal_event: string;
+  total_respondents: number;
+  respondents: KalbePostTestRespondentItem[];
+}
+
+export interface KalbePostTestRespondentsMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+export async function getKalbePostTestRespondents(params?: {
+  page?: number;
+  limit?: number;
+  post_test_id?: string;
+  symposium_id?: string;
+  search?: string;
+}): Promise<ApiResponse<KalbePostTestRespondentGroup[]> & { meta?: KalbePostTestRespondentsMeta }> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.post_test_id) query.append('post_test_id', params.post_test_id);
+  if (params?.symposium_id) query.append('symposium_id', params.symposium_id);
+  if (params?.search) query.append('search', params.search);
+
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiFetch<ApiResponse<KalbePostTestRespondentGroup[]> & { meta?: KalbePostTestRespondentsMeta }>(
+    `/api/v1/kalbe/post-tests/respondents${qs}`
+  );
+}
+
 
 // ─── Reward Types & API ─────────────────────────────────────────────────────
 

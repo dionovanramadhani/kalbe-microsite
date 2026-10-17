@@ -299,7 +299,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                   <>
                     <button
                       type="button"
-                      onClick={() => onMoritalksPodcast && onMoritalksPodcast({ id: "", name: "Moritalks Podcast", ref_id: "", created_at: "", updated_at: "" }, [])}
+                      onClick={() => onMoritalksPodcast && onMoritalksPodcast({ id: "", name: "Moritalks Podcast", topic: "Alergi & Gastro", ref_id: "", created_at: "", updated_at: "" }, [])}
                       className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                       style={{
                         backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,

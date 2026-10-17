@@ -13,6 +13,7 @@ import { VisitorsPage } from "./VisitorsPage";
 import { SymposiumCheckInPage } from "./SymposiumCheckInPage";
 import { BoothCheckInPage } from "./BoothCheckInPage";
 import { RewardClaimPage } from "./RewardClaimPage";
+import { PostTestRespondentsPage } from "./PostTestRespondentsPage";
 import { ToastProvider } from "../context/ToastContext";
 import "./admin.css";
 
@@ -225,6 +226,26 @@ function IconQrCode() {
   );
 }
 
+function IconFileReport() {
+  return (
+    <svg
+      className="nav-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
 function IconLogout() {
   return (
     <svg
@@ -257,6 +278,7 @@ type AdminPage =
   | "booth-activities"
   | "symposiums"
   | "post-tests"
+  | "post-test-respondents"
   | "rewards"
   | "mystery-box";
 
@@ -316,6 +338,12 @@ const navItems: NavItem[] = [
     id: "post-tests",
     label: "Post-Tests",
     icon: <IconClipboardCheck />,
+    section: "Symposium Management",
+  },
+  {
+    id: "post-test-respondents",
+    label: "Responden Post-Test",
+    icon: <IconFileReport />,
     section: "Symposium Management",
   },
 
@@ -417,6 +445,7 @@ export function AdminLayout() {
     "booth-activities": "Booth Activities & Podcast",
     symposiums: "Symposiums Management",
     "post-tests": "Post-Tests Management (Symposium)",
+    "post-test-respondents": "Responden Post-Test (Symposium)",
     rewards: "Rewards Merchandise Management",
     "mystery-box": "Mystery Box Management",
   };
@@ -436,6 +465,7 @@ export function AdminLayout() {
     "booth-activities",
     "symposiums",
     "post-tests",
+    "post-test-respondents",
     "rewards",
     "mystery-box",
   ];
@@ -491,6 +521,8 @@ export function AdminLayout() {
         return <SymposiumsPage />;
       case "post-tests":
         return <PostTestsPage />;
+      case "post-test-respondents":
+        return <PostTestRespondentsPage />;
       case "rewards":
         return <RewardsPage />;
       case "mystery-box":

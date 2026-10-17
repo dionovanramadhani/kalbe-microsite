@@ -7,6 +7,7 @@ import { BoothDrawer } from "../components/BoothDrawer";
 import { BoothMenuModal } from "../components/BoothMenuModal";
 import { PodcastScheduleModal } from "../components/PodcastScheduleModal";
 import { AwardPresentationModal } from "../components/AwardPresentationModal";
+import { PhotoboothModal } from "../components/PhotoboothModal";
 import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumStartedModal } from "../components/SymposiumStartedModal";
@@ -37,6 +38,8 @@ import {
   getCachedKalbeBooths,
   getCachedKalbeSymposiums,
   getKalbeUserHistory,
+  getKalbeBoothPodcastByRefID,
+  isSessionToday,
   type KalbeHistoryItemResponse,
   type KalbeBoothPodcastSession,
   type KalbeBoothActivityItem,
@@ -448,8 +451,10 @@ export const HomePage: React.FC = () => {
   const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
+  const [showPhotoboothModal, setShowPhotoboothModal] = useState(false);
   const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
   const [podcastTitle, setPodcastTitle] = useState<string>("Moritalks Podcast");
+  const [podcastTopic, setPodcastTopic] = useState<string>("Alergi & Gastro");
   const [selectedActivityItem, setSelectedActivityItem] =
     useState<KalbeBoothActivityItem | null>(null);
 
@@ -1032,18 +1037,28 @@ export const HomePage: React.FC = () => {
         onMoritalksPodcast={(_podcast, sessions) => {
           setPodcastSessions(sessions);
           setPodcastTitle(_podcast.name || "Moritalks Podcast");
+          setPodcastTopic(_podcast.topic || "");
           setShowBoothMenuModal(false);
           setShowPodcastScheduleModal(true);
         }}
         onSelectActivity={(item) => {
           setSelectedActivityItem(item);
           setShowBoothMenuModal(false);
-          setShowAwardPresentationModal(true);
+          if (item.name.toLowerCase().includes("photobooth")) {
+            setShowPhotoboothModal(true);
+          } else {
+            setShowAwardPresentationModal(true);
+          }
         }}
         onMoritalksAwardPresentation={() => {
           setSelectedActivityItem(null);
           setShowBoothMenuModal(false);
           setShowAwardPresentationModal(true);
+        }}
+        onPhotoboothHighAngel={() => {
+          setSelectedActivityItem(null);
+          setShowBoothMenuModal(false);
+          setShowPhotoboothModal(true);
         }}
       />
 
@@ -1052,7 +1067,31 @@ export const HomePage: React.FC = () => {
         isOpen={showBoothDrawer}
         boothData={morinagaBooth}
         onClose={() => setShowBoothDrawer(false)}
-        onPodcastScheduleClick={() => {
+        onPodcastScheduleClick={async () => {
+          if (morinagaBooth?.podcast) {
+            setPodcastTitle(morinagaBooth.podcast.name || "Moritalks Podcast");
+            setPodcastTopic(morinagaBooth.podcast.topic || "");
+            const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
+              isSessionToday(s.start_at, s.end_at),
+            );
+            setPodcastSessions(
+              today.length > 0 ? today : morinagaBooth.podcast.sessions || [],
+            );
+          } else if (morinagaBooth?.id) {
+            try {
+              const pod = await getKalbeBoothPodcastByRefID(morinagaBooth.id);
+              if (pod) {
+                setPodcastTitle(pod.name || "Moritalks Podcast");
+                setPodcastTopic(pod.topic || "");
+                const today = (pod.sessions || []).filter((s) =>
+                  isSessionToday(s.start_at, s.end_at),
+                );
+                setPodcastSessions(today.length > 0 ? today : pod.sessions || []);
+              }
+            } catch {
+              // fallback to defaults
+            }
+          }
           setShowPodcastScheduleModal(true);
         }}
         onContinueClick={() => {
@@ -1076,6 +1115,7 @@ export const HomePage: React.FC = () => {
       <PodcastScheduleModal
         isOpen={showPodcastScheduleModal}
         podcastTitle={podcastTitle}
+        topic={podcastTopic}
         sessions={podcastSessions}
         onClose={() => {
           setShowPodcastScheduleModal(false);
@@ -1089,6 +1129,16 @@ export const HomePage: React.FC = () => {
         activityItem={selectedActivityItem}
         onClose={() => {
           setShowAwardPresentationModal(false);
+          setShowBoothMenuModal(true);
+        }}
+      />
+
+      {/* 8c. Photobooth High Angel Modal */}
+      <PhotoboothModal
+        isOpen={showPhotoboothModal}
+        activityItem={selectedActivityItem}
+        onClose={() => {
+          setShowPhotoboothModal(false);
           setShowBoothMenuModal(true);
         }}
       />

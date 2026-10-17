@@ -73,6 +73,7 @@ export function BoothActivitiesPage() {
   const [podcastModalOpen, setPodcastModalOpen] = useState(false);
   const [editingPodcast, setEditingPodcast] = useState<KalbeBoothPodcastResponse | null>(null);
   const [podcastName, setPodcastName] = useState('');
+  const [podcastTopic, setPodcastTopic] = useState('');
   const [podcastRefId, setPodcastRefId] = useState('');
   const [podcastSessions, setPodcastSessions] = useState<PodcastSessionDraft[]>([]);
   const [savingPodcast, setSavingPodcast] = useState(false);
@@ -156,6 +157,7 @@ export function BoothActivitiesPage() {
     return podcasts.filter((pod) => {
       const matchesSearch =
         pod.name.toLowerCase().includes(podcastSearch.toLowerCase()) ||
+        (pod.topic || '').toLowerCase().includes(podcastSearch.toLowerCase()) ||
         (boothMap.get(pod.ref_id) || '').toLowerCase().includes(podcastSearch.toLowerCase()) ||
         (pod.sessions || []).some((s) => s.speaker.toLowerCase().includes(podcastSearch.toLowerCase()));
       const matchesBooth = selectedBoothFilter === 'all' || pod.ref_id === selectedBoothFilter;
@@ -361,6 +363,7 @@ export function BoothActivitiesPage() {
   const openCreatePodcast = () => {
     setEditingPodcast(null);
     setPodcastName('');
+    setPodcastTopic('');
     setPodcastRefId(booths.length > 0 ? booths[0].id : '');
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -377,6 +380,7 @@ export function BoothActivitiesPage() {
   const openEditPodcast = (pod: KalbeBoothPodcastResponse) => {
     setEditingPodcast(pod);
     setPodcastName(pod.name);
+    setPodcastTopic(pod.topic || '');
     setPodcastRefId(pod.ref_id);
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 3600000);
@@ -431,6 +435,10 @@ export function BoothActivitiesPage() {
       showToast('error', 'Nama Podcast wajib diisi');
       return;
     }
+    if (!podcastTopic.trim()) {
+      showToast('error', 'Topik Podcast wajib diisi');
+      return;
+    }
     if (!podcastRefId) {
       showToast('error', 'Pilih Booth terlebih dahulu');
       return;
@@ -446,6 +454,7 @@ export function BoothActivitiesPage() {
 
     const payload: KalbeBoothPodcastRequest = {
       name: podcastName.trim(),
+      topic: podcastTopic.trim(),
       ref_id: podcastRefId,
       sessions: validSessions,
     };
@@ -810,6 +819,7 @@ export function BoothActivitiesPage() {
                   <tr>
                     <th style={{ width: 60 }}>No</th>
                     <th>Nama Podcast</th>
+                    <th>Topik</th>
                     <th>Booth Reference</th>
                     <th>Sesi & Pembicara</th>
                     <th>Dibuat Pada</th>
@@ -819,7 +829,7 @@ export function BoothActivitiesPage() {
                 <tbody>
                   {filteredPodcasts.length === 0 ? (
                     <tr>
-                      <td colSpan={isBrand ? 5 : 6} style={{ textAlign: 'center', padding: 45 }}>
+                      <td colSpan={isBrand ? 6 : 7} style={{ textAlign: 'center', padding: 45 }}>
                         <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>🎙️</div>
                         <div style={{ color: 'var(--admin-text-secondary)', fontSize: 14 }}>
                           Belum ada podcast booth yang ditemukan
@@ -832,6 +842,9 @@ export function BoothActivitiesPage() {
                         <td style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>{index + 1}</td>
                         <td>
                           <span style={{ fontWeight: 600, color: 'var(--admin-text)' }}>{pod.name}</span>
+                        </td>
+                        <td>
+                          <span style={{ color: 'var(--admin-text-secondary)', fontSize: 13 }}>{pod.topic || '-'}</span>
                         </td>
                         <td>
                           <span className="admin-badge admin-badge-primary">
@@ -1192,11 +1205,11 @@ export function BoothActivitiesPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="admin-field">
                     <label>
-                      Nama / Tema Podcast <span className="required">*</span>
+                      Nama Podcast <span className="required">*</span>
                     </label>
                     <input
                       className="admin-input"
-                      placeholder="Contoh: Bincang Sehat Bersama Ahli Gizi"
+                      placeholder="Contoh: Moritalks Podcast"
                       value={podcastName}
                       onChange={(e) => setPodcastName(e.target.value)}
                       required
@@ -1204,6 +1217,19 @@ export function BoothActivitiesPage() {
                   </div>
 
                   <div className="admin-field">
+                    <label>
+                      Topik Podcast <span className="required">*</span>
+                    </label>
+                    <input
+                      className="admin-input"
+                      placeholder="Contoh: Alergi & Gastro"
+                      value={podcastTopic}
+                      onChange={(e) => setPodcastTopic(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-field" style={{ gridColumn: 'span 2' }}>
                     <label>
                       Pilih Booth Terkait <span className="required">*</span>
                     </label>
