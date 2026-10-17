@@ -286,7 +286,7 @@ export const PostTestPage: React.FC = () => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-4 pb-5 overflow-hidden"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
@@ -299,7 +299,7 @@ export const PostTestPage: React.FC = () => {
           title="Kembali"
         >
           <img
-            src="/assets/post-test-arrow.png"
+            src="/assets/post-test-arrow.webp"
             alt="Back"
             className="w-8 h-8 object-contain drop-shadow-sm"
           />
@@ -406,7 +406,7 @@ export const PostTestPage: React.FC = () => {
           <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
-              backgroundImage: `url('/assets/red-and-white-curve-bg-long.png')`,
+              backgroundImage: `url('/assets/red-and-white-curve-bg-long.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -425,7 +425,7 @@ export const PostTestPage: React.FC = () => {
               : "cursor-pointer active:scale-95 hover:brightness-105"
           }`}
           style={{
-            backgroundImage: `url('/assets/red-button.png')`,
+            backgroundImage: `url('/assets/red-button.webp')`,
             backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
           }}

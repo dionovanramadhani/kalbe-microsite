@@ -39,7 +39,7 @@ export const SymposiumUpcomingModal: React.FC<SymposiumUpcomingModalProps> = ({
           isClosing ? "animate-modal-out" : "animate-modal-in"
         }`}
         style={{
-          backgroundImage: `url('/assets/modal-background.png')`,
+          backgroundImage: `url('/assets/modal-background.webp')`,
           backgroundSize: "100% 100%",
           backgroundRepeat: "no-repeat",
         }}
@@ -58,7 +58,7 @@ export const SymposiumUpcomingModal: React.FC<SymposiumUpcomingModalProps> = ({
           {/* 3D Red Clock Graphic (Enlarged) */}
           <div className="w-full flex justify-center shrink-0 mb-0.5 -mt-3">
             <img
-              src="/assets/clock-red.png"
+              src="/assets/clock-red.webp"
               alt="Clock"
               className="w-[150px] h-auto object-contain drop-shadow-md pointer-events-none select-none"
             />
@@ -115,7 +115,7 @@ export const SymposiumUpcomingModal: React.FC<SymposiumUpcomingModalProps> = ({
               onClick={onClose}
               className="relative w-[180px] h-[50px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 mb-1 mt-2"
               style={{
-                backgroundImage: `url('/assets/red-button.png')`,
+                backgroundImage: `url('/assets/red-button.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}

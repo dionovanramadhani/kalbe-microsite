@@ -74,7 +74,11 @@ export function getUserData(): AuthUser | null {
   try {
     const userStr = localStorage.getItem('user') || localStorage.getItem('kalbe_auth_user');
     if (userStr) {
-      return JSON.parse(userStr);
+      const user = JSON.parse(userStr);
+      if (user && typeof user === 'object' && typeof user.avatar === 'string') {
+        user.avatar = user.avatar.replace(/\.png$/i, '.webp');
+      }
+      return user;
     }
   } catch (err) {
     console.error('Failed to parse user data from localStorage:', err);

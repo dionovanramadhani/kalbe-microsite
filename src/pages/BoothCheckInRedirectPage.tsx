@@ -81,7 +81,7 @@ export const BoothCheckInRedirectPage: React.FC = () => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-center items-center bg-cover bg-top select-none px-6 py-8"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >

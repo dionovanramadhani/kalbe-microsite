@@ -50,7 +50,14 @@ const loadRewardsForCurrentUser = (): RewardItem[] => {
           )
           .map((item) =>
             item.id === "early-life" ? { ...item, obtained: false, claimed: false } : item,
-          );
+          )
+          .map((item) => ({
+            ...item,
+            icon: item.icon ? item.icon.replace(/\.png$/i, ".webp") : item.icon,
+            rewardImage: item.rewardImage
+              ? item.rewardImage.replace(/\.png$/i, ".webp")
+              : item.rewardImage,
+          }));
       }
     } catch (e) {
       console.warn("Failed to load rewards from localStorage:", e);

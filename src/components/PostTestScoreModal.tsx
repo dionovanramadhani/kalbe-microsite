@@ -21,7 +21,7 @@ export const PostTestScoreModal: React.FC<PostTestScoreModalProps> = ({
       {/* Red Sunburst Radial Light Burst Background - Diperbesar Melewati Batas Viewport (Static) */}
       <div className="absolute inset-0 pointer-events-none select-none flex items-center justify-center overflow-hidden z-0">
         <img
-          src="/assets/score-red-circle-background.png"
+          src="/assets/score-red-circle-background.webp"
           alt="Score Background Rays"
           className="w-full h-full object-cover scale-[2.2] origin-center"
         />
@@ -33,7 +33,7 @@ export const PostTestScoreModal: React.FC<PostTestScoreModalProps> = ({
         <div
           className="relative z-10 w-[290px] h-[340px] flex flex-col items-center justify-between pt-6 pb-6 px-4 shadow-2xl animate-popup-scale-up"
           style={{
-            backgroundImage: `url('/assets/skor-bg-white.png')`,
+            backgroundImage: `url('/assets/skor-bg-white.webp')`,
             backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
             fontFamily: "KalbeGeometric, Arial, sans-serif",
@@ -42,7 +42,7 @@ export const PostTestScoreModal: React.FC<PostTestScoreModalProps> = ({
           {/* Top Logo: Kalbe Universe */}
           <div className="w-full flex justify-center pt-1">
             <img
-              src="/assets/kalbe-universe-logo.png"
+              src="/assets/kalbe-universe-logo.webp"
               alt="Kalbe Universe"
               className="w-[140px] h-auto object-contain pointer-events-none"
             />
@@ -82,7 +82,7 @@ export const PostTestScoreModal: React.FC<PostTestScoreModalProps> = ({
               onClick={onConfirm}
               className="relative w-[195px] h-[48px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
               style={{
-                backgroundImage: `url('/assets/red-button.png')`,
+                backgroundImage: `url('/assets/red-button.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}

@@ -71,7 +71,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
           {/* 3D Red Clock Graphic */}
           <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
-              src="/assets/clock-red.png"
+              src="/assets/clock-red.webp"
               alt="Jadwal Podcast"
               className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
             />
@@ -129,7 +129,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                       <div
                         className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
                         style={{
-                          backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                          backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                           backgroundSize: "100% 100%",
                           backgroundRepeat: "no-repeat",
                         }}
@@ -166,7 +166,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                     <div
                       className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
                       style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                         backgroundSize: "100% 100%",
                         backgroundRepeat: "no-repeat",
                       }}

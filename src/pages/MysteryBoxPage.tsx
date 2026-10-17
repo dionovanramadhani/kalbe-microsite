@@ -83,8 +83,8 @@ export const MysteryBoxPage: React.FC = () => {
             claimed: item.is_claimed,
             isClaimable: item.is_claimable !== false,
             pin: item.pin,
-            icon: item.reward?.picture || "/assets/mistery-box.png",
-            rewardImage: item.reward?.picture || "/assets/mystery-box-reward.png",
+            icon: item.reward?.picture || "/assets/mistery-box.webp",
+            rewardImage: item.reward?.picture || "/assets/mystery-box-reward.webp",
             rewardName: item.reward?.name || "Hadiah Eksklusif Mystery Box",
           }))
         );
@@ -194,7 +194,7 @@ export const MysteryBoxPage: React.FC = () => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-4 pb-5 overflow-hidden"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
@@ -207,7 +207,7 @@ export const MysteryBoxPage: React.FC = () => {
           title="Kembali ke Homepage"
         >
           <img
-            src="/assets/post-test-arrow.png"
+            src="/assets/post-test-arrow.webp"
             alt="Back"
             className="w-8 h-8 object-contain drop-shadow-sm"
           />
@@ -243,7 +243,7 @@ export const MysteryBoxPage: React.FC = () => {
               {rewards.length === 0 ? (
                 <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
                   <img
-                    src="/assets/mystery-box-reward.png"
+                    src="/assets/mystery-box-reward.webp"
                     alt="Belum Ada Mystery Box"
                     className="w-[110px] h-auto object-contain mb-3 opacity-60 grayscale"
                   />
@@ -264,11 +264,11 @@ export const MysteryBoxPage: React.FC = () => {
                     {/* Left: Futuristic Hex Icon Container */}
                     <div className="w-[46px] h-[46px] shrink-0 flex items-center justify-center">
                       <img
-                        src={item.icon || "/assets/mistery-box.png"}
+                        src={item.icon || "/assets/mistery-box.webp"}
                         alt={item.title}
                         className="w-full h-full object-contain drop-shadow-sm"
                         onError={(e) => {
-                          e.currentTarget.src = "/assets/mistery-box.png";
+                          e.currentTarget.src = "/assets/mistery-box.webp";
                         }}
                       />
                     </div>
@@ -319,7 +319,7 @@ export const MysteryBoxPage: React.FC = () => {
           <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
-              backgroundImage: `url('/assets/red-and-white-curve-bg-long.png')`,
+              backgroundImage: `url('/assets/red-and-white-curve-bg-long.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -391,7 +391,7 @@ export const MysteryBoxPage: React.FC = () => {
               submittingPin ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
             }`}
             style={{
-              backgroundImage: `url('/assets/red-button.png')`,
+              backgroundImage: `url('/assets/red-button.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -410,7 +410,7 @@ export const MysteryBoxPage: React.FC = () => {
           setShowRewardSuccessModal(false);
           setClaimedRewardInfo(null);
         }}
-        imageSrc={claimedRewardInfo?.image || selectedReward?.rewardImage || "/assets/mystery-box-reward.png"}
+        imageSrc={claimedRewardInfo?.image || selectedReward?.rewardImage || "/assets/mystery-box-reward.webp"}
         imageAlt={claimedRewardInfo?.name || selectedReward?.rewardName || "Mystery Box Morinaga"}
         imageClassName="max-w-[185px] max-h-[145px] w-auto h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"

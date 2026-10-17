@@ -47,7 +47,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
         <div
           className="w-full bg-white rounded-[24px] overflow-hidden shadow-2xl relative pt-7 pb-8 px-6 flex flex-col items-center text-center select-none font-kalbe"
           style={{
-            backgroundImage: "url('/assets/red-and-white-curve-bg.png')",
+            backgroundImage: "url('/assets/red-and-white-curve-bg.webp')",
             backgroundSize: "cover",
             backgroundPosition: "top",
           }}
@@ -55,7 +55,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
           {/* Kalbe Universe Logo */}
           <div className="w-[160px] mx-auto mb-5 shrink-0">
             <img
-              src="/assets/kalbe-universe-logo.png"
+              src="/assets/kalbe-universe-logo.webp"
               alt="Kalbe Universe"
               className="w-full h-auto object-contain pointer-events-none select-none drop-shadow-sm"
             />

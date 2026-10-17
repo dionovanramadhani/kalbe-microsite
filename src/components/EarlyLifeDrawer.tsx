@@ -9,6 +9,7 @@ export interface EarlyLifeDrawerProps {
   onClose: () => void;
   onContinueClick?: () => void;
   boothData?: KalbeBoothResponse | null;
+  imageTitle?: string | null;
 }
 
 export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
@@ -16,13 +17,17 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
   onClose,
   onContinueClick,
   boothData,
+  imageTitle,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
   if (!isRendered) return null;
 
-  const headerImage = boothData?.image_title || "/assets/kalbe-early-life-solution-title-image.png";
-  const bannerImage = boothData?.detailing_banner || "/assets/kalbe-early-life-booth-image.png";
+  const fallbackTitle = "/assets/kalbe-early-life-solution-title-image.webp";
+  const fallbackBanner = "/assets/kalbe-early-life-booth-image.webp";
+
+  const headerImage = boothData?.image_title?.trim() || imageTitle?.trim() || fallbackTitle;
+  const bannerImage = boothData?.detailing_banner?.trim() || fallbackBanner;
   const title = boothData?.detailing_title || boothData?.name || "Kalbe Early Life Solutions";
   const description =
     boothData?.detailing_description ||
@@ -62,6 +67,14 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
             <img
               src={headerImage}
               alt={boothData?.name || "Kalbe Early Life Solutions"}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !== window.location.origin + fallbackTitle &&
+                  !e.currentTarget.src.endsWith(fallbackTitle)
+                ) {
+                  e.currentTarget.src = fallbackTitle;
+                }
+              }}
               className="w-full h-auto object-contain pointer-events-none select-none max-h-[60px]"
             />
           </div>
@@ -71,6 +84,14 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
             <img
               src={bannerImage}
               alt={title}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !== window.location.origin + fallbackBanner &&
+                  !e.currentTarget.src.endsWith(fallbackBanner)
+                ) {
+                  e.currentTarget.src = fallbackBanner;
+                }
+              }}
               className="w-full h-auto object-cover pointer-events-none select-none"
             />
           </div>
@@ -91,7 +112,7 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
               onClick={onContinueClick}
               className="w-52 h-[44px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
               style={{
-                backgroundImage: `url('/assets/red-button.png')`,
+                backgroundImage: `url('/assets/red-button.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}

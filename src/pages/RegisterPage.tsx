@@ -130,7 +130,7 @@ export const RegisterPage: React.FC = () => {
         speciality: json?.data?.speciality || speciality,
         practicePlace: json?.data?.practice_place || practicePlace.trim(),
         practiceAddress: json?.data?.practice_place_address || practiceAddress.trim(),
-        avatar: "/assets/docter-avatar.png",
+        avatar: "/assets/docter-avatar.webp",
       };
       saveRegisteredUser(userData);
 
@@ -166,7 +166,7 @@ export const RegisterPage: React.FC = () => {
     <div
       className="relative h-full w-full flex flex-col bg-cover bg-top select-none overflow-y-auto"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         WebkitOverflowScrolling: "touch",
       }}
     >
@@ -182,7 +182,7 @@ export const RegisterPage: React.FC = () => {
       <div className="relative h-[180px] w-full shrink-0 flex items-center justify-center pt-2">
         <div className="w-[175px] sm:w-[190px]">
           <img
-            src="/assets/kalbe-universe-logo.png"
+            src="/assets/kalbe-universe-logo.webp"
             alt="Kalbe Universe - Your Choice, Their Future."
             className="w-full h-auto object-contain pointer-events-none drop-shadow-sm"
           />

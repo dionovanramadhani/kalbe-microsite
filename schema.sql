@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
     speciality TEXT,                     -- PPDS, GP, DSA, Other
     practice_place TEXT,
     practice_address TEXT,
-    avatar TEXT DEFAULT '/assets/docter-avatar.png',
+    avatar TEXT DEFAULT '/assets/docter-avatar.webp',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -128,9 +128,9 @@ CREATE TABLE IF NOT EXISTS post_test_submissions (
 
 -- 1. Users Seed
 INSERT OR REPLACE INTO users (id, full_name, phone, email, speciality, practice_place, avatar) VALUES
-('user-1', 'User Test', '00000000', 'user@test.com', 'DSA', 'RSIA Bunda Jakarta', '/assets/docter-avatar.png'),
-('user-2', 'dr. Sarah Amanda, Sp.A', '081298765432', 'sarah@kalbe.co.id', 'PPDS', 'RS Cipto Mangunkusumo', '/assets/docter-avatar.png'),
-('user-3', 'dr. Budi Pratama', '081122334455', 'budi@kalbe.co.id', 'GP', 'Klinik Medika Sehat', '/assets/docter-avatar.png');
+('user-1', 'User Test', '00000000', 'user@test.com', 'DSA', 'RSIA Bunda Jakarta', '/assets/docter-avatar.webp'),
+('user-2', 'dr. Sarah Amanda, Sp.A', '081298765432', 'sarah@kalbe.co.id', 'PPDS', 'RS Cipto Mangunkusumo', '/assets/docter-avatar.webp'),
+('user-3', 'dr. Budi Pratama', '081122334455', 'budi@kalbe.co.id', 'GP', 'Klinik Medika Sehat', '/assets/docter-avatar.webp');
 
 -- 2. Master Symposium Seed
 INSERT OR REPLACE INTO symposium_master (
@@ -154,10 +154,10 @@ INSERT OR REPLACE INTO symposium_master (
 
 -- 3. Rewards Master Seed
 INSERT OR REPLACE INTO rewards (id, title, subtitle, icon, reward_name, reward_image) VALUES
-('morinaga-sympo', 'Morinaga Sympo', 'Mengikuti symposium', '/assets/morinaga-sympo-icon.png', 'Sport Gym Bag Morinaga', '/assets/reward-dummy-symposium.png'),
-('morinaga-booth', 'Morinaga Booth', 'Mengikuti Morinaga Booth', '/assets/morinaga-booth-icon.png', 'DOCTOR’S ACTIVE KIT Morinaga', '/assets/morinaga-booth-reward.png'),
-('early-life', 'Kalbe Early Life Solutions', 'Mengikuti Kalbe Early Life Solutions', '/assets/kalbe-60th-icon.png', 'DOCTOR’S ACTIVE KIT Morinaga', '/assets/morinaga-booth-reward.png'),
-('mistery-box', 'Mistery Box', 'Mengikuti Semua Misi', '/assets/mistery-box.png', 'MYSTERY BOX Morinaga', '/assets/mystery-box-reward.png');
+('morinaga-sympo', 'Morinaga Sympo', 'Mengikuti symposium', '/assets/morinaga-sympo-icon.webp', 'Sport Gym Bag Morinaga', '/assets/reward-dummy-symposium.webp'),
+('morinaga-booth', 'Morinaga Booth', 'Mengikuti Morinaga Booth', '/assets/morinaga-booth-icon.webp', 'DOCTOR’S ACTIVE KIT Morinaga', '/assets/morinaga-booth-reward.webp'),
+('early-life', 'Kalbe Early Life Solutions', 'Mengikuti Kalbe Early Life Solutions', '/assets/kalbe-60th-icon.webp', 'DOCTOR’S ACTIVE KIT Morinaga', '/assets/morinaga-booth-reward.webp'),
+('mistery-box', 'Mistery Box', 'Mengikuti Semua Misi', '/assets/mistery-box.webp', 'MYSTERY BOX Morinaga', '/assets/mystery-box-reward.webp');
 
 -- 4. Post-Test Questions Seed
 INSERT OR REPLACE INTO post_test_questions (id, question, options_json, correct_answer) VALUES

@@ -2,12 +2,15 @@ import React from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
+import type { KalbeBoothResponse } from "../admin/adminApi";
 
 export interface BoothDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onPodcastScheduleClick?: () => void;
   onContinueClick?: () => void;
+  boothData?: KalbeBoothResponse | null;
+  imageTitle?: string | null;
 }
 
 export const BoothDrawer: React.FC<BoothDrawerProps> = ({
@@ -15,10 +18,22 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
   onClose,
   onPodcastScheduleClick,
   onContinueClick,
+  boothData,
+  imageTitle,
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
   if (!isRendered) return null;
+
+  const fallbackTitle = "/assets/morinaga-booth-title.webp";
+  const fallbackBanner = "/assets/morinaga-booth-image.webp";
+
+  const headerImage = boothData?.image_title?.trim() || imageTitle?.trim() || fallbackTitle;
+  const bannerImage = boothData?.detailing_banner?.trim() || fallbackBanner;
+  const title = boothData?.detailing_title || boothData?.name || "MoriTalks Morinaga – Meet The Expert";
+  const description =
+    boothData?.detailing_description ||
+    "Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai topik seputar nutrisi, tumbuh kembang, dan kesehatan anak, dikemas dalam obrolan yang ringan, informatif, dan mudah dipahami";
 
   return (
     <div className={`absolute inset-0 z-50 flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
@@ -52,8 +67,16 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
           {/* Top Header Badge: Futuristic MORINAGA BOOTH Plate */}
           <div className="mb-4 w-[240px] sm:w-[255px] shrink-0 flex items-center justify-center drop-shadow-sm">
             <img
-              src="/assets/morinaga-booth-title.png"
-              alt="Morinaga Booth"
+              src={headerImage}
+              alt={boothData?.name || "Morinaga Booth"}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !== window.location.origin + fallbackTitle &&
+                  !e.currentTarget.src.endsWith(fallbackTitle)
+                ) {
+                  e.currentTarget.src = fallbackTitle;
+                }
+              }}
               className="w-full h-auto object-contain pointer-events-none select-none"
             />
           </div>
@@ -61,8 +84,16 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
           {/* Booth 3D Visual Artwork (slightly narrower width) */}
           <div className="w-[270px] sm:w-[280px] rounded-2xl overflow-hidden bg-black/5 shadow-sm mb-4 border border-gray-100 flex justify-center">
             <img
-              src="/assets/morinaga-booth-image.png"
-              alt="Morinaga Booth Detailing"
+              src={bannerImage}
+              alt={title}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !== window.location.origin + fallbackBanner &&
+                  !e.currentTarget.src.endsWith(fallbackBanner)
+                ) {
+                  e.currentTarget.src = fallbackBanner;
+                }
+              }}
               className="w-full h-auto object-cover pointer-events-none select-none"
             />
           </div>
@@ -70,12 +101,10 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
           {/* Content Heading & Description */}
           <div className="w-full text-left mb-5">
             <h3 className="text-[16px] font-extrabold text-[#111111] leading-tight mb-2 tracking-tight">
-              MoriTalks Morinaga – Meet The Expert
+              {title}
             </h3>
             <p className="text-[14px] font-normal text-[#222222B2] leading-relaxed">
-              Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai
-              topik seputar nutrisi, tumbuh kembang, dan kesehatan anak, dikemas dalam
-              obrolan yang ringan, informatif, dan mudah dipahami
+              {description}
             </p>
           </div>
 
@@ -86,7 +115,7 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
               onClick={onPodcastScheduleClick}
               className="flex-1 h-[42px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
               style={{
-                backgroundImage: `url('/assets/detailing-orange.png')`,
+                backgroundImage: `url('/assets/detailing-orange.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}
@@ -101,7 +130,7 @@ export const BoothDrawer: React.FC<BoothDrawerProps> = ({
               onClick={onContinueClick}
               className="flex-1 h-[42px] relative flex items-center justify-center cursor-pointer transition-transform active:scale-95 hover:brightness-105"
               style={{
-                backgroundImage: `url('/assets/detailing-red.png')`,
+                backgroundImage: `url('/assets/detailing-red.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}

@@ -84,7 +84,7 @@ function createTablesIfNotExist(db: Database) {
       speciality TEXT,
       practice_place TEXT,
       practice_address TEXT,
-      avatar TEXT DEFAULT '/assets/docter-avatar.png',
+      avatar TEXT DEFAULT '/assets/docter-avatar.webp',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -121,7 +121,7 @@ function seedDefaultDataIfEmpty(db: Database) {
       db.run(
         `INSERT OR REPLACE INTO users (id, full_name, phone, email, speciality, practice_place, avatar) 
          VALUES (?, ?, ?, ?, ?, ?, ?);`,
-        [u.id, u.fullName, u.phone, u.email, u.speciality || "", u.practicePlace || "", u.avatar || "/assets/docter-avatar.png"]
+        [u.id, u.fullName, u.phone, u.email, u.speciality || "", u.practicePlace || "", u.avatar || "/assets/docter-avatar.webp"]
       );
 
       // Seed default activity
@@ -161,7 +161,7 @@ export async function sqliteInsertUser(user: User): Promise<void> {
       user.speciality || "",
       user.practicePlace || "",
       user.practiceAddress || "",
-      user.avatar || "/assets/docter-avatar.png",
+      user.avatar || "/assets/docter-avatar.webp",
     ]
   );
 

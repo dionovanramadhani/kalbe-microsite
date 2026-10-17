@@ -346,7 +346,7 @@ export const LoginPage: React.FC = () => {
         speciality: respData.speciality || selectedDoctor?.speciality || "",
         master_doctor_id: respData.master_doctor_id || selectedDoctor?.id || "",
         role: respData.role || "user",
-        avatar: "/assets/docter-avatar.png",
+        avatar: "/assets/docter-avatar.webp",
       };
 
       setAuthSession(token, userData, rememberMe);
@@ -370,7 +370,7 @@ export const LoginPage: React.FC = () => {
   return (
     <div
       className="relative h-full w-full flex flex-col justify-between bg-cover bg-top select-none overflow-hidden"
-      style={{ backgroundImage: `url('/assets/tower-background.png')` }}
+      style={{ backgroundImage: `url('/assets/tower-background.webp')` }}
     >
       {/* Top Floating Toast Notification */}
       <Toast
@@ -384,7 +384,7 @@ export const LoginPage: React.FC = () => {
       <div className="relative h-[220px] sm:h-[240px] w-full shrink-0">
         <div className="absolute top-[68px] right-[16px] w-[172px]">
           <img
-            src="/assets/kalbe-universe-logo.png"
+            src="/assets/kalbe-universe-logo.webp"
             alt="Kalbe Universe - Your Choice, Their Future."
             className="w-full h-auto object-contain pointer-events-none drop-shadow-sm"
           />

@@ -6,6 +6,7 @@ import {
   getKalbeBoothPodcastByRefID,
   getKalbeBoothActivityByRefID,
   isSessionToday,
+  type KalbeBoothResponse,
   type KalbeBoothPodcastResponse,
   type KalbeBoothPodcastSession,
   type KalbeBoothActivityResponse,
@@ -16,6 +17,8 @@ export interface BoothMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
   boothId?: string;
+  boothData?: KalbeBoothResponse | null;
+  logo?: string | null;
   onStartDetailing?: () => void;
   onMoritalksPodcast?: (podcast: KalbeBoothPodcastResponse, todaySessions: KalbeBoothPodcastSession[]) => void;
   onSelectActivity?: (activityItem: KalbeBoothActivityItem) => void;
@@ -27,6 +30,8 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   isOpen,
   onClose,
   boothId,
+  boothData,
+  logo,
   onStartDetailing,
   onMoritalksPodcast,
   onSelectActivity,
@@ -103,11 +108,19 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
           <X className="w-5 h-5 stroke-[2.8]" />
         </button>
 
-        {/* Top Header Badge: Futuristic Antenna Radar + MORINAGA BOOTH Plate */}
+        {/* Top Header Badge: Dynamic Logo with Fallback */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[210px] shrink-0 flex items-center justify-center drop-shadow-lg z-10 pointer-events-none select-none">
           <img
-            src="/assets/morinaga-booth-image-2.png"
-            alt="Morinaga Booth"
+            src={boothData?.logo || logo || "/assets/morinaga-booth-image-2.webp"}
+            alt={boothData?.name || "Morinaga Booth"}
+            onError={(e) => {
+              if (
+                e.currentTarget.src !== window.location.origin + "/assets/morinaga-booth-image-2.webp" &&
+                !e.currentTarget.src.endsWith("/assets/morinaga-booth-image-2.webp")
+              ) {
+                e.currentTarget.src = "/assets/morinaga-booth-image-2.webp";
+              }
+            }}
             className="w-full h-auto object-contain"
           />
         </div>
@@ -187,7 +200,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
             onClick={onStartDetailing || onClose}
             className="relative z-10 w-[235px] sm:w-[245px] h-[48px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0"
             style={{
-              backgroundImage: `url('/assets/red-button.png')`,
+              backgroundImage: `url('/assets/red-button.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -229,7 +242,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                     }}
                     className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                     style={{
-                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                       backgroundSize: "100% 100%",
                       backgroundRepeat: "no-repeat",
                     }}
@@ -263,7 +276,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                     }}
                     className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                     style={{
-                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                       backgroundSize: "100% 100%",
                       backgroundRepeat: "no-repeat",
                     }}
@@ -289,7 +302,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                       onClick={() => onMoritalksPodcast && onMoritalksPodcast({ id: "", name: "Moritalks Podcast", ref_id: "", created_at: "", updated_at: "" }, [])}
                       className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                       style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                         backgroundSize: "100% 100%",
                         backgroundRepeat: "no-repeat",
                       }}
@@ -310,7 +323,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                       onClick={onMoritalksAwardPresentation}
                       className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                       style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                         backgroundSize: "100% 100%",
                         backgroundRepeat: "no-repeat",
                       }}
@@ -331,7 +344,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                       onClick={onPhotoboothHighAngel}
                       className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
                       style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                         backgroundSize: "100% 100%",
                         backgroundRepeat: "no-repeat",
                       }}

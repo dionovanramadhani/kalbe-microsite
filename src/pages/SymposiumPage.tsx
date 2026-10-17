@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Camera, RefreshCw, X } from "lucide-react";
 import jsQR from "jsqr";
@@ -410,10 +410,10 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
             <img
               src={
                 activeScanType === "early-life"
-                  ? "/assets/sample-qr-early-life.png"
+                  ? "/assets/sample-qr-early-life.webp"
                   : activeScanType === "booth"
-                    ? "/assets/sample-qr-booth.png"
-                    : "/assets/sample-qr-symposium.png"
+                    ? "/assets/sample-qr-booth.webp"
+                    : "/assets/sample-qr-symposium.webp"
               }
               alt="Sample QR Code"
               className="w-[180px] h-[180px] object-contain"
@@ -455,8 +455,10 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         ? "booth"
         : "symposium");
 
-  const apiBoothsRef = useRef<KalbeBoothResponse[]>(getCachedKalbeBooths());
-  const apiSymposRef = useRef<KalbeSymposiumResponse[]>(getCachedKalbeSymposiums());
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() => getCachedKalbeBooths());
+  const [apiSympos, setApiSympos] = useState<KalbeSymposiumResponse[]>(() => getCachedKalbeSymposiums());
+  const apiBoothsRef = useRef<KalbeBoothResponse[]>(apiBooths);
+  const apiSymposRef = useRef<KalbeSymposiumResponse[]>(apiSympos);
 
   useEffect(() => {
     let isMounted = true;
@@ -464,6 +466,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       .then((data) => {
         if (isMounted && data) {
           apiBoothsRef.current = data;
+          setApiBooths(data);
         }
       })
       .catch((e) => console.warn("Failed to preload booths:", e));
@@ -472,6 +475,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       .then((data) => {
         if (isMounted && data) {
           apiSymposRef.current = data;
+          setApiSympos(data);
         }
       })
       .catch((e) => console.warn("Failed to preload symposiums:", e));
@@ -480,6 +484,44 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       isMounted = false;
     };
   }, []);
+
+  const fallbackLogo = useMemo(() => {
+    if (activeScanType === "early-life") return "/assets/kalbe-early-life-solution-logo-scaner.webp";
+    if (activeScanType === "booth") return "/assets/morinaga-booth-image-2.webp";
+    return "/assets/morinaga-sympo-image.webp";
+  }, [activeScanType]);
+
+  const bannerLogo = useMemo(() => {
+    if (activeScanType === "early-life") {
+      const match = apiBooths.find(
+        (b) =>
+          b.name.toLowerCase().includes("early life") ||
+          b.name.toLowerCase().includes("kalbe early") ||
+          b.name.toLowerCase().includes("early")
+      ) || apiBooths[0];
+      return match?.logo || fallbackLogo;
+    }
+    if (activeScanType === "booth") {
+      const match = apiBooths.find(
+        (b) =>
+          b.name.toLowerCase().includes("morinaga") &&
+          !b.name.toLowerCase().includes("early")
+      );
+      return match?.logo || fallbackLogo;
+    }
+    const match = apiSympos.find(
+      (s) =>
+        s.title.toLowerCase().includes("morinaga") ||
+        s.title.toLowerCase().includes("sympo")
+    ) || apiSympos[0];
+    return match?.logo || fallbackLogo;
+  }, [activeScanType, apiBooths, apiSympos, fallbackLogo]);
+
+  const bannerAlt = useMemo(() => {
+    if (activeScanType === "early-life") return "Kalbe Early Life Solutions";
+    if (activeScanType === "booth") return "Morinaga Booth";
+    return "Morinaga Sympo";
+  }, [activeScanType]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -945,7 +987,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-2.5 pb-3 overflow-hidden"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
@@ -980,20 +1022,16 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           }
         >
           <img
-            src={
-              activeScanType === "early-life"
-                ? "/assets/kalbe-early-life-solution-logo-scaner.png"
-                : activeScanType === "booth"
-                  ? "/assets/morinaga-booth-image-2.png"
-                  : "/assets/morinaga-sympo-image.png"
-            }
-            alt={
-              activeScanType === "early-life"
-                ? "Kalbe Early Life Solutions"
-                : activeScanType === "booth"
-                  ? "Morinaga Booth"
-                  : "Morinaga Sympo"
-            }
+            src={bannerLogo}
+            alt={bannerAlt}
+            onError={(e) => {
+              if (
+                e.currentTarget.src !== window.location.origin + fallbackLogo &&
+                !e.currentTarget.src.endsWith(fallbackLogo)
+              ) {
+                e.currentTarget.src = fallbackLogo;
+              }
+            }}
             className="w-full h-auto object-contain drop-shadow-md pointer-events-none"
           />
         </div>
@@ -1053,7 +1091,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
-              backgroundImage: `url('/assets/scanner-frame-camera.png')`,
+              backgroundImage: `url('/assets/scanner-frame-camera.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -1070,7 +1108,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         > */}
         <div className="relative pointer-events-none select-none">
           <img
-            src="/assets/scan-image.png"
+            src="/assets/scan-image.webp"
             alt="Scan QR"
             className="w-[62px] h-[62px] sm:w-[66px] sm:h-[66px] object-contain drop-shadow-md"
           />

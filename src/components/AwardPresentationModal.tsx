@@ -27,9 +27,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
   const image = activityItem
     ? activityItem.activity_image ||
       (activityItem.name.toLowerCase().includes("award") || activityItem.name.toLowerCase().includes("presentation")
-        ? "/assets/grand-final-title.png"
+        ? "/assets/grand-final-title.webp"
         : null)
-    : "/assets/grand-final-title.png";
+    : "/assets/grand-final-title.webp";
   const description =
     activityItem?.description &&
     activityItem.description.trim() !== "" &&
@@ -69,7 +69,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
           {/* 3D Red Clock Graphic */}
           <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
-              src="/assets/clock-red.png"
+              src="/assets/clock-red.webp"
               alt="Jadwal Aktivitas"
               className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
             />
@@ -119,7 +119,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                 <div
                   className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
                   style={{
-                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.png')`,
+                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
                     backgroundSize: "100% 100%",
                     backgroundRepeat: "no-repeat",
                   }}

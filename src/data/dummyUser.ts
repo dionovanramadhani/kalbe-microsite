@@ -86,7 +86,7 @@ export const registerNewUser = (
       id: `user-${Date.now()}`,
       phone: cleanPhone,
       email: cleanEmail,
-      avatar: userData.avatar || '/assets/docter-avatar.png',
+      avatar: userData.avatar || '/assets/docter-avatar.webp',
     };
 
     // 1. Simpan di LocalStorage
@@ -206,6 +206,12 @@ export const getCurrentUser = (): User | null => {
           ''
         ).trim();
 
+        const rawAvatar = parsed.avatar || '/assets/docter-avatar.webp';
+        const cleanAvatar =
+          typeof rawAvatar === 'string'
+            ? rawAvatar.replace(/\.png$/i, '.webp')
+            : '/assets/docter-avatar.webp';
+
         return {
           id: String(parsed.id || ''),
           fullName: fullName,
@@ -214,7 +220,7 @@ export const getCurrentUser = (): User | null => {
           speciality: parsed.speciality || '',
           practicePlace: parsed.practicePlace || parsed.practice_place || '',
           practiceAddress: parsed.practiceAddress || parsed.practice_place_address || '',
-          avatar: parsed.avatar || '/assets/docter-avatar.png',
+          avatar: cleanAvatar,
         };
       }
     }

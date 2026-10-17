@@ -61,8 +61,8 @@ const formatDate = (dateStr?: string | null): string => {
 const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardItem => {
   let title: string;
   let subtitle: string;
-  let icon = "/assets/morinaga-sympo-icon.png";
-  let rewardImage = "/assets/reward-box.png";
+  let icon = "/assets/morinaga-sympo-icon.webp";
+  let rewardImage = "/assets/reward-box.webp";
   let rewardName = "Special Reward";
 
   const type = (item.reward_type || "").toLowerCase();
@@ -72,16 +72,16 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     title = sympoName;
     subtitle = `Mengikuti ${sympoName}`;
     icon =
-      item.symposium?.icon || item.symposium?.logo || "/assets/morinaga-sympo-icon.png";
-    rewardImage = "/assets/reward-box.png";
+      item.symposium?.icon || item.symposium?.logo || "/assets/morinaga-sympo-icon.webp";
+    rewardImage = "/assets/reward-box.webp";
     rewardName = "Paket Spesial Morinaga";
   } else if (type === "booth") {
     const boothName =
       item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
     title = boothName;
     subtitle = `Mengikuti ${boothName}`;
-    icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon.png";
-    rewardImage = "/assets/morinaga-booth-reward.png";
+    icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon.webp";
+    rewardImage = "/assets/morinaga-booth-reward.webp";
     rewardName = "Hadiah Booth Morinaga";
   } else if (type.includes("early") || type.includes("life")) {
     const earlyLifeName =
@@ -90,14 +90,14 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
       "Kalbe Early Life Solutions";
     title = earlyLifeName;
     subtitle = `Mengikuti ${earlyLifeName}`;
-    icon = "/assets/kalbe-early-life-icon.png";
-    rewardImage = "/assets/spin-wheel-reward.png";
+    icon = item.booth?.icon || item.booth?.logo || "/assets/kalbe-60th-icon.webp";
+    rewardImage = "/assets/spin-wheel-reward.webp";
     rewardName = "Kesempatan Spin Wheel";
   } else if (type.includes("mystery")) {
     title = "Mystery Box";
     subtitle = "Mengikuti semua booth dan symposium";
-    icon = "/assets/mistery-box.png";
-    rewardImage = "/assets/mystery-box-reward.png";
+    icon = "/assets/mistery-box.webp";
+    rewardImage = "/assets/mystery-box-reward.webp";
     rewardName = "Hadiah Eksklusif Mystery Box";
   } else {
     const defaultName =
@@ -271,7 +271,7 @@ export const ClaimRewardPage: React.FC = () => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-between items-center bg-cover bg-top select-none px-4 pt-4 pb-5 overflow-hidden"
       style={{
-        backgroundImage: `url('/assets/red-and-white-curve-bg.png')`,
+        backgroundImage: `url('/assets/red-and-white-curve-bg.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
@@ -284,7 +284,7 @@ export const ClaimRewardPage: React.FC = () => {
           title="Kembali ke Homepage"
         >
           <img
-            src="/assets/post-test-arrow.png"
+            src="/assets/post-test-arrow.webp"
             alt="Back"
             className="w-8 h-8 object-contain drop-shadow-sm"
           />
@@ -320,7 +320,7 @@ export const ClaimRewardPage: React.FC = () => {
                 {rewards.length === 0 ? (
                   <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
                     <img
-                      src="/assets/reward-box.png"
+                      src="/assets/reward-box.webp"
                       alt="Belum Ada Hadiah"
                       className="w-[100px] h-auto object-contain mb-3 opacity-60 grayscale"
                     />
@@ -346,8 +346,8 @@ export const ClaimRewardPage: React.FC = () => {
                           onError={(e) => {
                             e.currentTarget.src =
                               item.rewardType === "booth"
-                                ? "/assets/morinaga-booth-icon.png"
-                                : "/assets/morinaga-sympo-icon.png";
+                                ? "/assets/morinaga-booth-icon.webp"
+                                : "/assets/morinaga-sympo-icon.webp";
                           }}
                         />
                       </div>
@@ -402,7 +402,7 @@ export const ClaimRewardPage: React.FC = () => {
           <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
-              backgroundImage: `url('/assets/red-and-white-curve-bg-long.png')`,
+              backgroundImage: `url('/assets/red-and-white-curve-bg-long.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -477,7 +477,7 @@ export const ClaimRewardPage: React.FC = () => {
               submittingPin ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
             }`}
             style={{
-              backgroundImage: `url('/assets/red-button.png')`,
+              backgroundImage: `url('/assets/red-button.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}

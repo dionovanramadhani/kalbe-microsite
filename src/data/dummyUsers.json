@@ -6,7 +6,7 @@
     "email": "user@test.com",
     "speciality": "DSA",
     "practicePlace": "RSIA Bunda Jakarta",
-    "avatar": "/assets/docter-avatar.png"
+    "avatar": "/assets/docter-avatar.webp"
   },
   {
     "id": "user-2",
@@ -15,7 +15,7 @@
     "email": "sarah@kalbe.co.id",
     "speciality": "PPDS",
     "practicePlace": "RS Cipto Mangunkusumo",
-    "avatar": "/assets/docter-avatar.png"
+    "avatar": "/assets/docter-avatar.webp"
   },
   {
     "id": "user-3",
@@ -24,6 +24,6 @@
     "email": "budi@kalbe.co.id",
     "speciality": "GP",
     "practicePlace": "Klinik Medika Sehat",
-    "avatar": "/assets/docter-avatar.png"
+    "avatar": "/assets/docter-avatar.webp"
   }
 ]

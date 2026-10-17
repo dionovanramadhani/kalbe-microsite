@@ -55,9 +55,9 @@ interface MissionItem {
   symposiumData?: KalbeSymposiumResponse;
 }
 
-const DEFAULT_BOOTH_ICON = "/assets/morinaga-booth-icon.png";
-const DEFAULT_SYMPO_ICON = "/assets/morinaga-sympo-icon.png";
-const DEFAULT_EARLY_LIFE_ICON = "/assets/kalbe-60th-icon.png";
+const DEFAULT_BOOTH_ICON = "/assets/morinaga-booth-icon.webp";
+const DEFAULT_SYMPO_ICON = "/assets/morinaga-sympo-icon.webp";
+const DEFAULT_EARLY_LIFE_ICON = "/assets/kalbe-60th-icon.webp";
 
 const resolveMissionIcon = (
   rawIcon: string | null | undefined,
@@ -67,12 +67,7 @@ const resolveMissionIcon = (
     return fallbackAsset;
   }
   const trimmed = rawIcon.trim();
-  if (
-    !trimmed ||
-    trimmed === "null" ||
-    trimmed === "undefined" ||
-    trimmed === "-"
-  ) {
+  if (!trimmed || trimmed === "null" || trimmed === "undefined" || trimmed === "-") {
     return fallbackAsset;
   }
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -127,8 +122,12 @@ export const HomePage: React.FC = () => {
     return isMysteryBoxClaimed();
   });
 
-  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() => getCachedKalbeBooths());
-  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>(() => getCachedKalbeSymposiums());
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() =>
+    getCachedKalbeBooths(),
+  );
+  const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>(() =>
+    getCachedKalbeSymposiums(),
+  );
 
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
 
@@ -150,81 +149,105 @@ export const HomePage: React.FC = () => {
       getKalbeBoothsList().catch(() => [] as KalbeBoothResponse[]),
       getKalbeSymposiumsList().catch(() => [] as KalbeSymposiumResponse[]),
       getKalbeUserHistory().catch(() => [] as KalbeHistoryItemResponse[]),
-    ]).then(([booths, sympos, historyList]) => {
-      if (!isMounted) return;
-      if (booths && booths.length > 0) setApiBooths(booths);
-      if (sympos && sympos.length > 0) setApiSymposiums(sympos);
+    ])
+      .then(([booths, sympos, historyList]) => {
+        if (!isMounted) return;
+        if (booths && booths.length > 0) setApiBooths(booths);
+        if (sympos && sympos.length > 0) setApiSymposiums(sympos);
 
-      // Track completed activities from API:
-      const morinagaBooth = booths.find(
-        (b) =>
-          b.name.toLowerCase().includes("morinaga") ||
-          (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early")),
-      );
-      const earlyLifeBooth = booths.find(
-        (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
-      );
-      const morinagaSympo =
-        sympos.find(
-          (s) =>
-            s.title.toLowerCase().includes("morinaga") ||
-            s.title.toLowerCase().includes("sympo"),
-        ) || sympos[0];
+        // Track completed activities from API:
+        const morinagaBooth = booths.find(
+          (b) =>
+            b.name.toLowerCase().includes("morinaga") ||
+            (b.name.toLowerCase().includes("booth") &&
+              !b.name.toLowerCase().includes("early")),
+        );
+        const earlyLifeBooth = booths.find(
+          (b) =>
+            b.name.toLowerCase().includes("early") ||
+            b.name.toLowerCase().includes("life"),
+        );
+        const morinagaSympo =
+          sympos.find(
+            (s) =>
+              s.title.toLowerCase().includes("morinaga") ||
+              s.title.toLowerCase().includes("sympo"),
+          ) || sympos[0];
 
-      const hasSympoHistory = historyList.some((h) => h.reward_type === "symposium");
-      const hasMorinagaHistory = historyList.some(
-        (h) =>
-          h.reward_type === "booth" &&
-          (h.booth?.name?.toLowerCase().includes("morinaga") ||
-            h.label?.toLowerCase().includes("morinaga") ||
-            (!h.label?.toLowerCase().includes("early") && !h.booth?.name?.toLowerCase().includes("early"))),
-      );
-      const hasEarlyLifeHistory = historyList.some(
-        (h) =>
-          h.reward_type === "booth" &&
-          (h.booth?.name?.toLowerCase().includes("early") ||
-            h.label?.toLowerCase().includes("early")),
-      );
+        const hasSympoHistory = historyList.some((h) => h.reward_type === "symposium");
+        const hasMorinagaHistory = historyList.some(
+          (h) =>
+            h.reward_type === "booth" &&
+            (h.booth?.name?.toLowerCase().includes("morinaga") ||
+              h.label?.toLowerCase().includes("morinaga") ||
+              (!h.label?.toLowerCase().includes("early") &&
+                !h.booth?.name?.toLowerCase().includes("early"))),
+        );
+        const hasEarlyLifeHistory = historyList.some(
+          (h) =>
+            h.reward_type === "booth" &&
+            (h.booth?.name?.toLowerCase().includes("early") ||
+              h.label?.toLowerCase().includes("early")),
+        );
 
-      const isPostTestFinished = Boolean(
-        morinagaSympo?.is_completed || hasSympoHistory || isPostTestCompleted() || hasPostTestSuccess,
-      );
-      const isMorinagaFinished = Boolean(
-        morinagaBooth?.is_completed || hasMorinagaHistory || isBoothDetailingCompleted() || hasBoothSuccess,
-      );
-      const isEarlyLifeFinished = Boolean(
-        earlyLifeBooth?.is_completed || hasEarlyLifeHistory || isEarlyLifeDetailingCompleted() || hasEarlyLifeSuccess,
-      );
+        const isPostTestFinished = Boolean(
+          morinagaSympo?.is_completed ||
+          hasSympoHistory ||
+          isPostTestCompleted() ||
+          hasPostTestSuccess,
+        );
+        const isMorinagaFinished = Boolean(
+          morinagaBooth?.is_completed ||
+          hasMorinagaHistory ||
+          isBoothDetailingCompleted() ||
+          hasBoothSuccess,
+        );
+        const isEarlyLifeFinished = Boolean(
+          earlyLifeBooth?.is_completed ||
+          hasEarlyLifeHistory ||
+          isEarlyLifeDetailingCompleted() ||
+          hasEarlyLifeSuccess,
+        );
 
-      setPostTestDone(isPostTestFinished);
-      setBoothDone(isMorinagaFinished);
-      setEarlyLifeDone(isEarlyLifeFinished);
+        setPostTestDone(isPostTestFinished);
+        setBoothDone(isMorinagaFinished);
+        setEarlyLifeDone(isEarlyLifeFinished);
 
-      if (isPostTestFinished) setPostTestCompleted(true);
-      if (isMorinagaFinished) setBoothDetailingCompleted(true);
-      if (isEarlyLifeFinished) setEarlyLifeDetailingCompleted(true);
+        if (isPostTestFinished) setPostTestCompleted(true);
+        if (isMorinagaFinished) setBoothDetailingCompleted(true);
+        if (isEarlyLifeFinished) setEarlyLifeDetailingCompleted(true);
 
-      // Track Mystery Box from API:
-      const mysteryBoxHistory = historyList.find(
-        (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery"),
-      );
-      const allActivitiesDone = isPostTestFinished && isMorinagaFinished && isEarlyLifeFinished;
-      const userHasMysteryBox = Boolean(mysteryBoxHistory || allActivitiesDone);
-      const isMbClaimed = Boolean(mysteryBoxHistory?.is_claimed);
+        // Track Mystery Box from API:
+        const mysteryBoxHistory = historyList.find(
+          (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery"),
+        );
+        const allActivitiesDone =
+          isPostTestFinished && isMorinagaFinished && isEarlyLifeFinished;
+        const userHasMysteryBox = Boolean(mysteryBoxHistory || allActivitiesDone);
+        const isMbClaimed = Boolean(mysteryBoxHistory?.is_claimed);
 
-      const isMbClaimable = mysteryBoxHistory ? mysteryBoxHistory.is_claimable !== false : true;
-      setHasMysteryBox(userHasMysteryBox);
-      setMysteryBoxClaimed(isMbClaimed);
-      setHasUnclaimedMysteryBoxState(userHasMysteryBox && !isMbClaimed && isMbClaimable);
+        const isMbClaimable = mysteryBoxHistory
+          ? mysteryBoxHistory.is_claimable !== false
+          : true;
+        setHasMysteryBox(userHasMysteryBox);
+        setMysteryBoxClaimed(isMbClaimed);
+        setHasUnclaimedMysteryBoxState(
+          userHasMysteryBox && !isMbClaimed && isMbClaimable,
+        );
 
-      // Unclaimed non-mystery rewards count:
-      const unclaimedCount = historyList.filter(
-        (h) => !h.is_claimed && (h.is_claimable !== false) && h.reward_type !== "mystery_box" && !h.reward_type?.includes("mystery"),
-      ).length;
-      setUnclaimedRewardsCount(unclaimedCount);
-    }).catch((err) => {
-      console.warn("Failed to fetch user state in HomePage:", err);
-    });
+        // Unclaimed non-mystery rewards count:
+        const unclaimedCount = historyList.filter(
+          (h) =>
+            !h.is_claimed &&
+            h.is_claimable !== false &&
+            h.reward_type !== "mystery_box" &&
+            !h.reward_type?.includes("mystery"),
+        ).length;
+        setUnclaimedRewardsCount(unclaimedCount);
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch user state in HomePage:", err);
+      });
 
     return () => {
       isMounted = false;
@@ -345,7 +368,11 @@ export const HomePage: React.FC = () => {
 
   const handleClosePostTestModal = () => {
     setShowPostTestModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
+    if (
+      isAllActivitiesCompleted() &&
+      !isMysteryBoxClaimed() &&
+      !isMysteryBoxPopupShown()
+    ) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
@@ -356,7 +383,11 @@ export const HomePage: React.FC = () => {
 
   const handleCloseBoothCompletionModal = () => {
     setShowBoothCompletionModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
+    if (
+      isAllActivitiesCompleted() &&
+      !isMysteryBoxClaimed() &&
+      !isMysteryBoxPopupShown()
+    ) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
@@ -367,7 +398,11 @@ export const HomePage: React.FC = () => {
 
   const handleCloseEarlyLifeCompletionModal = () => {
     setShowEarlyLifeCompletionModal(false);
-    if (isAllActivitiesCompleted() && !isMysteryBoxClaimed() && !isMysteryBoxPopupShown()) {
+    if (
+      isAllActivitiesCompleted() &&
+      !isMysteryBoxClaimed() &&
+      !isMysteryBoxPopupShown()
+    ) {
       checkAndUnlockMysteryBox();
       setHasMysteryBox(true);
       setHasUnclaimedMysteryBoxState(true);
@@ -415,13 +450,15 @@ export const HomePage: React.FC = () => {
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
   const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
   const [podcastTitle, setPodcastTitle] = useState<string>("Moritalks Podcast");
-  const [selectedActivityItem, setSelectedActivityItem] = useState<KalbeBoothActivityItem | null>(null);
+  const [selectedActivityItem, setSelectedActivityItem] =
+    useState<KalbeBoothActivityItem | null>(null);
 
   const morinagaBooth = useMemo(() => {
     return apiBooths.find(
       (b) =>
         b.name.toLowerCase().includes("morinaga") ||
-        (b.name.toLowerCase().includes("booth") && !b.name.toLowerCase().includes("early"))
+        (b.name.toLowerCase().includes("booth") &&
+          !b.name.toLowerCase().includes("early")),
     );
   }, [apiBooths]);
 
@@ -430,7 +467,7 @@ export const HomePage: React.FC = () => {
       (b) =>
         b.name.toLowerCase().includes("early") ||
         b.name.toLowerCase().includes("kalbe") ||
-        b.name.toLowerCase().includes("life")
+        b.name.toLowerCase().includes("life"),
     );
   }, [apiBooths]);
 
@@ -443,7 +480,7 @@ export const HomePage: React.FC = () => {
       apiSymposiums.find(
         (s) =>
           s.title.toLowerCase().includes("sympo") ||
-          s.title.toLowerCase().includes("morinaga")
+          s.title.toLowerCase().includes("morinaga"),
       ) || apiSymposiums[0];
 
     const list: MissionItem[] = [
@@ -481,14 +518,25 @@ export const HomePage: React.FC = () => {
 
     const getOrder = (title: string): number => {
       const lower = title.toLowerCase();
-      if (lower.includes("booth") || (lower.includes("morinaga") && !lower.includes("sympo"))) return 1;
+      if (
+        lower.includes("booth") ||
+        (lower.includes("morinaga") && !lower.includes("sympo"))
+      )
+        return 1;
       if (lower.includes("sympo") || lower.includes("simposium")) return 2;
       if (lower.includes("early") || lower.includes("kalbe")) return 3;
       return 99;
     };
 
     return list.sort((a, b) => getOrder(a.title) - getOrder(b.title));
-  }, [apiSymposiums, boothDone, postTestDone, earlyLifeDone, morinagaBooth, earlyLifeBooth]);
+  }, [
+    apiSymposiums,
+    boothDone,
+    postTestDone,
+    earlyLifeDone,
+    morinagaBooth,
+    earlyLifeBooth,
+  ]);
 
   useEffect(() => {
     if (
@@ -539,7 +587,7 @@ export const HomePage: React.FC = () => {
     <div
       className="font-kalbe relative h-full w-full flex flex-col justify-between bg-cover bg-top select-none overflow-hidden pb-3"
       style={{
-        backgroundImage: `url('/assets/tower-background.png')`,
+        backgroundImage: `url('/assets/tower-background.webp')`,
         fontFamily: "KalbeGeometric, Arial, sans-serif",
       }}
     >
@@ -547,7 +595,7 @@ export const HomePage: React.FC = () => {
       <div className="relative h-[185px] w-full shrink-0">
         <div className="absolute top-[42px] right-[16px] w-[172px]">
           <img
-            src="/assets/kalbe-universe-logo.png"
+            src="/assets/kalbe-universe-logo.webp"
             alt="Kalbe Universe - Your Choice, Their Future."
             className="w-full h-auto object-contain pointer-events-none drop-shadow-sm"
           />
@@ -560,16 +608,19 @@ export const HomePage: React.FC = () => {
         <div
           className="relative flex items-center h-[52px] pr-3 pl-1 shrink-0 transition-all duration-200"
           style={{
-            backgroundImage: `url('/assets/docter-bg.png')`,
+            backgroundImage: `url('/assets/docter-bg.webp')`,
             backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
             width: hasMysteryBox ? "172px" : "202px",
           }}
         >
           <img
-            src={currentUser?.avatar || "/assets/docter-avatar.png"}
+            src="/assets/doctor-avatar-svg.svg"
             alt={currentUser?.fullName || "Doctor"}
-            className="w-[48px] h-[48px] -ml-2 shrink-0 object-contain drop-shadow"
+            onError={(e) => {
+              e.currentTarget.src = "/assets/doctor-avatar-svg.svg";
+            }}
+            className="w-[58px] h-[58px] -ml-2 shrink-0 object-contain drop-shadow"
           />
           <div className="ml-1.5 flex flex-col justify-center overflow-hidden">
             <span className="text-[12px] font-bold text-[#1E1E1E] leading-tight">
@@ -588,7 +639,7 @@ export const HomePage: React.FC = () => {
             onClick={handleClaimReward}
             className="relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 cursor-pointer transition-transform active:scale-95 hover:brightness-105 select-none"
             style={{
-              backgroundImage: `url('/assets/reward-claim-bg-new.png')`,
+              backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}
@@ -600,7 +651,7 @@ export const HomePage: React.FC = () => {
             )}
             <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
               <img
-                src="/assets/reward-icon-red.png"
+                src="/assets/reward-icon-red.webp"
                 alt="Klaim Hadiah"
                 className={`w-[38px] h-[38px] object-contain drop-shadow-sm ${
                   unclaimedRewardsCount > 0 ? "animate-bell-shake" : ""
@@ -629,7 +680,7 @@ export const HomePage: React.FC = () => {
                   : "cursor-pointer transition-transform active:scale-95 hover:brightness-105"
               }`}
               style={{
-                backgroundImage: `url('/assets/reward-claim-bg-new.png')`,
+                backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
               }}
@@ -641,14 +692,14 @@ export const HomePage: React.FC = () => {
               )}
               <div className="w-full flex-1 flex items-center justify-center translate-y-[4px]">
                 <img
-                  src="/assets/mistery-box.png"
+                  src="/assets/mystery-box-svg.svg"
                   alt="Mystery Box"
-                  className={`w-[58px] h-[58px] object-contain drop-shadow-sm ${
+                  className={`w-[52px] h-[52px] object-contain drop-shadow-sm ${
                     !mysteryBoxClaimed ? "animate-bell-shake-delayed" : ""
                   }`}
                 />
               </div>
-              <div className="w-full h-[18px] flex items-center justify-center -mt-[2.5px]">
+              <div className="w-full h-[18px] flex items-center justify-center mt-[2.5px]">
                 <span
                   className={`text-[8px] font-bold tracking-tight whitespace-nowrap leading-none ${
                     mysteryBoxClaimed ? "text-gray-400" : "text-[#FF1D1D]"
@@ -758,9 +809,11 @@ export const HomePage: React.FC = () => {
                       onError={(e) => {
                         const target = e.currentTarget;
                         const fallback =
-                          mission.id === "morinaga-booth" || mission.type === "booth-morinaga"
+                          mission.id === "morinaga-booth" ||
+                          mission.type === "booth-morinaga"
                             ? DEFAULT_BOOTH_ICON
-                            : mission.id === "morinaga-sympo" || mission.type === "symposium"
+                            : mission.id === "morinaga-sympo" ||
+                                mission.type === "symposium"
                               ? DEFAULT_SYMPO_ICON
                               : DEFAULT_EARLY_LIFE_ICON;
                         if (target.src !== fallback && !target.src.endsWith(fallback)) {
@@ -796,7 +849,7 @@ export const HomePage: React.FC = () => {
                         <div
                           className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center select-none"
                           style={{
-                            backgroundImage: `url('/assets/check-in-green.png')`,
+                            backgroundImage: `url('/assets/check-in-green.webp')`,
                             backgroundSize: "contain",
                             backgroundRepeat: "no-repeat",
                             backgroundPosition: "center",
@@ -814,7 +867,7 @@ export const HomePage: React.FC = () => {
                           }}
                           className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all cursor-pointer active:scale-95 hover:brightness-110"
                           style={{
-                            backgroundImage: `url('/assets/check-in-red.png')`,
+                            backgroundImage: `url('/assets/check-in-red.webp')`,
                             backgroundSize: "contain",
                             backgroundRepeat: "no-repeat",
                             backgroundPosition: "center",
@@ -838,7 +891,7 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showPostTestModal}
         onClose={handleClosePostTestModal}
-        imageSrc="/assets/reward-box.png"
+        imageSrc="/assets/reward-box.webp"
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
@@ -855,7 +908,7 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showBoothCompletionModal}
         onClose={handleCloseBoothCompletionModal}
-        imageSrc="/assets/reward-box.png"
+        imageSrc="/assets/reward-box.webp"
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
@@ -873,7 +926,7 @@ export const HomePage: React.FC = () => {
         isOpen={showEarlyLifeCompletionModal}
         onClose={handleCloseEarlyLifeCompletionModal}
         containerClassName="max-w-[361px] h-[515px] max-h-[94%] aspect-[361/515] flex flex-col items-center justify-center px-5 pt-5 pb-11"
-        imageSrc="/assets/spin-wheel-reward.png"
+        imageSrc="/assets/spin-wheel-reward.webp"
         imageAlt="Spin Wheel Reward"
         imageClassName="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-md pointer-events-none"
         imageContainerClassName="w-full flex justify-center shrink-0 mb-4"
@@ -883,7 +936,9 @@ export const HomePage: React.FC = () => {
           <>
             Terimakasih telah mengikuti
             <br />
-            <span className="whitespace-nowrap">Detailing Kalbe Early Life Solutions.</span>
+            <span className="whitespace-nowrap">
+              Detailing Kalbe Early Life Solutions.
+            </span>
           </>
         }
         subtitleClassName="text-[14.5px] sm:text-[15.5px] max-w-[325px] mb-3"
@@ -902,7 +957,7 @@ export const HomePage: React.FC = () => {
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
         containerClassName="max-w-[361px] h-[500px] max-h-[94%] aspect-[361/500] flex flex-col items-center justify-center px-5 pt-5 pb-8"
-        imageSrc="/assets/mistery-box.png"
+        imageSrc="/assets/mistery-box.webp"
         imageAlt="Mystery Box Morinaga"
         imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
@@ -931,10 +986,10 @@ export const HomePage: React.FC = () => {
         onClose={() => setShowRewardSuccessModal(false)}
         imageSrc={
           targetRewardId === "mistery-box"
-            ? "/assets/mystery-box-reward.png"
+            ? "/assets/mystery-box-reward.webp"
             : targetRewardId === "morinaga-booth" || targetRewardId === "early-life"
-              ? "/assets/morinaga-booth-reward.png"
-              : "/assets/reward-dummy-symposium.png"
+              ? "/assets/morinaga-booth-reward.webp"
+              : "/assets/reward-dummy-symposium.webp"
         }
         imageAlt={
           targetRewardId === "mistery-box"
@@ -969,6 +1024,7 @@ export const HomePage: React.FC = () => {
         isOpen={showBoothMenuModal}
         onClose={() => setShowBoothMenuModal(false)}
         boothId={morinagaBooth?.id}
+        boothData={morinagaBooth}
         onStartDetailing={() => {
           setShowBoothMenuModal(false);
           navigate("/booth-scan");
@@ -994,6 +1050,7 @@ export const HomePage: React.FC = () => {
       {/* 6. Morinaga Booth Detailing Bottom Drawer */}
       <BoothDrawer
         isOpen={showBoothDrawer}
+        boothData={morinagaBooth}
         onClose={() => setShowBoothDrawer(false)}
         onPodcastScheduleClick={() => {
           setShowPodcastScheduleModal(true);
@@ -1053,25 +1110,23 @@ export const HomePage: React.FC = () => {
       <SymposiumUpcomingModal
         isOpen={showSymposiumUpcomingModal}
         onClose={() => setShowSymposiumUpcomingModal(false)}
-        startTimeText={
-          (() => {
-            const sympo =
-              apiSymposiums.find(
-                (s) =>
-                  s.title.toLowerCase().includes("sympo") ||
-                  s.title.toLowerCase().includes("morinaga")
-              ) || apiSymposiums[0];
-            if (sympo?.started_at) {
-              const d = new Date(sympo.started_at);
-              if (!isNaN(d.getTime())) {
-                const hh = String(d.getHours()).padStart(2, "0");
-                const mm = String(d.getMinutes()).padStart(2, "0");
-                return `Pukul ${hh}.${mm} WIB`;
-              }
+        startTimeText={(() => {
+          const sympo =
+            apiSymposiums.find(
+              (s) =>
+                s.title.toLowerCase().includes("sympo") ||
+                s.title.toLowerCase().includes("morinaga"),
+            ) || apiSymposiums[0];
+          if (sympo?.started_at) {
+            const d = new Date(sympo.started_at);
+            if (!isNaN(d.getTime())) {
+              const hh = String(d.getHours()).padStart(2, "0");
+              const mm = String(d.getMinutes()).padStart(2, "0");
+              return `Pukul ${hh}.${mm} WIB`;
             }
-            return undefined;
-          })()
-        }
+          }
+          return undefined;
+        })()}
       />
     </div>
   );

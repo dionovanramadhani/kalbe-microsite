@@ -9,6 +9,8 @@ import type {
 } from '../admin/adminApi';
 
 export type {
+  KalbeBoothResponse,
+  KalbeSymposiumResponse,
   KalbeBoothPodcastResponse,
   KalbeBoothPodcastSession,
   KalbeBoothActivityResponse,

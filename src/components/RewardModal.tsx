@@ -72,7 +72,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
           isClosing ? "animate-modal-out" : "animate-modal-in"
         } ${cardClassName || ""}`}
         style={{
-          backgroundImage: `url('/assets/modal-background.png')`,
+          backgroundImage: `url('/assets/modal-background.webp')`,
           backgroundSize: "100% 100%",
           backgroundRepeat: "no-repeat",
         }}
@@ -142,7 +142,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
                 onClick={onButtonClick}
                 className="relative w-[215px] sm:w-[225px] h-[44px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105"
                 style={{
-                  backgroundImage: `url('/assets/red-button.png')`,
+                  backgroundImage: `url('/assets/red-button.webp')`,
                   backgroundSize: "100% 100%",
                   backgroundRepeat: "no-repeat",
                 }}

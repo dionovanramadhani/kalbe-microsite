@@ -50,7 +50,7 @@ export const SymposiumStartedModal: React.FC<SymposiumStartedModalProps> = ({
           {/* Futuristic Rocket Graphic + MORINAGA SYMPO Badge */}
           <div className="w-full max-w-[310px] flex justify-center shrink-0 drop-shadow-lg -mb-2">
             <img
-              src="/assets/morinaga-sympo-image.png"
+              src="/assets/morinaga-sympo-image.webp"
               alt="Morinaga Sympo"
               className="w-full h-auto object-contain pointer-events-none select-none"
             />
@@ -66,7 +66,7 @@ export const SymposiumStartedModal: React.FC<SymposiumStartedModalProps> = ({
             onClick={onTakePostTest}
             className="relative w-full max-w-[280px] h-[52px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-110 shadow-xl"
             style={{
-              backgroundImage: `url('/assets/red-button.png')`,
+              backgroundImage: `url('/assets/red-button.webp')`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
             }}

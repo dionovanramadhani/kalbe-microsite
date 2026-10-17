@@ -4,43 +4,43 @@
     "title": "Morinaga Sympo",
     "subtitle": "Mengikuti symposium",
     "date": "12 Okt 2026 • 10:30",
-    "icon": "/assets/morinaga-sympo-icon.png",
+    "icon": "/assets/morinaga-sympo-icon.webp",
     "obtained": false,
     "claimed": false,
     "rewardName": "Sport Gym Bag Morinaga",
-    "rewardImage": "/assets/reward-dummy-symposium.png"
+    "rewardImage": "/assets/reward-dummy-symposium.webp"
   },
   {
     "id": "morinaga-booth",
     "title": "Morinaga Booth",
     "subtitle": "Mengikuti Morinaga Booth",
     "date": "12 Okt 2026 • 10:30",
-    "icon": "/assets/morinaga-booth-icon.png",
+    "icon": "/assets/morinaga-booth-icon.webp",
     "obtained": false,
     "claimed": false,
     "rewardName": "DOCTOR’S ACTIVE KIT Morinaga",
-    "rewardImage": "/assets/morinaga-booth-reward.png"
+    "rewardImage": "/assets/morinaga-booth-reward.webp"
   },
   {
     "id": "early-life",
     "title": "Kalbe Early Life Solutions",
     "subtitle": "Mengikuti Kalbe Early Life Solutions",
     "date": "12 Okt 2026 • 10:30",
-    "icon": "/assets/kalbe-60th-icon.png",
+    "icon": "/assets/kalbe-60th-icon.webp",
     "obtained": false,
     "claimed": false,
     "rewardName": "DOCTOR’S ACTIVE KIT Morinaga",
-    "rewardImage": "/assets/morinaga-booth-reward.png"
+    "rewardImage": "/assets/morinaga-booth-reward.webp"
   },
   {
     "id": "mistery-box",
     "title": "Mystery Box",
     "subtitle": "Mengikuti Semua Misi",
     "date": "12 Okt 2026 • 10:30",
-    "icon": "/assets/mistery-box.png",
+    "icon": "/assets/mistery-box.webp",
     "obtained": false,
     "claimed": false,
     "rewardName": "MYSTERY BOX Morinaga",
-    "rewardImage": "/assets/mystery-box-reward.png"
+    "rewardImage": "/assets/mystery-box-reward.webp"
   }
 ]
