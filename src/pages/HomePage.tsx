@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "../data/dummyUser";
 import { getUserName } from "../utils/auth";
@@ -10,13 +10,10 @@ import { AwardPresentationModal } from "../components/AwardPresentationModal";
 import { PhotoboothModal } from "../components/PhotoboothModal";
 import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
+import { SymposiumPosterModal } from "../components/SymposiumPosterModal";
 import { SymposiumStartedModal } from "../components/SymposiumStartedModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
-import {
-  isSymposiumStartedOrOngoing,
-  isSymposiumUpcoming,
-  isSymposiumJoined,
-} from "../data/symposiumStore";
+import { isSymposiumUpcoming, setSymposiumJoined } from "../data/symposiumStore";
 import {
   getUnclaimedRewardsCount,
   hasUnclaimedMysteryBox as checkHasUnclaimedMysteryBox,
@@ -35,11 +32,16 @@ import {
 import {
   getKalbeBoothsList,
   getKalbeSymposiumsList,
+  getKalbeSymposiumToday,
   getCachedKalbeBooths,
   getCachedKalbeSymposiums,
+  getCachedKalbeSymposiumToday,
   getKalbeUserHistory,
   getKalbeBoothPodcastByRefID,
   isSessionToday,
+  formatSymposiumStartTime,
+  isSymposiumEnded,
+  isSymposiumOngoingNow,
   type KalbeHistoryItemResponse,
   type KalbeBoothPodcastSession,
   type KalbeBoothActivityItem,
@@ -54,6 +56,7 @@ interface MissionItem {
   icon: string;
   disabled?: boolean;
   isCompleted?: boolean;
+  isEnded?: boolean;
   boothData?: KalbeBoothResponse;
   symposiumData?: KalbeSymposiumResponse;
 }
@@ -83,6 +86,26 @@ const resolveMissionIcon = (
   return trimmed;
 };
 
+const getInitialMorinagaPoster = (): string | null => {
+  const cachedToday = getCachedKalbeSymposiumToday();
+  if (cachedToday?.poster && cachedToday.poster.trim() !== "") {
+    return cachedToday.poster;
+  }
+  const cachedList = getCachedKalbeSymposiums();
+  if (cachedList && cachedList.length > 0) {
+    const sym =
+      cachedList.find(
+        (s) =>
+          s.title.toLowerCase().includes("morinaga") ||
+          s.title.toLowerCase().includes("sympo"),
+      ) || cachedList[0];
+    if (sym?.poster && sym.poster.trim() !== "") {
+      return sym.poster;
+    }
+  }
+  return null;
+};
+
 // Urutan misi sesuai instruksi:
 // 1. Morinaga Booth
 // 2. Morinaga Sympo
@@ -95,9 +118,26 @@ export const HomePage: React.FC = () => {
   const hasEarlyLifeSuccess = Boolean(location.state?.showEarlyLifeSuccessModal);
 
   const currentUser = getCurrentUser();
-  const [postTestDone, setPostTestDone] = useState<boolean>(
-    () => isPostTestCompleted() || hasPostTestSuccess,
-  );
+  const [postTestDone, setPostTestDone] = useState<boolean>(() => {
+    if (hasPostTestSuccess) return true;
+    const cachedToday = getCachedKalbeSymposiumToday();
+    if (cachedToday && typeof cachedToday.is_completed === "boolean") {
+      return cachedToday.is_completed;
+    }
+    const cachedSympos = getCachedKalbeSymposiums();
+    if (cachedSympos && cachedSympos.length > 0) {
+      const sym =
+        cachedSympos.find(
+          (s) =>
+            s.title.toLowerCase().includes("sympo") ||
+            s.title.toLowerCase().includes("morinaga"),
+        ) || cachedSympos[0];
+      if (sym && typeof sym.is_completed === "boolean") {
+        return sym.is_completed;
+      }
+    }
+    return isPostTestCompleted();
+  });
   const [boothDone, setBoothDone] = useState<boolean>(
     () => isBoothDetailingCompleted() || hasBoothSuccess,
   );
@@ -131,6 +171,29 @@ export const HomePage: React.FC = () => {
   const [apiSymposiums, setApiSymposiums] = useState<KalbeSymposiumResponse[]>(() =>
     getCachedKalbeSymposiums(),
   );
+  const [todaySymposium, setTodaySymposium] = useState<KalbeSymposiumResponse | null>(
+    () => getCachedKalbeSymposiumToday(),
+  );
+  const todaySymposiumRef = useRef<KalbeSymposiumResponse | null>(
+    getCachedKalbeSymposiumToday(),
+  );
+  const morinagaSympoRef = useRef<KalbeSymposiumResponse | null>(null);
+  const hasDismissedSymposiumModalRef = useRef<boolean>(false);
+  const hasDismissedPosterModalRef = useRef<boolean>(false);
+  const [selectedSymposiumForUpcoming, setSelectedSymposiumForUpcoming] =
+    useState<KalbeSymposiumResponse | null>(null);
+
+  const morinagaSympo = useMemo(() => {
+    return (
+      todaySymposium ||
+      apiSymposiums.find(
+        (s) =>
+          s.title.toLowerCase().includes("sympo") ||
+          s.title.toLowerCase().includes("morinaga"),
+      ) ||
+      apiSymposiums[0]
+    );
+  }, [todaySymposium, apiSymposiums]);
 
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
 
@@ -152,11 +215,14 @@ export const HomePage: React.FC = () => {
       getKalbeBoothsList().catch(() => [] as KalbeBoothResponse[]),
       getKalbeSymposiumsList().catch(() => [] as KalbeSymposiumResponse[]),
       getKalbeUserHistory().catch(() => [] as KalbeHistoryItemResponse[]),
+      getKalbeSymposiumToday().catch(() => null as KalbeSymposiumResponse | null),
     ])
-      .then(([booths, sympos, historyList]) => {
+      .then(([booths, sympos, historyList, sympoToday]) => {
         if (!isMounted) return;
         if (booths && booths.length > 0) setApiBooths(booths);
         if (sympos && sympos.length > 0) setApiSymposiums(sympos);
+        setTodaySymposium(sympoToday);
+        todaySymposiumRef.current = sympoToday;
 
         // Track completed activities from API:
         const morinagaBooth = booths.find(
@@ -170,14 +236,22 @@ export const HomePage: React.FC = () => {
             b.name.toLowerCase().includes("early") ||
             b.name.toLowerCase().includes("life"),
         );
-        const morinagaSympo =
+        const currentMorinagaSympo =
+          sympoToday ||
           sympos.find(
             (s) =>
               s.title.toLowerCase().includes("morinaga") ||
               s.title.toLowerCase().includes("sympo"),
-          ) || sympos[0];
+          ) ||
+          sympos[0];
+        morinagaSympoRef.current = currentMorinagaSympo;
 
+        // Jika user check-in symposium (via admin atau scan), tandai hasJoinedSymposium
         const hasSympoHistory = historyList.some((h) => h.reward_type === "symposium");
+        if (hasSympoHistory) {
+          setSymposiumJoined(true);
+        }
+
         const hasMorinagaHistory = historyList.some(
           (h) =>
             h.reward_type === "booth" &&
@@ -193,11 +267,18 @@ export const HomePage: React.FC = () => {
               h.label?.toLowerCase().includes("early")),
         );
 
+        // Status selesai simposium ditentukan oleh is_completed dari backend API (atau post-test baru saja diisi)
+        // Check-in participant saja BUKAN berarti post-test sudah selesai.
+        const isSympoApiCompleted =
+          typeof currentMorinagaSympo?.is_completed === "boolean"
+            ? currentMorinagaSympo.is_completed
+            : typeof sympoToday?.is_completed === "boolean"
+              ? sympoToday.is_completed
+              : null;
+
         const isPostTestFinished = Boolean(
-          morinagaSympo?.is_completed ||
-          hasSympoHistory ||
-          isPostTestCompleted() ||
-          hasPostTestSuccess,
+          hasPostTestSuccess ||
+          (isSympoApiCompleted !== null ? isSympoApiCompleted : isPostTestCompleted())
         );
         const isMorinagaFinished = Boolean(
           morinagaBooth?.is_completed ||
@@ -216,9 +297,36 @@ export const HomePage: React.FC = () => {
         setBoothDone(isMorinagaFinished);
         setEarlyLifeDone(isEarlyLifeFinished);
 
-        if (isPostTestFinished) setPostTestCompleted(true);
-        if (isMorinagaFinished) setBoothDetailingCompleted(true);
-        if (isEarlyLifeFinished) setEarlyLifeDetailingCompleted(true);
+        setPostTestCompleted(isPostTestFinished);
+        setBoothDetailingCompleted(isMorinagaFinished);
+        setEarlyLifeDetailingCompleted(isEarlyLifeFinished);
+
+        // Alur urutan modal di HomePage:
+        // 1. WelcomeModal (jika isWelcomePending)
+        // 2. Poster Modal (jika morinaga symposium punya poster dan welcome modal sudah tidak pending)
+        // 3. SymposiumStartedModal (jika tidak ada poster / setelah poster ditutup dan symposium sedang berlangsung)
+        const hasPoster = Boolean(
+          currentMorinagaSympo?.poster && currentMorinagaSympo.poster.trim() !== "",
+        );
+
+        if (
+          !isWelcomePending &&
+          !hasPostTestSuccess &&
+          !hasBoothSuccess &&
+          !hasEarlyLifeSuccess
+        ) {
+          if (hasPoster && !hasDismissedPosterModalRef.current) {
+            setShowPosterModal(true);
+          } else if (
+            !hasPoster &&
+            sympoToday &&
+            isSymposiumOngoingNow(sympoToday) &&
+            !isPostTestFinished &&
+            !hasDismissedSymposiumModalRef.current
+          ) {
+            setShowSymposiumStartedModal(true);
+          }
+        }
 
         // Track Mystery Box from API:
         const mysteryBoxHistory = historyList.find(
@@ -334,15 +442,27 @@ export const HomePage: React.FC = () => {
     }
   }, [showMysteryBoxModal]);
 
+  const [showPosterModal, setShowPosterModal] = useState<boolean>(() => {
+    // Urutan 1: Jika welcome modal pending, tunggu sampai welcome modal selesai
+    if (isWelcomePending) return false;
+    if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
+    const initialPoster = getInitialMorinagaPoster();
+    return Boolean(initialPoster);
+  });
+
   const [showSymposiumStartedModal, setShowSymposiumStartedModal] = useState<boolean>(
     () => {
-      // Jika welcoming pop up atau mystery box pop up sedang aktif/pending, jangan tampilkan symposium modal terlebih dahulu
+      // Urutan 1: Jika welcome modal sedang aktif/pending, jangan tampilkan symposium modal terlebih dahulu
       if (isWelcomePending) return false;
+      // Urutan 2: Jika poster modal akan tampil, jangan tampilkan symposium started modal terlebih dahulu
+      if (getInitialMorinagaPoster()) return false;
       if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
       if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) return false;
-      const isDone = isPostTestCompleted() || hasPostTestSuccess;
-      if (isDone || isSymposiumJoined()) return false;
-      return isSymposiumStartedOrOngoing();
+      const cachedToday = getCachedKalbeSymposiumToday();
+      const isDone =
+        isPostTestCompleted() || hasPostTestSuccess || Boolean(cachedToday?.is_completed);
+      if (isDone || !isSymposiumOngoingNow(cachedToday)) return false;
+      return Boolean(cachedToday);
     },
   );
 
@@ -355,15 +475,51 @@ export const HomePage: React.FC = () => {
       checkAndUnlockMysteryBox();
     }
 
-    // Reminder symposium jika belum diikuti dan sedang aktif
-    const isDone = isPostTestCompleted() || hasPostTestSuccess;
+    // Urutan 2: Poster Modal (jika symposium memang punya poster)
+    const currentMorinagaSympo = morinagaSympoRef.current || morinagaSympo;
+    const poster = currentMorinagaSympo?.poster;
+    if (poster && poster.trim() !== "" && !hasDismissedPosterModalRef.current) {
+      setShowPosterModal(true);
+      return;
+    }
+
+    // Urutan 3: symposium started modal (jika tidak ada poster, dan ada symposium di hari itu yang SEDANG BERLANGSUNG)
+    const currentTodaySympo = todaySymposiumRef.current;
+    const isDone =
+      isPostTestCompleted() ||
+      hasPostTestSuccess ||
+      Boolean(currentTodaySympo?.is_completed);
     if (
       !hasPostTestSuccess &&
       !hasBoothSuccess &&
       !hasEarlyLifeSuccess &&
       !isDone &&
-      !isSymposiumJoined() &&
-      isSymposiumStartedOrOngoing()
+      !hasDismissedSymposiumModalRef.current &&
+      currentTodaySympo &&
+      isSymposiumOngoingNow(currentTodaySympo)
+    ) {
+      setShowSymposiumStartedModal(true);
+    }
+  };
+
+  const handleClosePosterModal = () => {
+    hasDismissedPosterModalRef.current = true;
+    setShowPosterModal(false);
+
+    // Urutan 3: symposium started modal (setelah poster modal ditutup, jika symposium sedang berlangsung)
+    const currentTodaySympo = todaySymposiumRef.current;
+    const isDone =
+      isPostTestCompleted() ||
+      hasPostTestSuccess ||
+      Boolean(currentTodaySympo?.is_completed);
+    if (
+      !hasPostTestSuccess &&
+      !hasBoothSuccess &&
+      !hasEarlyLifeSuccess &&
+      !isDone &&
+      !hasDismissedSymposiumModalRef.current &&
+      currentTodaySympo &&
+      isSymposiumOngoingNow(currentTodaySympo)
     ) {
       setShowSymposiumStartedModal(true);
     }
@@ -418,14 +574,19 @@ export const HomePage: React.FC = () => {
     markMysteryBoxPopupShown();
     setShowMysteryBoxModal(false);
     setShouldAnimateMysteryBox(false);
-    const isDone = isPostTestCompleted() || hasPostTestSuccess;
+    const currentTodaySympo = todaySymposiumRef.current;
+    const isDone =
+      isPostTestCompleted() ||
+      hasPostTestSuccess ||
+      Boolean(currentTodaySympo?.is_completed);
     if (
       !hasPostTestSuccess &&
       !hasBoothSuccess &&
       !hasEarlyLifeSuccess &&
       !isDone &&
-      !isSymposiumJoined() &&
-      isSymposiumStartedOrOngoing()
+      !hasDismissedSymposiumModalRef.current &&
+      currentTodaySympo &&
+      isSymposiumOngoingNow(currentTodaySympo)
     ) {
       setShowSymposiumStartedModal(true);
     }
@@ -482,11 +643,15 @@ export const HomePage: React.FC = () => {
   // 3. Kalbe Early Life Solution
   const missions: MissionItem[] = useMemo(() => {
     const morinagaSympo =
+      todaySymposium ||
       apiSymposiums.find(
         (s) =>
           s.title.toLowerCase().includes("sympo") ||
           s.title.toLowerCase().includes("morinaga"),
-      ) || apiSymposiums[0];
+      ) ||
+      apiSymposiums[0];
+
+    const isSympoEnded = isSymposiumEnded(morinagaSympo);
 
     const list: MissionItem[] = [
       {
@@ -503,10 +668,14 @@ export const HomePage: React.FC = () => {
         id: "morinaga-sympo",
         type: "symposium",
         title: morinagaSympo?.title || "Morinaga Sympo",
-        subtitle: "Ikuti Symposium",
+        subtitle:
+          isSympoEnded && !morinagaSympo?.is_completed && !postTestDone
+            ? "Sudah Selesai"
+            : "Ikuti Symposium",
         icon: resolveMissionIcon(morinagaSympo?.icon, DEFAULT_SYMPO_ICON),
-        disabled: Boolean(morinagaSympo?.is_completed || postTestDone),
+        disabled: Boolean(morinagaSympo?.is_completed || postTestDone || isSympoEnded),
         isCompleted: Boolean(morinagaSympo?.is_completed || postTestDone),
+        isEnded: isSympoEnded,
         symposiumData: morinagaSympo,
       },
       {
@@ -561,20 +730,35 @@ export const HomePage: React.FC = () => {
   const handleEnterMission = (mission: MissionItem) => {
     if (mission.disabled) return;
     if (mission.id === "morinaga-sympo" || mission.type === "symposium") {
-      // Jika simposium belum dimulai, tampilkan modal peringatan waktu mulai
-      const sympo = mission.symposiumData;
+      // Jika simposium belum dimulai / belum di jadwalnya, tampilkan modal peringatan waktu mulai
+      const sympo =
+        todaySymposium ||
+        mission.symposiumData ||
+        apiSymposiums.find(
+          (s) =>
+            s.title.toLowerCase().includes("sympo") ||
+            s.title.toLowerCase().includes("morinaga"),
+        ) ||
+        apiSymposiums[0];
+
+      if (isSymposiumEnded(sympo)) {
+        return;
+      }
+
       if (sympo?.started_at) {
         const now = new Date();
         const start = new Date(sympo.started_at);
         if (!isNaN(start.getTime()) && now < start) {
+          setSelectedSymposiumForUpcoming(sympo);
           setShowSymposiumUpcomingModal(true);
           return;
         }
       } else if (isSymposiumUpcoming()) {
+        setSelectedSymposiumForUpcoming(sympo || null);
         setShowSymposiumUpcomingModal(true);
         return;
       }
-      navigate("/symposium");
+      navigate("/symposium", { state: { todaySymposium: sympo } });
       return;
     }
     if (mission.id === "morinaga-booth" || mission.type === "booth-morinaga") {
@@ -792,7 +976,7 @@ export const HomePage: React.FC = () => {
           {/* Mission Items List */}
           <div className="relative z-10 flex-1 flex flex-col gap-7 py-0.5 min-h-0 mt-1">
             {missions.map((mission) => {
-              const isClickable = !mission.isCompleted;
+              const isClickable = !mission.isCompleted && !mission.disabled;
               return (
                 <div
                   key={mission.id}
@@ -801,8 +985,12 @@ export const HomePage: React.FC = () => {
                       handleEnterMission(mission);
                     }
                   }}
-                  className={`flex items-start gap-2 py-0.5 px-1.5 rounded-xl ${
-                    isClickable ? "cursor-pointer" : "cursor-default"
+                  className={`flex items-start gap-2 py-0.5 px-1.5 rounded-xl transition-all ${
+                    isClickable
+                      ? "cursor-pointer"
+                      : mission.disabled && !mission.isCompleted
+                        ? "cursor-not-allowed opacity-60"
+                        : "cursor-default"
                   }`}
                 >
                   {/* Left: Hexagonal Futuristic Icon */}
@@ -844,7 +1032,13 @@ export const HomePage: React.FC = () => {
                           <span className="truncate">Selesai</span>
                         </div>
                       ) : (
-                        <div className="flex-1 min-w-0 flex items-center border border-[#F87171] rounded-full px-3.5 h-[28px] text-[11px] text-[#444444] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                        <div
+                          className={`flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
+                            mission.disabled
+                              ? "border border-gray-300 bg-gray-100 text-[#888888]"
+                              : "border border-[#F87171] bg-white text-[#444444]"
+                          }`}
+                        >
                           <span className="truncate">{mission.subtitle}</span>
                         </div>
                       )}
@@ -866,11 +1060,18 @@ export const HomePage: React.FC = () => {
                         </div>
                       ) : (
                         <button
+                          disabled={mission.disabled}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEnterMission(mission);
+                            if (!mission.disabled) {
+                              handleEnterMission(mission);
+                            }
                           }}
-                          className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all cursor-pointer active:scale-95 hover:brightness-110"
+                          className={`relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all ${
+                            mission.disabled
+                              ? "cursor-not-allowed opacity-50 grayscale pointer-events-none"
+                              : "cursor-pointer active:scale-95 hover:brightness-110"
+                          }`}
                           style={{
                             backgroundImage: `url('/assets/check-in-red.webp')`,
                             backgroundSize: "contain",
@@ -1146,37 +1347,44 @@ export const HomePage: React.FC = () => {
       {/* 0. Welcoming Pop Up PIT IKA 2026 */}
       <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
+      {/* 1. Morinaga Symposium Poster Modal */}
+      <SymposiumPosterModal
+        isOpen={showPosterModal}
+        onClose={handleClosePosterModal}
+        posterUrl={morinagaSympo?.poster || getInitialMorinagaPoster()}
+      />
+
       {/* 9. Morinaga Symposium Started / Ongoing Modal */}
       <SymposiumStartedModal
         isOpen={showSymposiumStartedModal}
-        onClose={() => setShowSymposiumStartedModal(false)}
-        onTakePostTest={() => {
+        onClose={() => {
+          hasDismissedSymposiumModalRef.current = true;
           setShowSymposiumStartedModal(false);
-          navigate("/symposium");
+        }}
+        onTakePostTest={() => {
+          hasDismissedSymposiumModalRef.current = true;
+          setShowSymposiumStartedModal(false);
+          navigate("/symposium", { state: { todaySymposium } });
         }}
       />
 
       {/* 10. Morinaga Symposium Upcoming / Belum Dimulai Modal */}
       <SymposiumUpcomingModal
         isOpen={showSymposiumUpcomingModal}
-        onClose={() => setShowSymposiumUpcomingModal(false)}
-        startTimeText={(() => {
-          const sympo =
+        onClose={() => {
+          setShowSymposiumUpcomingModal(false);
+          setSelectedSymposiumForUpcoming(null);
+        }}
+        startTimeText={formatSymposiumStartTime(
+          selectedSymposiumForUpcoming?.started_at ||
+            todaySymposium?.started_at ||
             apiSymposiums.find(
               (s) =>
                 s.title.toLowerCase().includes("sympo") ||
                 s.title.toLowerCase().includes("morinaga"),
-            ) || apiSymposiums[0];
-          if (sympo?.started_at) {
-            const d = new Date(sympo.started_at);
-            if (!isNaN(d.getTime())) {
-              const hh = String(d.getHours()).padStart(2, "0");
-              const mm = String(d.getMinutes()).padStart(2, "0");
-              return `Pukul ${hh}.${mm} WIB`;
-            }
-          }
-          return undefined;
-        })()}
+            )?.started_at ||
+            apiSymposiums[0]?.started_at,
+        )}
       />
     </div>
   );

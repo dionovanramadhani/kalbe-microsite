@@ -21,9 +21,11 @@ const getBaseUrl = (): string => (import.meta.env.VITE_API_BASE_URL || '').repla
 
 let _cachedBooths: KalbeBoothResponse[] | null = null;
 let _cachedSymposiums: KalbeSymposiumResponse[] | null = null;
+let _cachedSymposiumToday: KalbeSymposiumResponse | null = null;
 
 export const getCachedKalbeBooths = (): KalbeBoothResponse[] => _cachedBooths || [];
 export const getCachedKalbeSymposiums = (): KalbeSymposiumResponse[] => _cachedSymposiums || [];
+export const getCachedKalbeSymposiumToday = (): KalbeSymposiumResponse | null => _cachedSymposiumToday;
 
 /**
  * Fetch all active Kalbe Booths from the backend API
@@ -107,6 +109,47 @@ export async function getKalbeSymposiumsList(): Promise<KalbeSymposiumResponse[]
   const sympos = json.data || [];
   _cachedSymposiums = sympos;
   return sympos;
+}
+
+/**
+ * Fetch Kalbe Symposium scheduled for today from the backend API.
+ * Returns KalbeSymposiumResponse if there is a symposium today, or null if none.
+ */
+export async function getKalbeSymposiumToday(): Promise<KalbeSymposiumResponse | null> {
+  const baseUrl = getBaseUrl();
+  const token = getToken();
+  const user = getUserData();
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  const query = new URLSearchParams();
+  if (user?.id) {
+    query.append('user_id', String(user.id));
+  }
+
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  const res = await fetch(`${baseUrl}/api/v1/kalbe/symposium/today${queryString}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch today's symposium: status ${res.status}`);
+  }
+
+  const json = await res.json();
+  const symposiumToday = json.data || null;
+  _cachedSymposiumToday = symposiumToday;
+  return symposiumToday;
 }
 
 // ─── Post-Test Types & API ──────────────────────────────────────────────────
@@ -593,6 +636,75 @@ export function formatTimeRangeWIB(startAt?: string | null, endAt?: string | nul
   if (start && end) return `${start} – ${end} WIB`;
   if (start) return `${start} WIB`;
   return '';
+}
+
+/**
+ * Format start time to WIB string (e.g. "Pukul 14.00 WIB")
+ */
+export function formatSymposiumStartTime(startAt?: string | null): string {
+  if (!startAt) return 'Pukul 10.00 WIB';
+  const d = new Date(startAt);
+  if (isNaN(d.getTime())) return 'Pukul 10.00 WIB';
+  try {
+    const formatted = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+      .format(d)
+      .replace(':', '.');
+    return `Pukul ${formatted} WIB`;
+  } catch {
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `Pukul ${h}.${m} WIB`;
+  }
+}
+
+/**
+ * Check if symposium has already started based on started_at
+ */
+export function isSymposiumStarted(sympo?: KalbeSymposiumResponse | null): boolean {
+  if (!sympo?.started_at) return false;
+  const start = new Date(sympo.started_at);
+  if (isNaN(start.getTime())) return false;
+  return new Date() >= start;
+}
+
+/**
+ * Check if symposium has already ended based on ended_at / end_date
+ */
+export function isSymposiumEnded(sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null): boolean {
+  if (!sympo) return false;
+  const endIso = sympo.ended_at || (sympo as any).end_date;
+  if (endIso) {
+    const end = new Date(endIso);
+    if (!isNaN(end.getTime())) {
+      return new Date() > end;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if symposium is currently active and ongoing (started_at <= now <= ended_at)
+ */
+export function isSymposiumOngoingNow(sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null): boolean {
+  if (!sympo?.started_at) return false;
+  const now = new Date();
+  const start = new Date(sympo.started_at);
+  if (isNaN(start.getTime())) return false;
+  if (now < start) return false;
+
+  const endIso = sympo.ended_at || (sympo as any).end_date;
+  if (endIso) {
+    const end = new Date(endIso);
+    if (!isNaN(end.getTime()) && now > end) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**

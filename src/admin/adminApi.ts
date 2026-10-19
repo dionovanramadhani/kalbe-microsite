@@ -604,6 +604,7 @@ export interface KalbeSymposiumResponse {
   logo?: string | null;
   qr_code?: string | null;
   qr_code_content?: string | null;
+  poster?: string | null;
   category?: string | null;
   is_completed?: boolean;
   created_at: string;
@@ -620,6 +621,7 @@ export interface KalbeSymposiumRequest {
   logo?: string | null;
   qr_code?: string | null;
   qr_code_content?: string | null;
+  poster?: string | null;
 }
 
 export interface KalbeSymposiumFormValues {
@@ -631,10 +633,12 @@ export interface KalbeSymposiumFormValues {
   iconFile?: File | null;
   logoFile?: File | null;
   qrCodeFile?: File | null;
+  posterFile?: File | null;
   qr_code_content?: string | null;
   iconUrl?: string;
   logoUrl?: string;
   qrCodeUrl?: string;
+  posterUrl?: string;
 }
 
 export async function getKalbeSymposiums(params?: {
@@ -665,9 +669,11 @@ export async function createKalbeSymposium(data: KalbeSymposiumFormValues | Kalb
     'iconFile' in data ||
     'logoFile' in data ||
     'qrCodeFile' in data ||
+    'posterFile' in data ||
     'iconUrl' in data ||
     'logoUrl' in data ||
-    'qrCodeUrl' in data
+    'qrCodeUrl' in data ||
+    'posterUrl' in data
   ) {
     const formData = new FormData();
     formData.append('title', data.title.trim());
@@ -692,6 +698,12 @@ export async function createKalbeSymposium(data: KalbeSymposiumFormValues | Kalb
       formData.append('qr_code', data.qrCodeFile);
     } else if (data.qrCodeUrl !== undefined) {
       formData.append('qr_code', data.qrCodeUrl || '');
+    }
+
+    if (data.posterFile) {
+      formData.append('poster', data.posterFile);
+    } else if (data.posterUrl !== undefined) {
+      formData.append('poster', data.posterUrl || '');
     }
 
     if (data.qr_code_content !== undefined && data.qr_code_content !== null) {
@@ -715,9 +727,11 @@ export async function updateKalbeSymposium(id: string, data: KalbeSymposiumFormV
     'iconFile' in data ||
     'logoFile' in data ||
     'qrCodeFile' in data ||
+    'posterFile' in data ||
     'iconUrl' in data ||
     'logoUrl' in data ||
-    'qrCodeUrl' in data
+    'qrCodeUrl' in data ||
+    'posterUrl' in data
   ) {
     const formData = new FormData();
     formData.append('title', data.title.trim());
@@ -742,6 +756,12 @@ export async function updateKalbeSymposium(id: string, data: KalbeSymposiumFormV
       formData.append('qr_code', data.qrCodeFile);
     } else if (data.qrCodeUrl !== undefined) {
       formData.append('qr_code', data.qrCodeUrl || '');
+    }
+
+    if (data.posterFile) {
+      formData.append('poster', data.posterFile);
+    } else if (data.posterUrl !== undefined) {
+      formData.append('poster', data.posterUrl || '');
     }
 
     if (data.qr_code_content !== undefined && data.qr_code_content !== null) {

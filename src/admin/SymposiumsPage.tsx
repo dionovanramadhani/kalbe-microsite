@@ -40,6 +40,9 @@ export function SymposiumsPage() {
   const [qrCodePreview, setQrCodePreview] = useState<string>('');
   const [qrCodeContent, setQrCodeContent] = useState<string>('');
 
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [posterPreview, setPosterPreview] = useState<string>('');
+
   const [saving, setSaving] = useState(false);
 
   // Modal Delete
@@ -112,6 +115,8 @@ export function SymposiumsPage() {
     setQrCodeFile(null);
     setQrCodePreview('');
     setQrCodeContent('');
+    setPosterFile(null);
+    setPosterPreview('');
     const now = new Date();
     const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     setStartedAt(toLocalInputValue(now.toISOString()));
@@ -132,6 +137,8 @@ export function SymposiumsPage() {
     setQrCodeFile(null);
     setQrCodePreview(sym.qr_code || '');
     setQrCodeContent(sym.qr_code_content || '');
+    setPosterFile(null);
+    setPosterPreview(sym.poster || '');
     setStartedAt(toLocalInputValue(sym.started_at));
     setEndedAt(toLocalInputValue(sym.ended_at));
     setIsActive(sym.is_active);
@@ -193,10 +200,12 @@ export function SymposiumsPage() {
       iconFile,
       logoFile,
       qrCodeFile,
+      posterFile,
       qr_code_content: qrCodeContent || (editing ? (editing.qr_code_content || undefined) : undefined),
       iconUrl: !iconFile && editing ? (editing.icon || '') : undefined,
       logoUrl: !logoFile && editing ? (editing.logo || '') : undefined,
       qrCodeUrl: !qrCodeFile && editing ? (editing.qr_code || '') : undefined,
+      posterUrl: !posterFile && editing ? (editing.poster || '') : undefined,
     };
 
     setSaving(true);
@@ -369,7 +378,7 @@ export function SymposiumsPage() {
             <thead>
               <tr>
                 <th style={{ width: 60 }}>No</th>
-                <th style={{ width: 80 }}>Media</th>
+                <th style={{ width: 70 }}>Icon</th>
                 <th>Judul Simposium</th>
                 <th>Deskripsi</th>
                 <th>Waktu Pelaksanaan</th>
@@ -393,31 +402,39 @@ export function SymposiumsPage() {
                   <tr key={sym.id}>
                     <td style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>{index + 1}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        {sym.icon ? (
-                          <img
-                            src={sym.icon}
-                            alt="Icon"
-                            title="Icon"
-                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
-                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                          />
-                        ) : null}
-                        {sym.logo ? (
-                          <img
-                            src={sym.logo}
-                            alt="Logo"
-                            title="Logo"
-                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--admin-border)' }}
-                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                          />
-                        ) : null}
-                        {!sym.icon && !sym.logo && (
-                          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--admin-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-                            📅
-                          </div>
-                        )}
-                      </div>
+                      {sym.icon ? (
+                        <img
+                          src={sym.icon}
+                          alt="Icon"
+                          title="Icon"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 8,
+                            objectFit: 'contain',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid var(--admin-border)',
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 8,
+                            background: 'var(--admin-surface)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 16,
+                          }}
+                        >
+                          📅
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--admin-text)', fontSize: 14 }}>
@@ -593,8 +610,8 @@ export function SymposiumsPage() {
                   </div>
                 </div>
 
-                {/* Media Icon, Logo & QR Code */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
+                {/* Media Icon, Logo, QR Code & Poster */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
                   {/* Icon Image */}
                   <div className="admin-field">
                     <label>Icon Simposium</label>
@@ -631,6 +648,27 @@ export function SymposiumsPage() {
                         <img
                           src={logoPreview}
                           alt="Logo Preview"
+                          style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Poster Image */}
+                  <div className="admin-field">
+                    <label>Poster Simposium</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="admin-input"
+                      style={{ padding: 8, fontSize: 12 }}
+                      onChange={(e) => handleFileChange(e, setPosterFile, setPosterPreview)}
+                    />
+                    {posterPreview && (
+                      <div style={{ marginTop: 8, textAlign: 'center' }}>
+                        <img
+                          src={posterPreview}
+                          alt="Poster Preview"
                           style={{ height: 48, borderRadius: 6, objectFit: 'contain', background: 'rgba(255, 255, 255, 0.05)', padding: 4 }}
                         />
                       </div>

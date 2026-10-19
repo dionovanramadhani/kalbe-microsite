@@ -5,6 +5,7 @@ import jsQR from "jsqr";
 import QRCode from "qrcode";
 import {
   isPostTestCompleted,
+  setPostTestCompleted,
   isBoothDetailingCompleted,
   setBoothDetailingCompleted,
   isEarlyLifeDetailingCompleted,
@@ -476,6 +477,10 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         if (isMounted && data) {
           apiSymposRef.current = data;
           setApiSympos(data);
+          const activeSympo = data.find((s) => s.is_active) || data[0];
+          if (activeSympo && activeSympo.is_completed === false) {
+            setPostTestCompleted(false);
+          }
         }
       })
       .catch((e) => console.warn("Failed to preload symposiums:", e));
@@ -532,14 +537,24 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
 
   // Jika user sudah menyelesaikan misi terkait, redirect ke home
   useEffect(() => {
-    if (activeScanType === "symposium" && isPostTestCompleted()) {
-      navigate("/home", { replace: true });
+    if (activeScanType === "symposium") {
+      const activeSympo =
+        apiSympos.find((s) => s.is_active) ||
+        apiSympos[0] ||
+        (location.state as { todaySymposium?: KalbeSymposiumResponse })?.todaySymposium;
+      if (activeSympo && activeSympo.is_completed === false) {
+        setPostTestCompleted(false);
+        return;
+      }
+      if (activeSympo?.is_completed || isPostTestCompleted()) {
+        navigate("/home", { replace: true });
+      }
     } else if (activeScanType === "booth" && isBoothDetailingCompleted()) {
       navigate("/home", { replace: true });
     } else if (activeScanType === "early-life" && isEarlyLifeDetailingCompleted()) {
       navigate("/home", { replace: true });
     }
-  }, [navigate, activeScanType]);
+  }, [navigate, activeScanType, apiSympos, location.state]);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -774,6 +789,27 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         }, 350);
       } else {
         // activeScanType === "symposium"
+        const matchedSympo =
+          apiSymposRef.current.find((s) => s.id === qrResult.sympoId) ||
+          apiSymposRef.current.find((s) => s.is_active) ||
+          apiSymposRef.current[0];
+        if (matchedSympo?.started_at) {
+          const start = new Date(matchedSympo.started_at);
+          if (!isNaN(start.getTime()) && new Date() < start) {
+            showToast("error", "Sesi symposium belum dimulai");
+            setIsScanned(false);
+            return false;
+          }
+        }
+        if (matchedSympo?.ended_at) {
+          const end = new Date(matchedSympo.ended_at);
+          if (!isNaN(end.getTime()) && new Date() > end) {
+            showToast("error", "Sesi symposium telah berakhir");
+            setIsScanned(false);
+            return false;
+          }
+        }
+
         setSymposiumJoined(true);
         let targetPath = "/post-test";
         if (qrResult.sympoId) {

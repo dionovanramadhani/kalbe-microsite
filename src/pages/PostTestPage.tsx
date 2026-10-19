@@ -13,6 +13,7 @@ import {
   getKalbePostTestByID,
   submitKalbePostTest,
   getKalbeSymposiumsList,
+  getKalbeSymposiumToday,
 } from "../utils/kalbeApi";
 import type {
   KalbePostTestDetail,
@@ -69,11 +70,46 @@ export const PostTestPage: React.FC = () => {
     }
   }, [symposiumId]);
 
-  // Jika user sudah menyelesaikan post-test, tidak boleh akses post-test lagi
+  // Verifikasi status selesai post-test dan rentang waktu simposium
   useEffect(() => {
-    if (isPostTestCompleted()) {
-      navigate("/home", { replace: true });
-    }
+    let isSubscribed = true;
+    const verifyAndCheckTiming = async () => {
+      try {
+        const todaySympo = await getKalbeSymposiumToday().catch(() => null);
+        if (!isSubscribed) return;
+
+        // Jika API menyatakan simposium belum selesai (misal hanya check-in participant), pastikan tidak diblokir
+        if (todaySympo && todaySympo.is_completed === false) {
+          setPostTestCompleted(false);
+        } else if (todaySympo?.is_completed || isPostTestCompleted()) {
+          navigate("/home", { replace: true });
+          return;
+        }
+
+        if (todaySympo?.started_at) {
+          const start = new Date(todaySympo.started_at);
+          if (!isNaN(start.getTime()) && new Date() < start) {
+            navigate("/home", { replace: true });
+            return;
+          }
+        }
+        if (todaySympo?.ended_at) {
+          const end = new Date(todaySympo.ended_at);
+          if (!isNaN(end.getTime()) && new Date() > end) {
+            navigate("/home", { replace: true });
+            return;
+          }
+        }
+      } catch {
+        if (isPostTestCompleted()) {
+          navigate("/home", { replace: true });
+        }
+      }
+    };
+    verifyAndCheckTiming();
+    return () => {
+      isSubscribed = false;
+    };
   }, [navigate]);
 
   // Fetch post test questions from API by symposium ref_id or direct post test id
