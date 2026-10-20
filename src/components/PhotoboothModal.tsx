@@ -15,7 +15,9 @@ export const PhotoboothModal: React.FC<PhotoboothModalProps> = ({
   onClose,
   activityItem,
 }) => {
-  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, {
+    duration: 280,
+  });
 
   if (!isRendered) return null;
 
@@ -30,7 +32,9 @@ export const PhotoboothModal: React.FC<PhotoboothModalProps> = ({
       : "Nikmati pengalaman berfoto yang seru di Photobooth High Angel Morinaga. Abadikan momen kebersamaan dari sudut yang unik dan bawa pulang keychain gratis.";
 
   return (
-    <div className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Backdrop with smooth blur & fade */}
       <div
         onClick={handleClose}
@@ -59,7 +63,7 @@ export const PhotoboothModal: React.FC<PhotoboothModalProps> = ({
         {/* Drawer Body Container */}
         <div className="w-full bg-white rounded-t-[32px] px-5 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
           {/* Top Banner / Image (Rounded Corners) */}
-          <div className="w-full rounded-[20px] overflow-hidden bg-black/5 mb-4 shadow-sm flex items-center justify-center border border-gray-100">
+          <div className="w-full rounded-[20px] overflow-hidden mb-4 flex items-center justify-center">
             <img
               src={image}
               alt={title}
@@ -71,7 +75,7 @@ export const PhotoboothModal: React.FC<PhotoboothModalProps> = ({
                   e.currentTarget.src = fallbackImage;
                 }
               }}
-              className="w-full h-auto max-h-[260px] object-cover pointer-events-none select-none"
+              className="w-full h-auto object-cover pointer-events-none select-none"
             />
           </div>
 

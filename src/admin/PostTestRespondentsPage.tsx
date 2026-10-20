@@ -27,6 +27,76 @@ import {
   type KalbeSymposiumResponse,
 } from './adminApi';
 
+// Helper accessors for data safety
+const getPostTestTitle = (g: KalbePostTestRespondentGroup) => {
+  const rec = g as unknown as Record<string, unknown>;
+  return (
+    g.nama_post_test ||
+    (typeof rec.post_test_name === 'string' ? rec.post_test_name : '') ||
+    (typeof rec.title === 'string' ? rec.title : '') ||
+    'Post-Test Tanpa Judul'
+  );
+};
+
+const getSymposiumName = (g: KalbePostTestRespondentGroup) => {
+  const rec = g as unknown as Record<string, unknown>;
+  return (
+    g.nama_symposium ||
+    (typeof rec.symposium_name === 'string' ? rec.symposium_name : '') ||
+    '-'
+  );
+};
+
+const getEventDate = (g: KalbePostTestRespondentGroup) => {
+  const rec = g as unknown as Record<string, unknown>;
+  return (
+    g.tanggal_event ||
+    (typeof rec.symposium_date === 'string' ? rec.symposium_date : '') ||
+    (typeof rec.started_at === 'string' ? rec.started_at : '') ||
+    '-'
+  );
+};
+
+const getRespName = (r: KalbePostTestRespondentItem) => {
+  const rec = r as unknown as Record<string, unknown>;
+  return (
+    r.nama ||
+    (typeof rec.fullname === 'string' ? rec.fullname : '') ||
+    (typeof rec.name === 'string' ? rec.name : '') ||
+    (typeof rec.respondent_name === 'string' ? rec.respondent_name : '') ||
+    'Tanpa Nama'
+  );
+};
+
+const getRespPhone = (r: KalbePostTestRespondentItem) => {
+  const rec = r as unknown as Record<string, unknown>;
+  return (
+    r.handphone ||
+    (typeof rec.phone_number === 'string' ? rec.phone_number : '') ||
+    (typeof rec.respondent_phone_number === 'string' ? rec.respondent_phone_number : '') ||
+    '-'
+  );
+};
+
+const getRespEmail = (r: KalbePostTestRespondentItem) => {
+  const rec = r as unknown as Record<string, unknown>;
+  return (
+    r.email ||
+    (typeof rec.respondent_email === 'string' ? rec.respondent_email : '') ||
+    '-'
+  );
+};
+
+const getRespSubmitDate = (r: KalbePostTestRespondentItem) => {
+  const rec = r as unknown as Record<string, unknown>;
+  return (
+    r.tanggal_submit ||
+    (typeof rec.submitted_at === 'string' ? rec.submitted_at : '') ||
+    (typeof rec.created_at === 'string' ? rec.created_at : '') ||
+    '-'
+  );
+};
+
 export const PostTestRespondentsPage: React.FC = () => {
   const { showToast } = useToast();
 
@@ -176,27 +246,6 @@ export const PostTestRespondentsPage: React.FC = () => {
     return <span className="admin-badge admin-badge-danger">{formatted} / 100</span>;
   };
 
-  // Helper accessors for data safety
-  const getPostTestTitle = (g: KalbePostTestRespondentGroup) =>
-    g.nama_post_test || (g as any).post_test_name || (g as any).title || 'Post-Test Tanpa Judul';
-
-  const getSymposiumName = (g: KalbePostTestRespondentGroup) =>
-    g.nama_symposium || (g as any).symposium_name || '-';
-
-  const getEventDate = (g: KalbePostTestRespondentGroup) =>
-    g.tanggal_event || (g as any).symposium_date || (g as any).started_at || '-';
-
-  const getRespName = (r: KalbePostTestRespondentItem) =>
-    r.nama || (r as any).fullname || (r as any).name || (r as any).respondent_name || 'Tanpa Nama';
-
-  const getRespPhone = (r: KalbePostTestRespondentItem) =>
-    r.handphone || (r as any).phone_number || (r as any).respondent_phone_number || '-';
-
-  const getRespEmail = (r: KalbePostTestRespondentItem) =>
-    r.email || (r as any).respondent_email || '-';
-
-  const getRespSubmitDate = (r: KalbePostTestRespondentItem) =>
-    r.tanggal_submit || (r as any).submitted_at || (r as any).created_at || '-';
 
   // ─── Export CSV Functions ───────────────────────────────────────────────────
   const handleExportCSV = (targetGroup?: KalbePostTestRespondentGroup) => {
@@ -886,9 +935,23 @@ export const PostTestRespondentsPage: React.FC = () => {
                       }}
                     >
                       {(() => {
-                        const qText = ans.pertanyaan || (ans as any).question_text || 'Pertanyaan';
-                        const uAns = (ans.answer && ans.answer !== '-') ? ans.answer : ((ans as any).user_selected_options?.join(', ') || '(Tidak menjawab)');
-                        const cAns = (ans.correct_answer && ans.correct_answer !== '-') ? ans.correct_answer : ((ans as any).correct_options?.join(', ') || '-');
+                        const ansRec = ans as unknown as Record<string, unknown>;
+                        const qText =
+                          ans.pertanyaan ||
+                          (typeof ansRec.question_text === 'string' ? ansRec.question_text : '') ||
+                          'Pertanyaan';
+                        const uAns =
+                          ans.answer && ans.answer !== '-'
+                            ? ans.answer
+                            : Array.isArray(ansRec.user_selected_options)
+                              ? ansRec.user_selected_options.join(', ')
+                              : '(Tidak menjawab)';
+                        const cAns =
+                          ans.correct_answer && ans.correct_answer !== '-'
+                            ? ans.correct_answer
+                            : Array.isArray(ansRec.correct_options)
+                              ? ansRec.correct_options.join(', ')
+                              : '-';
 
                         return (
                           <>

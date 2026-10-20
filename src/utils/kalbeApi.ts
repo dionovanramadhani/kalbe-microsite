@@ -711,7 +711,7 @@ export function isSymposiumStarted(sympo?: KalbeSymposiumResponse | null): boole
  */
 export function isSymposiumEnded(sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null): boolean {
   if (!sympo) return false;
-  const endIso = sympo.ended_at || (sympo as any).end_date;
+  const endIso = sympo.ended_at || sympo.end_date;
   if (endIso) {
     const end = new Date(endIso);
     if (!isNaN(end.getTime())) {
@@ -731,7 +731,7 @@ export function isSymposiumOngoingNow(sympo?: (KalbeSymposiumResponse & { end_da
   if (isNaN(start.getTime())) return false;
   if (now < start) return false;
 
-  const endIso = sympo.ended_at || (sympo as any).end_date;
+  const endIso = sympo.ended_at || sympo.end_date;
   if (endIso) {
     const end = new Date(endIso);
     if (!isNaN(end.getTime()) && now > end) {

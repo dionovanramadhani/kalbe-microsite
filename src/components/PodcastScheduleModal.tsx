@@ -9,6 +9,7 @@ export interface PodcastScheduleModalProps {
   onClose: () => void;
   podcastTitle?: string;
   topic?: string;
+  image?: string | null;
   sessions?: KalbeBoothPodcastSession[];
 }
 
@@ -17,28 +18,37 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
   onClose,
   podcastTitle,
   topic,
+  image,
   sessions,
 }) => {
-  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
+  const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, {
+    duration: 280,
+  });
 
   if (!isRendered) return null;
 
   const formatSpeaker = (speaker: string) => {
     let clean = speaker.replace(/^sesi\s*\d+[\s\-:]*/i, "").trim();
     if (!clean) clean = "Pembicara";
-    if (/pembicara/i.test(clean)) return clean;
+    if (/\(pembicara\)/i.test(clean)) return clean;
     return `${clean} (Pembicara)`;
   };
 
-  const formatHost = (host: string) => {
-    let clean = host.replace(/^host[\s\-:]*/i, "").trim();
+  const formatHost = (host?: string | null) => {
+    if (!host) return "";
+    const clean = host.replace(/^host[\s\-:]*/i, "").trim();
     if (!clean) return "";
-    if (/host/i.test(clean)) return clean;
+    if (/\(host\)/i.test(clean)) return clean;
     return `${clean} (Host)`;
   };
 
+  const headerImage =
+    image && image.trim() !== "" ? image.trim() : "/assets/moritalks-podcast-logo.webp";
+
   return (
-    <div className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Backdrop with smooth blur & fade */}
       <div
         onClick={handleClose}
@@ -54,8 +64,9 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
         }`}
       >
         {/* Floating Red Circular Close Button right above the drawer top */}
-        <div className="w-full flex justify-end px-5 mb-2 pointer-events-none">
+        <div className="w-full max-w-[420px] flex justify-end px-5 mb-2 pointer-events-none">
           <button
+            type="button"
             onClick={handleClose}
             className="pointer-events-auto w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-lg active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
             title="Tutup"
@@ -65,55 +76,56 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
         </div>
 
         {/* Drawer Body Container */}
-        <div className="w-full bg-white rounded-t-[32px] px-5 pt-6 pb-9 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
-          {/* 3D Red Clock Graphic */}
+        <div className="w-full max-w-[420px] bg-white rounded-t-[32px] pt-6 pb-6 px-5 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
+          {/* Top Header Graphic from response (fallback to MoriTalks Podcast logo) */}
           <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
-              src="/assets/clock-red.webp"
-              alt="Jadwal Podcast"
-              className="w-[145px] sm:w-[155px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
+              src={headerImage}
+              alt={podcastTitle || "Moritalks Podcast"}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !==
+                    window.location.origin + "/assets/moritalks-podcast-logo.webp" &&
+                  !e.currentTarget.src.endsWith("/assets/moritalks-podcast-logo.webp")
+                ) {
+                  e.currentTarget.src = "/assets/moritalks-podcast-logo.webp";
+                }
+              }}
+              className="scale-110 w-[320px] sm:w-[320px] max-h-[95px] object-contain pointer-events-none select-none drop-shadow-sm"
             />
           </div>
 
-          {/* Title: moritalks podcast -> #D41025 bold 20px */}
-          <h2
-            style={{
-              color: "#D41025",
-              fontSize: "20px",
-              fontWeight: "bold",
-            }}
-            className="tracking-tight text-center leading-tight mb-2"
-          >
-            {podcastTitle || "Moritalks Podcast"}
-          </h2>
-
-          {/* Subtitle: topik -> #222222 bold 16px */}
-          <p
+          {/* Subtitle: Topik -> #222222 bold 16px */}
+          <h3
             style={{
               color: "#222222",
               fontSize: "16px",
               fontWeight: "bold",
             }}
-            className="tracking-tight text-center leading-tight mb-5"
+            className="tracking-tight text-center leading-tight mb-4 shrink-0"
           >
-            Topik: {topic?.trim() ? topic.trim().replace(/^topik:\s*/i, "") : "Alergi & Gastro"}
-          </p>
+            Topik:{" "}
+            {topic?.trim() ? topic.trim().replace(/^topik:\s*/i, "") : "Alergi & Gastro"}
+          </h3>
 
-          {/* Sessions List */}
-          <div className="w-full flex flex-col items-center space-y-6 max-h-[300px] overflow-y-auto no-scrollbar">
+          {/* Sessions List (Scrollable Area) */}
+          <div className="w-full flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col items-center space-y-6 pb-2">
             {sessions && sessions.length > 0 ? (
               sessions.map((session, index) => {
-                const formattedTime = (
-                  formatTimeRangeWIB(session.start_at, session.end_at) || "10.00 - 10.10 WIB"
-                ).replace("–", "-");
+                const formattedTime =
+                  formatTimeRangeWIB(session.start_at, session.end_at) ||
+                  "10.00 – 10.10 WIB";
 
                 return (
-                  <div key={session.id || index} className="w-full flex flex-col items-center">
-                    {/* Sesi 1 / Sesi 2 -> Bold 14px #222222 */}
+                  <div
+                    key={session.id || index}
+                    className="w-full flex flex-col items-center"
+                  >
+                    {/* Sesi 1 / Sesi 2 -> Bold 15px #222222 */}
                     <span
                       style={{
                         color: "#222222",
-                        fontSize: "14px",
+                        fontSize: "15px",
                         fontWeight: "bold",
                       }}
                       className="mb-1 text-center leading-tight"
@@ -128,7 +140,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                         fontSize: "14px",
                         fontWeight: 400,
                       }}
-                      className="mb-0.5 text-center leading-tight"
+                      className="mb-0.5 text-center leading-tight max-w-[320px]"
                     >
                       {formatSpeaker(session.speaker)}
                     </span>
@@ -141,7 +153,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                           fontSize: "14px",
                           fontWeight: 400,
                         }}
-                        className="mb-3 text-center leading-tight"
+                        className="mb-3 text-center leading-tight max-w-[320px]"
                       >
                         {formatHost(session.host)}
                       </span>

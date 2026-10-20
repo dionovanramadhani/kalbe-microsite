@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { X } from "lucide-react";
 
 import { useModalAnimation } from "../utils/useModalAnimation";
@@ -12,6 +12,28 @@ export interface EarlyLifeDrawerProps {
   imageTitle?: string | null;
 }
 
+function parseBoothDescription(desc?: string | null): { mainText: string; specialText: string | null } {
+  if (!desc || desc.trim() === "") {
+    return { mainText: "", specialText: null };
+  }
+
+  const trimmed = desc.trim();
+  // Deteksi kalimat "Journey of Purpose, Growth and Hope" di akhir paragraf
+  const regex = /(?:,\s*|\.\s*|\s+)(Journey\s+of\s+Purpose,?\s+Growth\s+and\s+Hope[.!]?)\s*$/i;
+  const match = trimmed.match(regex);
+
+  if (match) {
+    let mainText = trimmed.substring(0, match.index).trim();
+    if (!mainText.endsWith(".") && !mainText.endsWith("!") && !mainText.endsWith("?")) {
+      mainText += ".";
+    }
+    const specialText = "Journey of Purpose, Growth and Hope.";
+    return { mainText, specialText };
+  }
+
+  return { mainText: trimmed, specialText: null };
+}
+
 export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
   isOpen,
   onClose,
@@ -21,17 +43,22 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
 }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
-  if (!isRendered) return null;
-
   const fallbackTitle = "/assets/kalbe-early-life-solution-title-image.webp";
   const fallbackBanner = "/assets/kalbe-early-life-booth-image.webp";
 
   const headerImage = boothData?.image_title?.trim() || imageTitle?.trim() || fallbackTitle;
   const bannerImage = boothData?.detailing_banner?.trim() || fallbackBanner;
   const title = boothData?.detailing_title || boothData?.name || "Kalbe Early Life Solutions";
-  const description =
+  const rawDescription =
     boothData?.detailing_description ||
-    "Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai topik seputar nutrisi, tumbuh kembang, dan kesehatan anak, dikemas dalam obrolan yang ringan, informatif, dan mudah dipahami";
+    "Sesi edukatif bersama HCP (Health Care Professional) yang membahas berbagai topik seputar nutrisi, tumbuh kembang dan kesehatan anak. Yuk, ikuti seluruh aktifitas menarik di booth Kalbe Early Life Solutions, Journey of Purpose, Growth and Hope.";
+
+  const { mainText, specialText } = useMemo(
+    () => parseBoothDescription(rawDescription),
+    [rawDescription]
+  );
+
+  if (!isRendered) return null;
 
   return (
     <div className={`absolute inset-0 z-50 flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
@@ -97,13 +124,30 @@ export const EarlyLifeDrawer: React.FC<EarlyLifeDrawerProps> = ({
           </div>
 
           {/* Content Heading & Description */}
-          <div className="w-full text-left mb-5">
-            <h3 className="text-[16px] font-extrabold text-[#111111] leading-tight mb-2 tracking-tight">
+          <div className="w-full mb-5 flex flex-col items-center">
+            <h3 className="text-[16px] font-extrabold text-[#111111] leading-tight mb-2 tracking-tight text-center">
               {title}
             </h3>
-            <p className="text-[14px] font-normal text-[#222222B2] leading-relaxed">
-              {description}
+            <p
+              style={{
+                textAlign: "justify",
+                textAlignLast: "center",
+              }}
+              className="text-[14px] font-normal text-[#222222B2] leading-relaxed"
+            >
+              {mainText}
             </p>
+            {specialText && (
+              <p
+                style={{
+                  textAlign: "center",
+                  textAlignLast: "center",
+                }}
+                className="text-[14px] font-semibold text-[#111111] leading-relaxed mt-2.5"
+              >
+                {specialText}
+              </p>
+            )}
           </div>
 
           {/* Action Button: LANJUT (Full width single button without podcast schedule) */}

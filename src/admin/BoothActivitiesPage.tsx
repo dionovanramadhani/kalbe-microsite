@@ -26,7 +26,8 @@ interface ActivityItemDraft {
   activity_image: string;
   imageFile?: File | null;
   imagePreview?: string;
-  speaker: string;
+  host: string;
+  speakers: string[];
   start_at: string;
   end_at: string;
 }
@@ -75,6 +76,9 @@ export function BoothActivitiesPage() {
   const [editingPodcast, setEditingPodcast] = useState<KalbeBoothPodcastResponse | null>(null);
   const [podcastName, setPodcastName] = useState('');
   const [podcastTopic, setPodcastTopic] = useState('');
+  const [podcastImage, setPodcastImage] = useState('');
+  const [podcastImageFile, setPodcastImageFile] = useState<File | null>(null);
+  const [podcastImagePreview, setPodcastImagePreview] = useState('');
   const [podcastRefId, setPodcastRefId] = useState('');
   const [podcastSessions, setPodcastSessions] = useState<PodcastSessionDraft[]>([]);
   const [savingPodcast, setSavingPodcast] = useState(false);
@@ -147,7 +151,14 @@ export function BoothActivitiesPage() {
     return activities.filter((act) => {
       const matchesSearch =
         act.name.toLowerCase().includes(activitySearch.toLowerCase()) ||
-        (boothMap.get(act.ref_id) || '').toLowerCase().includes(activitySearch.toLowerCase());
+        (boothMap.get(act.ref_id) || '').toLowerCase().includes(activitySearch.toLowerCase()) ||
+        (act.activity_items || []).some(
+          (it) =>
+            it.name.toLowerCase().includes(activitySearch.toLowerCase()) ||
+            (it.host || '').toLowerCase().includes(activitySearch.toLowerCase()) ||
+            (it.speakers || []).some((s) => s.toLowerCase().includes(activitySearch.toLowerCase())) ||
+            (it.speaker || '').toLowerCase().includes(activitySearch.toLowerCase())
+        );
       const matchesBooth = selectedBoothFilter === 'all' || act.ref_id === selectedBoothFilter;
       return matchesSearch && matchesBooth;
     });
@@ -199,7 +210,8 @@ export function BoothActivitiesPage() {
         activity_image: '',
         imageFile: null,
         imagePreview: '',
-        speaker: '',
+        host: '',
+        speakers: [''],
         start_at: '',
         end_at: '',
       },
@@ -220,7 +232,13 @@ export function BoothActivitiesPage() {
             activity_image: item.activity_image || '',
             imageFile: null,
             imagePreview: item.activity_image || '',
-            speaker: item.speaker || '',
+            host: item.host || '',
+            speakers:
+              item.speakers && item.speakers.length > 0
+                ? item.speakers
+                : item.speaker
+                ? [item.speaker]
+                : [''],
             start_at: toLocalInputValue(item.start_at || ''),
             end_at: toLocalInputValue(item.end_at || ''),
           }))
@@ -232,7 +250,8 @@ export function BoothActivitiesPage() {
               activity_image: '',
               imageFile: null,
               imagePreview: '',
-              speaker: '',
+              host: '',
+              speakers: [''],
               start_at: '',
               end_at: '',
             },
@@ -251,11 +270,56 @@ export function BoothActivitiesPage() {
         activity_image: '',
         imageFile: null,
         imagePreview: '',
-        speaker: '',
+        host: '',
+        speakers: [''],
         start_at: '',
         end_at: '',
       },
     ]);
+  };
+
+  const handleAddSpeaker = (itemIndex: number) => {
+    setActivityItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? { ...item, speakers: [...item.speakers, ''] }
+          : item
+      )
+    );
+  };
+
+  const handleRemoveSpeaker = (itemIndex: number, speakerIndex: number) => {
+    setActivityItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              speakers: item.speakers.length > 1
+                ? item.speakers.filter((_, sIdx) => sIdx !== speakerIndex)
+                : [''],
+            }
+          : item
+      )
+    );
+  };
+
+  const handleUpdateSpeaker = (
+    itemIndex: number,
+    speakerIndex: number,
+    val: string
+  ) => {
+    setActivityItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              speakers: item.speakers.map((spk, sIdx) =>
+                sIdx === speakerIndex ? val : spk
+              ),
+            }
+          : item
+      )
+    );
   };
 
   const handleRemoveActivityItem = (index: number) => {
@@ -328,15 +392,22 @@ export function BoothActivitiesPage() {
 
       const validItems = itemsWithUploadedImages
         .filter((it) => it.name.trim() !== '')
-        .map((it, idx) => ({
-          name: it.name.trim(),
-          order: it.order || idx + 1,
-          description: it.description.trim() ? it.description.trim() : null,
-          activity_image: it.activity_image && it.activity_image.trim() ? it.activity_image.trim() : null,
-          speaker: it.speaker.trim() ? it.speaker.trim() : null,
-          start_at: it.start_at ? new Date(it.start_at).toISOString() : null,
-          end_at: it.end_at ? new Date(it.end_at).toISOString() : null,
-        }));
+        .map((it, idx) => {
+          const cleanSpeakers = it.speakers
+            .map((s) => s.trim())
+            .filter((s) => s !== '');
+          return {
+            name: it.name.trim(),
+            order: it.order || idx + 1,
+            description: it.description.trim() ? it.description.trim() : null,
+            activity_image: it.activity_image && it.activity_image.trim() ? it.activity_image.trim() : null,
+            host: it.host.trim() ? it.host.trim() : null,
+            speakers: cleanSpeakers,
+            speaker: cleanSpeakers.length > 0 ? cleanSpeakers.join(', ') : null,
+            start_at: it.start_at ? new Date(it.start_at).toISOString() : null,
+            end_at: it.end_at ? new Date(it.end_at).toISOString() : null,
+          };
+        });
 
       const payload: KalbeBoothActivityRequest = {
         name: activityName.trim(),
@@ -369,6 +440,9 @@ export function BoothActivitiesPage() {
     setEditingPodcast(null);
     setPodcastName('');
     setPodcastTopic('');
+    setPodcastImage('');
+    setPodcastImageFile(null);
+    setPodcastImagePreview('');
     setPodcastRefId(booths.length > 0 ? booths[0].id : '');
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -387,6 +461,9 @@ export function BoothActivitiesPage() {
     setEditingPodcast(pod);
     setPodcastName(pod.name);
     setPodcastTopic(pod.topic || '');
+    setPodcastImage(pod.image || '');
+    setPodcastImageFile(null);
+    setPodcastImagePreview(pod.image || '');
     setPodcastRefId(pod.ref_id);
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 3600000);
@@ -462,15 +539,23 @@ export function BoothActivitiesPage() {
         end_at: new Date(s.end_at).toISOString(),
       }));
 
-    const payload: KalbeBoothPodcastRequest = {
-      name: podcastName.trim(),
-      topic: podcastTopic.trim(),
-      ref_id: podcastRefId,
-      sessions: validSessions,
-    };
-
     setSavingPodcast(true);
     try {
+      let finalImageUrl: string | null = podcastImage.trim() ? podcastImage.trim() : null;
+      if (podcastImageFile) {
+        const uploadRes = await uploadKalbeMedia(podcastImageFile);
+        if (uploadRes.data?.url) {
+          finalImageUrl = uploadRes.data.url;
+        }
+      }
+
+      const payload: KalbeBoothPodcastRequest = {
+        name: podcastName.trim(),
+        topic: podcastTopic.trim(),
+        image: finalImageUrl,
+        ref_id: podcastRefId,
+        sessions: validSessions,
+      };
       if (editingPodcast) {
         await updateKalbeBoothPodcast(editingPodcast.id, payload);
         showToast('success', 'Booth Podcast berhasil diperbarui');
@@ -706,11 +791,20 @@ export function BoothActivitiesPage() {
                                       </a>
                                     )}
                                   </div>
-                                  {it.speaker && (
-                                    <div style={{ color: 'var(--admin-primary-light)', fontSize: 11, marginTop: 2 }}>
-                                      👨‍⚕️ {it.speaker}
+                                  {it.host && (
+                                    <div style={{ color: 'var(--admin-text-muted)', fontSize: 11, marginTop: 2 }}>
+                                      🎤 Host: {it.host}
                                     </div>
                                   )}
+                                  {it.speakers && it.speakers.length > 0 ? (
+                                    <div style={{ color: 'var(--admin-primary-light)', fontSize: 11, marginTop: 2 }}>
+                                      👨‍⚕️ Speaker: {it.speakers.join(', ')}
+                                    </div>
+                                  ) : it.speaker ? (
+                                    <div style={{ color: 'var(--admin-primary-light)', fontSize: 11, marginTop: 2 }}>
+                                      👨‍⚕️ Speaker: {it.speaker}
+                                    </div>
+                                  ) : null}
                                   {(it.start_at || it.end_at) && (
                                     <div style={{ color: 'var(--admin-text-muted)', fontSize: 11, marginTop: 2 }}>
                                       🕒{' '}
@@ -828,6 +922,7 @@ export function BoothActivitiesPage() {
                 <thead>
                   <tr>
                     <th style={{ width: 60 }}>No</th>
+                    <th style={{ width: 70 }}>Gambar</th>
                     <th>Nama Podcast</th>
                     <th>Topik</th>
                     <th>Booth Reference</th>
@@ -839,7 +934,7 @@ export function BoothActivitiesPage() {
                 <tbody>
                   {filteredPodcasts.length === 0 ? (
                     <tr>
-                      <td colSpan={isBrand ? 6 : 7} style={{ textAlign: 'center', padding: 45 }}>
+                      <td colSpan={isBrand ? 7 : 8} style={{ textAlign: 'center', padding: 45 }}>
                         <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>🎙️</div>
                         <div style={{ color: 'var(--admin-text-secondary)', fontSize: 14 }}>
                           Belum ada podcast booth yang ditemukan
@@ -850,6 +945,26 @@ export function BoothActivitiesPage() {
                     filteredPodcasts.map((pod, index) => (
                       <tr key={pod.id}>
                         <td style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>{index + 1}</td>
+                        <td>
+                          {pod.image ? (
+                            <a href={pod.image} target="_blank" rel="noreferrer">
+                              <img
+                                src={pod.image}
+                                alt={pod.name}
+                                style={{
+                                  height: 28,
+                                  width: 44,
+                                  objectFit: 'contain',
+                                  borderRadius: 4,
+                                  border: '1px solid var(--admin-border)',
+                                  background: 'rgba(0,0,0,0.2)',
+                                }}
+                              />
+                            </a>
+                          ) : (
+                            <span style={{ color: 'var(--admin-text-muted)', fontSize: 12 }}>-</span>
+                          )}
+                        </td>
                         <td>
                           <span style={{ fontWeight: 600, color: 'var(--admin-text)' }}>{pod.name}</span>
                         </td>
@@ -1079,13 +1194,13 @@ export function BoothActivitiesPage() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                           <div className="admin-field">
-                            <label style={{ fontSize: 12 }}>Speaker / Narasumber (Opsional)</label>
+                            <label style={{ fontSize: 12 }}>Host (Opsional)</label>
                             <input
                               className="admin-input"
                               style={{ padding: '8px 12px', fontSize: 13 }}
                               placeholder="Contoh: dr. Amanda, Sp.GK"
-                              value={item.speaker}
-                              onChange={(e) => handleUpdateActivityItem(idx, 'speaker', e.target.value)}
+                              value={item.host}
+                              onChange={(e) => handleUpdateActivityItem(idx, 'host', e.target.value)}
                             />
                           </div>
 
@@ -1152,6 +1267,45 @@ export function BoothActivitiesPage() {
                                 </div>
                               )}
                             </div>
+                          </div>
+                        </div>
+
+                        {/* Speakers Section (Bisa lebih dari 1) */}
+                        <div className="admin-field">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <label style={{ fontSize: 12 }}>Speaker / Narasumber (Opsional - Bisa lebih dari 1)</label>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-secondary"
+                              style={{ padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              onClick={() => handleAddSpeaker(idx)}
+                            >
+                              + Tambah Speaker
+                            </button>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {item.speakers.map((spk, spkIdx) => (
+                              <div key={spkIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input
+                                  className="admin-input"
+                                  style={{ padding: '7px 12px', fontSize: 13, flex: 1 }}
+                                  placeholder={`Speaker ${spkIdx + 1} (Contoh: dr. John Doe, Sp.A)`}
+                                  value={spk}
+                                  onChange={(e) => handleUpdateSpeaker(idx, spkIdx, e.target.value)}
+                                />
+                                {item.speakers.length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="admin-btn admin-btn-danger"
+                                    style={{ padding: '6px 10px', fontSize: 12 }}
+                                    onClick={() => handleRemoveSpeaker(idx, spkIdx)}
+                                    title="Hapus speaker ini"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
 
@@ -1260,6 +1414,80 @@ export function BoothActivitiesPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="admin-field" style={{ gridColumn: 'span 2' }}>
+                    <label>Header Image / Logo Podcast</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      {podcastImagePreview ? (
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: 80,
+                            height: 52,
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            border: '1px solid var(--admin-border)',
+                            background: 'rgba(0,0,0,0.25)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <img
+                            src={podcastImagePreview}
+                            alt="Preview Podcast"
+                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPodcastImage('');
+                              setPodcastImageFile(null);
+                              setPodcastImagePreview('');
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              right: 2,
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              background: 'rgba(239, 68, 68, 0.9)',
+                              color: 'white',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                            }}
+                            title="Hapus gambar"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : null}
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="admin-input"
+                          style={{ padding: '6px 10px', fontSize: 13 }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPodcastImageFile(file);
+                              setPodcastImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                        <span style={{ fontSize: 11, color: 'var(--admin-text-secondary)', display: 'block', marginTop: 4 }}>
+                          Upload gambar logo/banner MoriTalks Podcast (.png / .webp / .jpg)
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

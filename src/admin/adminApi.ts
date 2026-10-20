@@ -432,6 +432,8 @@ export interface KalbeBoothActivityItem {
   order: number;
   description?: string | null;
   activity_image?: string | null;
+  host?: string | null;
+  speakers?: string[];
   speaker?: string | null;
   start_at?: string | null;
   end_at?: string | null;
@@ -458,6 +460,8 @@ export interface KalbeBoothActivityRequest {
     order: number;
     description?: string | null;
     activity_image?: string | null;
+    host?: string | null;
+    speakers?: string[];
     speaker?: string | null;
     start_at?: string | null;
     end_at?: string | null;
@@ -532,6 +536,7 @@ export interface KalbeBoothPodcastResponse {
   id: string;
   name: string;
   topic?: string;
+  image?: string | null;
   ref_id: string; // Booth ID
   created_at: string;
   updated_at: string;
@@ -542,6 +547,7 @@ export interface KalbeBoothPodcastResponse {
 export interface KalbeBoothPodcastRequest {
   name: string;
   topic: string;
+  image?: string | null;
   ref_id: string; // Booth ID
   sessions?: Array<{
     speaker: string;

@@ -8,16 +8,15 @@ export interface WelcomeModalProps {
   onClose: () => void;
 }
 
-export const WelcomeModal: React.FC<WelcomeModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
 
   if (!isRendered) return null;
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Dark backdrop with blur confined strictly to mobile viewport */}
       <div
         onClick={handleClose}
@@ -70,8 +69,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
 
           {/* Description (12px regular #4E4E4E) */}
           <p className="text-[12px] font-normal text-[#4E4E4E] leading-relaxed">
-            Yuk, ikuti seluruh rangkaian acara Morinaga dan dapatkan pengalaman
-            dan hadiah menarik bersama kami.
+            Ikuti rangkaian acara Morinaga, dapatkan pengalaman menarik, serta hadiah
+            eksklusif Morinaga.
           </p>
         </div>
       </div>

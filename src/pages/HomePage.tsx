@@ -213,6 +213,16 @@ export const HomePage: React.FC = () => {
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
   const isPosterPending = sessionStorage.getItem("kalbe_poster_pending") === "true";
 
+  const [showPosterModal, setShowPosterModal] = useState<boolean>(() => {
+    // Sama persis seperti WelcomeModal: hanya tampil jika kalbe_poster_pending bernilai true
+    if (!isPosterPending) return false;
+    // Jika welcome modal sedang pending, tunggu sampai welcome modal selesai/ditutup
+    if (isWelcomePending) return false;
+    if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
+    return true;
+  });
+
+
   // Re-sync state whenever user navigates to HomePage or switches user session
   useEffect(() => {
     let isMounted = true;
@@ -332,7 +342,8 @@ export const HomePage: React.FC = () => {
           !hasBoothSuccess &&
           !hasEarlyLifeSuccess
         ) {
-          const isPosterPendingNow = sessionStorage.getItem("kalbe_poster_pending") === "true";
+          const isPosterPendingNow =
+            sessionStorage.getItem("kalbe_poster_pending") === "true";
           if (isPosterPendingNow && hasPoster) {
             setShowPosterModal(true);
           }
@@ -461,14 +472,6 @@ export const HomePage: React.FC = () => {
     }
   }, [showMysteryBoxModal]);
 
-  const [showPosterModal, setShowPosterModal] = useState<boolean>(() => {
-    // Sama persis seperti WelcomeModal: hanya tampil jika kalbe_poster_pending bernilai true
-    if (!isPosterPending) return false;
-    // Jika welcome modal sedang pending, tunggu sampai welcome modal selesai/ditutup
-    if (isWelcomePending) return false;
-    if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
-    return true;
-  });
 
   const handleCloseWelcomeModal = () => {
     sessionStorage.removeItem("kalbe_welcome_pending");
@@ -613,8 +616,12 @@ export const HomePage: React.FC = () => {
   const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
   const [podcastTitle, setPodcastTitle] = useState<string>("Moritalks Podcast");
   const [podcastTopic, setPodcastTopic] = useState<string>("Alergi & Gastro");
+  const [podcastImage, setPodcastImage] = useState<string | null>(null);
   const [selectedActivityItem, setSelectedActivityItem] =
     useState<KalbeBoothActivityItem | null>(null);
+  const [selectedActivityItems, setSelectedActivityItems] = useState<
+    KalbeBoothActivityItem[]
+  >([]);
 
   const morinagaBooth = useMemo(() => {
     return apiBooths.find(
@@ -701,6 +708,7 @@ export const HomePage: React.FC = () => {
 
     return list.sort((a, b) => getOrder(a.title) - getOrder(b.title));
   }, [
+    todaySymposium,
     apiSymposiums,
     boothDone,
     postTestDone,
@@ -1140,11 +1148,11 @@ export const HomePage: React.FC = () => {
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
-        subtitle="Terimakasih telah mengikuti post test Morinaga Symposium."
-        description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
+        subtitle="Terima kasih telah menyelesaikan post-test Simposium Morinaga. hadiah eksklusif telah menanti!"
+        // description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center">
-            Silahkan Ambil Hadiah di Booth Morinaga
+            Silahkan redeem Hadiah di Booth Morinaga.
           </p>
         }
       />
@@ -1157,11 +1165,11 @@ export const HomePage: React.FC = () => {
         imageAlt="Morinaga Reward Gift"
         imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
-        subtitle="Terimakasih telah mengikuti Detailing Morinaga Booth."
-        description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
+        subtitle="Terima kasih telah mengikuti aktivitas pada booth Morinaga, hadiah eksklusif telah menanti!"
+        // description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center">
-            Silahkan Ambil Hadiah di Booth Morinaga
+            Silakan reedem Hadiah di Booth Morinaga.
           </p>
         }
       />
@@ -1179,20 +1187,22 @@ export const HomePage: React.FC = () => {
         titleClassName="text-[28px] font-semibold text-[#C70412] tracking-tight mb-3.5 leading-tight"
         subtitle={
           <>
-            Terimakasih telah mengikuti
+            {/* Terimakasih telah mengikuti
             <br />
             <span className="whitespace-nowrap">
               Detailing Kalbe Early Life Solutions.
-            </span>
+            </span> */}
+            Terima kasih telah mengikuti aktivitas pada booth Kalbe Early Life Solution,
+            hadiah eksklusif telah menanti!
           </>
         }
         subtitleClassName="text-[14.5px] sm:text-[15.5px] max-w-[325px] mb-3"
-        description="Anda telah menyelesaikan aktivitas dan mendapatkan spin wheel sebagai bentuk apresiasi atas partisipasi Anda."
+        // description="Anda telah menyelesaikan aktivitas dan mendapatkan spin wheel sebagai bentuk apresiasi atas partisipasi Anda."
         descriptionClassName="text-[12px] font-normal text-[#4B5563] leading-relaxed max-w-[295px]"
         bodyClassName="mb-6"
         footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center max-w-[280px] leading-snug">
-            Anda dapat memainkan Spin Wheel di booth Kalbe Early Life Solutions!
+            Silahkan redeem Hadiah di Booth Kalbe Early Life Solution.
           </p>
         }
       />
@@ -1201,18 +1211,18 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
-        containerClassName="max-w-[361px] h-[520px] max-h-[96%] aspect-[361/520] flex flex-col items-center justify-center px-5 pt-5 pb-9"
+        containerClassName="max-w-[361px] h-[420px] max-h-[96%] aspect-[361/520] flex flex-col items-center justify-center px-5 pt-5 pb-9"
         imageSrc="/assets/mystery-box.webp"
         imageAlt="Mystery Box Morinaga"
         imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle={
           <span>
-            Anda mendapatkan <br />
-            <span className="font-bold">MYSTERY BOX Morinaga</span>
+            Terima kasih telah mengikuti seluruh rangkaian, hadiah eksklusif telah
+            menanti!
           </span>
         }
-        description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
+        // description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center leading-snug">
             Silahkan Ambil Hadiah di
@@ -1276,11 +1286,13 @@ export const HomePage: React.FC = () => {
           setPodcastSessions(sessions);
           setPodcastTitle(_podcast.name || "Moritalks Podcast");
           setPodcastTopic(_podcast.topic || "");
+          setPodcastImage(_podcast.image || null);
           setShowBoothMenuModal(false);
           setShowPodcastScheduleModal(true);
         }}
-        onSelectActivity={(item) => {
+        onSelectActivity={(item, allItems) => {
           setSelectedActivityItem(item);
+          setSelectedActivityItems(allItems || (item ? [item] : []));
           setShowBoothMenuModal(false);
           if (item.name.toLowerCase().includes("photobooth")) {
             setShowPhotoboothModal(true);
@@ -1288,13 +1300,15 @@ export const HomePage: React.FC = () => {
             setShowAwardPresentationModal(true);
           }
         }}
-        onMoritalksAwardPresentation={() => {
-          setSelectedActivityItem(null);
+        onMoritalksAwardPresentation={(allItems) => {
+          setSelectedActivityItem(allItems && allItems.length > 0 ? allItems[0] : null);
+          setSelectedActivityItems(allItems || []);
           setShowBoothMenuModal(false);
           setShowAwardPresentationModal(true);
         }}
         onPhotoboothHighAngel={() => {
           setSelectedActivityItem(null);
+          setSelectedActivityItems([]);
           setShowBoothMenuModal(false);
           setShowPhotoboothModal(true);
         }}
@@ -1309,6 +1323,7 @@ export const HomePage: React.FC = () => {
           if (morinagaBooth?.podcast) {
             setPodcastTitle(morinagaBooth.podcast.name || "Moritalks Podcast");
             setPodcastTopic(morinagaBooth.podcast.topic || "");
+            setPodcastImage(morinagaBooth.podcast.image || null);
             const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
               isSessionToday(s.start_at, s.end_at),
             );
@@ -1319,6 +1334,7 @@ export const HomePage: React.FC = () => {
               if (pod) {
                 setPodcastTitle(pod.name || "Moritalks Podcast");
                 setPodcastTopic(pod.topic || "");
+                setPodcastImage(pod.image || null);
                 const today = (pod.sessions || []).filter((s) =>
                   isSessionToday(s.start_at, s.end_at),
                 );
@@ -1352,6 +1368,7 @@ export const HomePage: React.FC = () => {
         isOpen={showPodcastScheduleModal}
         podcastTitle={podcastTitle}
         topic={podcastTopic}
+        image={podcastImage}
         sessions={podcastSessions}
         onClose={() => {
           setShowPodcastScheduleModal(false);
@@ -1363,6 +1380,7 @@ export const HomePage: React.FC = () => {
       <AwardPresentationModal
         isOpen={showAwardPresentationModal}
         activityItem={selectedActivityItem}
+        activityItems={selectedActivityItems}
         onClose={() => {
           setShowAwardPresentationModal(false);
           setShowBoothMenuModal(true);
@@ -1386,7 +1404,9 @@ export const HomePage: React.FC = () => {
       <SymposiumPosterModal
         isOpen={showPosterModal}
         onClose={handleClosePosterModal}
-        posterUrl={normalizePosterUrl(morinagaSympo?.poster || getInitialMorinagaPoster())}
+        posterUrl={normalizePosterUrl(
+          morinagaSympo?.poster || getInitialMorinagaPoster(),
+        )}
       />
 
       {/* 10. Morinaga Symposium Upcoming / Belum Dimulai Modal */}
