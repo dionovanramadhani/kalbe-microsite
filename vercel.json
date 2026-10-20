@@ -6,7 +6,7 @@
     },
     {
       "source": "/morinaga-api/:path*",
-      "destination": "https://api-morinaga-medical.dev.rollingglory.com/:path*"
+      "destination": "https://medical-api.morinaga.id/:path*"
     },
     {
       "source": "/(.*)",

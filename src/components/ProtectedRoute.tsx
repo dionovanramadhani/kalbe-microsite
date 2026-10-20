@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { isTokenValid, getToken, getUserData, logout } from '../utils/auth';
 
 interface ProtectedRouteProps {
@@ -7,6 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const location = useLocation();
   const token = getToken();
   const user = getUserData();
   const isValid = Boolean(token && isTokenValid(token) && user);
@@ -15,7 +16,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     if (token && !user) {
       logout();
     }
-    return <Navigate to="/login" replace />;
+    const currentPath = `${location.pathname}${location.search}`;
+    const redirectParam = currentPath && currentPath !== '/' ? `?redirect=${encodeURIComponent(currentPath)}` : '';
+    return <Navigate to={`/login${redirectParam}`} replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;

@@ -165,6 +165,8 @@ export const authenticateUser = (
 
     sessionStorage.removeItem('kalbe_welcome_shown');
     sessionStorage.setItem('kalbe_welcome_pending', 'true');
+    sessionStorage.removeItem('kalbe_poster_shown');
+    sessionStorage.setItem('kalbe_poster_pending', 'true');
 
     // Khusus untuk user dummy (user@test.com), reset data aktivitas dan rewards saat login
     if (matchedUser.email.trim().toLowerCase() === 'user@test.com') {

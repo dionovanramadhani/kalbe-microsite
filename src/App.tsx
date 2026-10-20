@@ -13,6 +13,7 @@ import { PostTestPage } from './pages/PostTestPage';
 import { ClaimRewardPage } from './pages/ClaimRewardPage';
 import { MysteryBoxPage } from './pages/MysteryBoxPage';
 import { BoothCheckInRedirectPage } from './pages/BoothCheckInRedirectPage';
+import { SympoCheckInRedirectPage } from './pages/SympoCheckInRedirectPage';
 import { AdminLayout } from './admin/AdminLayout';
 
 const RootRoute = () => {
@@ -52,6 +53,7 @@ export default function App() {
                   <Route path="/claim-reward" element={<ClaimRewardPage />} />
                   <Route path="/mystery-box" element={<MysteryBoxPage />} />
                   <Route path="/booth-checkin" element={<BoothCheckInRedirectPage />} />
+                  <Route path="/sympo-checkin" element={<SympoCheckInRedirectPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/login" replace />} />

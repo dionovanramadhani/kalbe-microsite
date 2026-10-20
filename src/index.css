@@ -393,3 +393,25 @@
     aspect-ratio: auto !important;
   }
 }
+
+/* User Dropdown Register Button */
+.user-dropdown-register-btn {
+  background: linear-gradient(90deg, #C70412 0%, #8E000A 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(199, 4, 18, 0.35);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.user-dropdown-register-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 16px rgba(199, 4, 18, 0.5);
+}

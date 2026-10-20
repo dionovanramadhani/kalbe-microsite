@@ -11,7 +11,6 @@ import { PhotoboothModal } from "../components/PhotoboothModal";
 import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumPosterModal } from "../components/SymposiumPosterModal";
-import { SymposiumStartedModal } from "../components/SymposiumStartedModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
 import { isSymposiumUpcoming, setSymposiumJoined } from "../data/symposiumStore";
 import {
@@ -75,6 +74,22 @@ const resolveMissionIcon = (
   const trimmed = rawIcon.trim();
   if (!trimmed || trimmed === "null" || trimmed === "undefined" || trimmed === "-") {
     return fallbackAsset;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/")) {
+    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+    return `${apiBaseUrl}${trimmed}`;
+  }
+  return trimmed;
+};
+
+const normalizePosterUrl = (url?: string | null): string | null => {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === "null" || trimmed === "undefined" || trimmed === "-") {
+    return null;
   }
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
@@ -179,7 +194,6 @@ export const HomePage: React.FC = () => {
   );
   const morinagaSympoRef = useRef<KalbeSymposiumResponse | null>(null);
   const hasDismissedSymposiumModalRef = useRef<boolean>(false);
-  const hasDismissedPosterModalRef = useRef<boolean>(false);
   const [selectedSymposiumForUpcoming, setSelectedSymposiumForUpcoming] =
     useState<KalbeSymposiumResponse | null>(null);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
@@ -197,6 +211,7 @@ export const HomePage: React.FC = () => {
   }, [todaySymposium, apiSymposiums]);
 
   const isWelcomePending = sessionStorage.getItem("kalbe_welcome_pending") === "true";
+  const isPosterPending = sessionStorage.getItem("kalbe_poster_pending") === "true";
 
   // Re-sync state whenever user navigates to HomePage or switches user session
   useEffect(() => {
@@ -317,16 +332,9 @@ export const HomePage: React.FC = () => {
           !hasBoothSuccess &&
           !hasEarlyLifeSuccess
         ) {
-          if (hasPoster && !hasDismissedPosterModalRef.current) {
+          const isPosterPendingNow = sessionStorage.getItem("kalbe_poster_pending") === "true";
+          if (isPosterPendingNow && hasPoster) {
             setShowPosterModal(true);
-          } else if (
-            !hasPoster &&
-            sympoToday &&
-            isSymposiumOngoingNow(sympoToday) &&
-            !isPostTestFinished &&
-            !hasDismissedSymposiumModalRef.current
-          ) {
-            setShowSymposiumStartedModal(true);
           }
         }
 
@@ -454,28 +462,13 @@ export const HomePage: React.FC = () => {
   }, [showMysteryBoxModal]);
 
   const [showPosterModal, setShowPosterModal] = useState<boolean>(() => {
-    // Urutan 1: Jika welcome modal pending, tunggu sampai welcome modal selesai
+    // Sama persis seperti WelcomeModal: hanya tampil jika kalbe_poster_pending bernilai true
+    if (!isPosterPending) return false;
+    // Jika welcome modal sedang pending, tunggu sampai welcome modal selesai/ditutup
     if (isWelcomePending) return false;
     if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
-    const initialPoster = getInitialMorinagaPoster();
-    return Boolean(initialPoster);
+    return true;
   });
-
-  const [showSymposiumStartedModal, setShowSymposiumStartedModal] = useState<boolean>(
-    () => {
-      // Urutan 1: Jika welcome modal sedang aktif/pending, jangan tampilkan symposium modal terlebih dahulu
-      if (isWelcomePending) return false;
-      // Urutan 2: Jika poster modal akan tampil, jangan tampilkan symposium started modal terlebih dahulu
-      if (getInitialMorinagaPoster()) return false;
-      if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
-      if (isAllActivitiesCompleted() && !isMysteryBoxClaimed()) return false;
-      const cachedToday = getCachedKalbeSymposiumToday();
-      const isDone =
-        isPostTestCompleted() || hasPostTestSuccess || Boolean(cachedToday?.is_completed);
-      if (isDone || !isSymposiumOngoingNow(cachedToday)) return false;
-      return Boolean(cachedToday);
-    },
-  );
 
   const handleCloseWelcomeModal = () => {
     sessionStorage.removeItem("kalbe_welcome_pending");
@@ -486,10 +479,8 @@ export const HomePage: React.FC = () => {
       checkAndUnlockMysteryBox();
     }
 
-    // Urutan 2: Poster Modal (jika symposium memang punya poster)
-    const currentMorinagaSympo = morinagaSympoRef.current || morinagaSympo;
-    const poster = currentMorinagaSympo?.poster;
-    if (poster && poster.trim() !== "" && !hasDismissedPosterModalRef.current) {
+    // Urutan 2: Poster Modal (sama persis dengan alur welcome pop up, aktif saat kalbe_poster_pending true)
+    if (sessionStorage.getItem("kalbe_poster_pending") === "true") {
       setShowPosterModal(true);
       return;
     }
@@ -509,12 +500,13 @@ export const HomePage: React.FC = () => {
       currentTodaySympo &&
       isSymposiumOngoingNow(currentTodaySympo)
     ) {
-      setShowSymposiumStartedModal(true);
+      // setShowSymposiumStartedModal(true);
     }
   };
 
   const handleClosePosterModal = () => {
-    hasDismissedPosterModalRef.current = true;
+    sessionStorage.removeItem("kalbe_poster_pending");
+    sessionStorage.setItem("kalbe_poster_shown", "true");
     setShowPosterModal(false);
 
     // Urutan 3: symposium started modal (setelah poster modal ditutup, jika symposium sedang berlangsung)
@@ -532,7 +524,7 @@ export const HomePage: React.FC = () => {
       currentTodaySympo &&
       isSymposiumOngoingNow(currentTodaySympo)
     ) {
-      setShowSymposiumStartedModal(true);
+      // setShowSymposiumStartedModal(true);
     }
   };
 
@@ -599,14 +591,8 @@ export const HomePage: React.FC = () => {
       currentTodaySympo &&
       isSymposiumOngoingNow(currentTodaySympo)
     ) {
-      setShowSymposiumStartedModal(true);
+      // setShowSymposiumStartedModal(true);
     }
-  };
-
-  const handleTakeMysteryBox = () => {
-    setShowMysteryBoxModal(false);
-    setShouldAnimateMysteryBox(false);
-    navigate("/mystery-box");
   };
 
   const [showSymposiumUpcomingModal, setShowSymposiumUpcomingModal] = useState(false);
@@ -1215,7 +1201,7 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
-        containerClassName="max-w-[361px] h-[540px] max-h-[96%] aspect-[361/540] flex flex-col items-center justify-center px-5 pt-5 pb-10"
+        containerClassName="max-w-[361px] h-[520px] max-h-[96%] aspect-[361/520] flex flex-col items-center justify-center px-5 pt-5 pb-9"
         imageSrc="/assets/mystery-box.webp"
         imageAlt="Mystery Box Morinaga"
         imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
@@ -1227,9 +1213,7 @@ export const HomePage: React.FC = () => {
           </span>
         }
         description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
-        buttonText="Ambil"
-        onButtonClick={handleTakeMysteryBox}
-        footerNote={
+        footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center leading-snug">
             Silahkan Ambil Hadiah di
             <br />
@@ -1402,21 +1386,7 @@ export const HomePage: React.FC = () => {
       <SymposiumPosterModal
         isOpen={showPosterModal}
         onClose={handleClosePosterModal}
-        posterUrl={morinagaSympo?.poster || getInitialMorinagaPoster()}
-      />
-
-      {/* 9. Morinaga Symposium Started / Ongoing Modal */}
-      <SymposiumStartedModal
-        isOpen={showSymposiumStartedModal}
-        onClose={() => {
-          hasDismissedSymposiumModalRef.current = true;
-          setShowSymposiumStartedModal(false);
-        }}
-        onTakePostTest={() => {
-          hasDismissedSymposiumModalRef.current = true;
-          setShowSymposiumStartedModal(false);
-          navigate("/symposium", { state: { todaySymposium } });
-        }}
+        posterUrl={normalizePosterUrl(morinagaSympo?.poster || getInitialMorinagaPoster())}
       />
 
       {/* 10. Morinaga Symposium Upcoming / Belum Dimulai Modal */}

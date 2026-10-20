@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { setAuthSession } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
 
@@ -59,6 +59,8 @@ const MailFilledIcon = () => (
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const regState = location.state as {
     registrationSuccess?: boolean;
     toastMessage?: string;
@@ -112,9 +114,11 @@ export const LoginPage: React.FC = () => {
     // Debounce delay 1.5 detik setelah user selesai mengetik baru hit API
     const timer = setTimeout(async () => {
       try {
-        const morinagaBaseUrl = (import.meta.env.VITE_MORINAGA_API_URL || "https://api-morinaga-medical.dev.rollingglory.com").replace(/\/$/, "");
-        const username = import.meta.env.VITE_MORINAGA_USERNAME || "uLCrEf4ECb";
-        const password = import.meta.env.VITE_MORINAGA_PASSWORD || "cmFAiDg6SX";
+        const morinagaBaseUrl = (
+          import.meta.env.VITE_MORINAGA_API_URL || "https://medical-api.morinaga.id"
+        ).replace(/\/$/, "");
+        const username = import.meta.env.VITE_MORINAGA_USERNAME || "mWPa9WrCHQ";
+        const password = import.meta.env.VITE_MORINAGA_PASSWORD || "r5Zl6pThBb";
         const authHeader = "Basic " + btoa(`${username}:${password}`);
         const endpoint = `/api/external/magenta/get-master-doctor?search=${encodeURIComponent(query)}&page=1&size=10`;
         // Primary URL uses /morinaga-api proxy (handled by Vite in dev and by vercel.json in production) to avoid CORS issues
@@ -134,7 +138,9 @@ export const LoginPage: React.FC = () => {
             const data: MasterDoctorResponse = await res.json();
             items = data.items || [];
           } else {
-            console.warn(`Primary proxy fetch returned status ${res.status}, trying direct URL`);
+            console.warn(
+              `Primary proxy fetch returned status ${res.status}, trying direct URL`,
+            );
             const directRes = await fetch(directUrl, {
               headers: {
                 Authorization: authHeader,
@@ -194,24 +200,102 @@ export const LoginPage: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectDoctor = (doctor: MasterDoctorItem) => {
+  const handleSelectDoctor = async (doctor: MasterDoctorItem) => {
     setFullName(doctor.fullName);
+    setSelectedDoctor(doctor);
+    setShowDropdown(false);
+    if (errorMessage) setErrorMessage(null);
+
+    // Initial fallback if doctor already has phone/email
     if (doctor.phone || doctor.phoneNumber) {
       const rawPhone = doctor.phone || doctor.phoneNumber || "";
       const cleanDigits = rawPhone.replace(/\D/g, "");
       const normalizedPhone = cleanDigits.startsWith("62")
         ? "0" + cleanDigits.slice(2)
         : cleanDigits.startsWith("0")
-        ? cleanDigits
-        : "0" + cleanDigits;
+          ? cleanDigits
+          : "0" + cleanDigits;
       setPhone(normalizedPhone);
     }
     if (doctor.email) {
       setEmail(doctor.email);
     }
-    setSelectedDoctor(doctor);
-    setShowDropdown(false);
-    if (errorMessage) setErrorMessage(null);
+
+    // Call detail endpoint: /api/external/magenta/get-master-doctor/{{doctorId}}/detail
+    if (!doctor.id) return;
+
+    try {
+      setIsSearching(true);
+      const morinagaBaseUrl = (
+        import.meta.env.VITE_MORINAGA_API_URL || "https://medical-api.morinaga.id"
+      ).replace(/\/$/, "");
+      const username = import.meta.env.VITE_MORINAGA_USERNAME || "mWPa9WrCHQ";
+      const password = import.meta.env.VITE_MORINAGA_PASSWORD || "r5Zl6pThBb";
+      const authHeader = "Basic " + btoa(`${username}:${password}`);
+      const endpoint = `/api/external/magenta/get-master-doctor/${encodeURIComponent(doctor.id)}/detail`;
+      const primaryUrl = `/morinaga-api${endpoint}`;
+      const directUrl = `${morinagaBaseUrl}${endpoint}`;
+
+      let detailData: Record<string, unknown> | null = null;
+      try {
+        const res = await fetch(primaryUrl, {
+          headers: {
+            Authorization: authHeader,
+            Accept: "application/json",
+          },
+        });
+        if (res.ok) {
+          detailData = await res.json();
+        } else {
+          const directRes = await fetch(directUrl, {
+            headers: {
+              Authorization: authHeader,
+              Accept: "application/json",
+            },
+          });
+          if (directRes.ok) {
+            detailData = await directRes.json();
+          }
+        }
+      } catch {
+        const directRes = await fetch(directUrl, {
+          headers: {
+            Authorization: authHeader,
+            Accept: "application/json",
+          },
+        });
+        if (directRes.ok) {
+          detailData = await directRes.json();
+        }
+      }
+
+      if (detailData) {
+        if (detailData.fullName && typeof detailData.fullName === "string") {
+          setFullName(detailData.fullName);
+        }
+        if (detailData.phone) {
+          const rawPhone = String(detailData.phone);
+          const cleanDigits = rawPhone.replace(/\D/g, "");
+          const normalizedPhone = cleanDigits.startsWith("62")
+            ? "0" + cleanDigits.slice(2)
+            : cleanDigits.startsWith("0")
+              ? cleanDigits
+              : "0" + cleanDigits;
+          setPhone(normalizedPhone);
+        }
+        if (detailData.email && typeof detailData.email === "string") {
+          setEmail(detailData.email);
+        }
+        setSelectedDoctor((prev) => ({
+          ...(prev || doctor),
+          ...(detailData as Partial<MasterDoctorItem>),
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch doctor detail:", err);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // const handleQuickFill = () => {
@@ -234,12 +318,12 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    if (!cleanPhone || !cleanEmail) {
-      setErrorMessage("Nomor telepon dan email wajib diisi.");
+    if (!cleanPhone) {
+      setErrorMessage("Nomor telepon wajib diisi.");
       return;
     }
 
-    if (!cleanEmail.includes("@")) {
+    if (cleanEmail && !cleanEmail.includes("@")) {
       setErrorMessage("Format email tidak valid.");
       return;
     }
@@ -254,24 +338,37 @@ export const LoginPage: React.FC = () => {
       const requestBody: {
         fullname: string;
         phone_number: string;
-        email: string;
+        email?: string;
         master_doctor_id?: string;
+        microsite_id?: string;
+        source?: string;
       } = {
         fullname: cleanFullName,
         phone_number: cleanPhone,
-        email: cleanEmail,
+        source: selectedDoctor ? "dropdown" : "manual",
       };
+
+      if (cleanEmail) {
+        requestBody.email = cleanEmail;
+      }
 
       if (selectedDoctor?.id) {
         requestBody.master_doctor_id = selectedDoctor.id;
       }
 
+      if (selectedDoctor?.micrositeId) {
+        requestBody.microsite_id = selectedDoctor.micrositeId;
+      }
+
       const requestHeaders: Record<string, string> = {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
       };
 
-      if (apiBaseUrl.includes("ngrok") || (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))) {
+      if (
+        apiBaseUrl.includes("ngrok") ||
+        (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+      ) {
         requestHeaders["ngrok-skip-browser-warning"] = "true";
       }
 
@@ -312,7 +409,12 @@ export const LoginPage: React.FC = () => {
       }
 
       const respData = json.data || {};
-      const finalFullName = (respData.fullname || cleanFullName || selectedDoctor?.fullName || "").trim();
+      const finalFullName = (
+        respData.fullname ||
+        cleanFullName ||
+        selectedDoctor?.fullName ||
+        ""
+      ).trim();
       const finalPhone = (respData.phone_number || cleanPhone || "").trim();
       const finalEmail = (respData.email || cleanEmail || "").trim();
 
@@ -328,19 +430,27 @@ export const LoginPage: React.FC = () => {
         phoneNumber: finalPhone,
         phone: finalPhone,
         practicePlace: respData.practice_place || selectedDoctor?.clinicLocation || "",
-        practiceAddress: respData.practice_place_address || selectedDoctor?.clinicAddress || "",
+        practiceAddress:
+          respData.practice_place_address || selectedDoctor?.clinicAddress || "",
         speciality: respData.speciality || selectedDoctor?.speciality || "",
         master_doctor_id: respData.master_doctor_id || selectedDoctor?.id || "",
         role: respData.role || "user",
         avatar: "/assets/docter-avatar.webp",
+        registration_response: respData.registration_response,
       };
 
       setAuthSession(token, userData, rememberMe);
 
       sessionStorage.removeItem("kalbe_welcome_shown");
       sessionStorage.setItem("kalbe_welcome_pending", "true");
+      sessionStorage.removeItem("kalbe_poster_shown");
+      sessionStorage.setItem("kalbe_poster_pending", "true");
 
-      navigate("/home");
+      if (redirectUrl && redirectUrl.startsWith("/")) {
+        navigate(redirectUrl, { replace: true });
+      } else {
+        navigate("/home");
+      }
     } catch (err: unknown) {
       console.error("Login submission error:", err);
       const message =
@@ -444,31 +554,59 @@ export const LoginPage: React.FC = () => {
 
               {/* Search Dropdown Panel */}
               {showDropdown && fullName.trim().length > 0 && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] bg-white rounded-[10px] border border-gray-200 shadow-xl max-h-[220px] overflow-y-auto z-50 py-1">
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] bg-white rounded-[10px] border border-gray-200 shadow-xl max-h-[250px] overflow-y-auto z-50 py-1">
                   {isSearching && doctorResults.length === 0 ? (
                     <div className="py-3 px-4 text-center text-[13px] text-gray-500 font-medium">
                       Mencari dokter...
                     </div>
                   ) : doctorResults.length > 0 ? (
-                    doctorResults.map((doc, idx) => (
-                      <div
-                        key={doc.id || idx}
-                        onClick={() => handleSelectDoctor(doc)}
-                        className="px-4 py-2.5 hover:bg-red-50/60 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-left flex flex-col gap-0.5"
-                      >
-                        <span className="text-[14px] font-semibold text-gray-800 leading-tight">
-                          {doc.fullName}
-                        </span>
-                        {(doc.email || doc.phone || doc.phoneNumber) ? (
-                          <span className="text-[12px] text-gray-500 leading-tight">
-                            {[doc.email, doc.phone || doc.phoneNumber].filter(Boolean).join(" • ")}
+                    <>
+                      {doctorResults.map((doc, idx) => (
+                        <div
+                          key={doc.id || idx}
+                          onClick={() => handleSelectDoctor(doc)}
+                          className="px-4 py-2.5 hover:bg-red-50/60 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-left flex flex-col gap-0.5"
+                        >
+                          <span className="text-[14px] font-semibold text-gray-800 leading-tight">
+                            {doc.fullName}
                           </span>
-                        ) : null}
+                          {/* {doc.email || doc.phone || doc.phoneNumber ? (
+                            <span className="text-[12px] text-gray-500 leading-tight">
+                              {[doc.email, doc.phone || doc.phoneNumber]
+                                .filter(Boolean)
+                                .join(" • ")}
+                            </span>
+                          ) : null} */}
+                        </div>
+                      ))}
+                      <div className="p-3 text-center border-t border-gray-100 bg-[#FAFAFD] sticky -bottom-1">
+                        <button
+                          type="button"
+                          className="user-dropdown-register-btn"
+                          onClick={() =>
+                            navigate("/register", {
+                              state: { fullName: fullName.trim() },
+                            })
+                          }
+                        >
+                          Belum terdaftar? Daftar di sini
+                        </button>
                       </div>
-                    ))
+                    </>
                   ) : fullName.trim().length >= 3 ? (
-                    <div className="py-3 px-4 text-center text-[13px] text-gray-500 font-medium">
-                      Dokter tidak ditemukan
+                    <div className="py-4 px-4 text-center flex flex-col items-center gap-2">
+                      <p className="text-[13px] text-gray-500 font-medium">
+                        Dokter tidak ditemukan
+                      </p>
+                      <button
+                        type="button"
+                        className="user-dropdown-register-btn"
+                        onClick={() =>
+                          navigate("/register", { state: { fullName: fullName.trim() } })
+                        }
+                      >
+                        Belum terdaftar? Daftar di sini
+                      </button>
                     </div>
                   ) : (
                     <div className="py-3 px-4 text-center text-[13px] text-gray-400 font-normal">
@@ -507,7 +645,7 @@ export const LoginPage: React.FC = () => {
                   setEmail(e.target.value);
                   if (errorMessage) setErrorMessage(null);
                 }}
-                placeholder="Masukan email"
+                placeholder="Masukan email (opsional)"
                 className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
               />
             </div>
@@ -560,11 +698,11 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Footer: Belum punya akun? DAFTAR */}
-          <div className="text-center text-[13px] text-[#374151]">
+          <div className="text-center text-[15px] sm:text-[16px] text-[#374151] pt-1">
             <span>Belum punya akun? </span>
             <Link
               to="/register"
-              className="font-bold text-[#E59A00] hover:text-[#C88500] transition-colors"
+              className="font-extrabold text-[16px] sm:text-[17px] text-[#E59A00] hover:text-[#C88500] hover:underline transition-all tracking-wide ml-0.5 inline-block"
             >
               DAFTAR
             </Link>

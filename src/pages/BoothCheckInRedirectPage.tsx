@@ -49,9 +49,16 @@ export const BoothCheckInRedirectPage: React.FC = () => {
         // Cari tahu apakah booth ini Morinaga Booth atau Kalbe Early Life Solutions
         const booths = await getKalbeBoothsList().catch(() => []);
         const matchedBooth = booths.find((b) => b.id === boothId);
-        const nameLower = (matchedBooth?.name || "").toLowerCase();
+        const typeParam = (searchParams.get("type") || "").toLowerCase();
+        const nameParam = (searchParams.get("name") || "").toLowerCase();
+        const nameLower = (matchedBooth?.name || nameParam).toLowerCase();
+        const isEarly =
+          typeParam.includes("early") ||
+          typeParam.includes("life") ||
+          nameLower.includes("early") ||
+          nameLower.includes("life");
 
-        if (nameLower.includes("early") || nameLower.includes("life")) {
+        if (isEarly) {
           setEarlyLifeDetailingCompleted(true);
           if (isMounted) {
             navigate("/home", { replace: true, state: { showEarlyLifeSuccessModal: true } });

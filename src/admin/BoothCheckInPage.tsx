@@ -390,7 +390,8 @@ export const BoothCheckInPage: React.FC = () => {
   const getBoothCheckInUrl = (item: KalbeBoothResponse): string => {
     const isEarly = item.name.toLowerCase().includes('early') || item.name.toLowerCase().includes('life');
     const type = isEarly ? 'early-life' : 'booth';
-    return `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(item.id)}&type=${type}&name=${encodeURIComponent(item.name)}`;
+    const origin = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+    return `${origin}/booth-checkin?booth_id=${encodeURIComponent(item.id)}&type=${type}&name=${encodeURIComponent(item.name)}`;
   };
 
   // Generate QR Code image for modal when opened

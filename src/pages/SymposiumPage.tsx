@@ -19,6 +19,7 @@ import {
   getKalbeSymposiumsList,
   getKalbeBoothsList,
   insertKalbeBoothParticipant,
+  insertKalbeSymposiumParticipant,
   getCachedKalbeBooths,
   getCachedKalbeSymposiums,
 } from "../utils/kalbeApi";
@@ -117,9 +118,18 @@ const parseQrData = (
 
       if (
         urlObj.pathname.includes("post-test") ||
-        urlObj.pathname.includes("symposium")
+        urlObj.pathname.includes("symposium") ||
+        urlObj.pathname.includes("sympo-checkin") ||
+        urlObj.pathname.includes("sympo")
       ) {
         detectedType = "symposium";
+      } else if (
+        urlObj.pathname.includes("booth-checkin") ||
+        urlObj.pathname.includes("booth")
+      ) {
+        if (!detectedType) {
+          detectedType = "booth";
+        }
       }
     }
   } catch {
@@ -810,10 +820,21 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           }
         }
 
+        if (matchedSympo?.id) {
+          try {
+            await insertKalbeSymposiumParticipant(matchedSympo.id);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "";
+            if (!msg.toLowerCase().includes("already")) {
+              console.warn("Insert symposium participant error:", err);
+            }
+          }
+        }
+
         setSymposiumJoined(true);
         let targetPath = "/post-test";
-        if (qrResult.sympoId) {
-          targetPath = `/post-test?symposium_id=${encodeURIComponent(qrResult.sympoId)}`;
+        if (qrResult.sympoId || matchedSympo?.id) {
+          targetPath = `/post-test?symposium_id=${encodeURIComponent(qrResult.sympoId || matchedSympo!.id)}`;
         }
         setTimeout(() => {
           setIsScanned(false);

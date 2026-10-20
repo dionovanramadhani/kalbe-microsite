@@ -462,6 +462,40 @@ export async function insertKalbeBoothParticipant(boothId: string): Promise<unkn
 }
 
 /**
+ * Insert authenticated participant into Kalbe symposium
+ */
+export async function insertKalbeSymposiumParticipant(symposiumId: string): Promise<unknown> {
+  const baseUrl = getBaseUrl();
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  const res = await fetch(`${baseUrl}/api/v1/kalbe/participant/symposium`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ symposium_id: symposiumId }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.message || `Failed to check in symposium participant: status ${res.status}`);
+  }
+
+  const json = await res.json();
+  return json.data;
+}
+
+/**
  * Get Mystery Box history item for authenticated user
  */
 export async function getKalbeMysteryBox(): Promise<KalbeHistoryItemResponse | null> {

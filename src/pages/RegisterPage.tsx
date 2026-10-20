@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { saveRegisteredUser, type User } from "../data/dummyUser";
 import { logout } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
@@ -8,7 +8,9 @@ const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState("");
+  const location = useLocation();
+  const regFullName = (location.state as { fullName?: string } | null)?.fullName || "";
+  const [fullName, setFullName] = useState(regFullName);
   const [practicePlace, setPracticePlace] = useState("");
   const [practiceAddress, setPracticeAddress] = useState("");
   const [email, setEmail] = useState("");
@@ -44,7 +46,6 @@ export const RegisterPage: React.FC = () => {
     if (
       !fullName.trim() ||
       !practicePlace.trim() ||
-      !practiceAddress.trim() ||
       !email.trim() ||
       !cleanDigits
     ) {
@@ -207,7 +208,7 @@ export const RegisterPage: React.FC = () => {
             {/* Nama lengkap */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
-                Nama lengkap
+                Nama lengkap <span className="text-[#C70412]">*</span>
               </label>
               <input
                 type="text"
@@ -221,7 +222,7 @@ export const RegisterPage: React.FC = () => {
             {/* Tempat praktik */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
-                Tempat praktik
+                Tempat praktik <span className="text-[#C70412]">*</span>
               </label>
               <input
                 type="text"
@@ -242,14 +243,13 @@ export const RegisterPage: React.FC = () => {
                 value={practiceAddress}
                 onChange={(e) => setPracticeAddress(e.target.value)}
                 className="w-full h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] text-[14px] text-gray-800 bg-white transition-all focus:border-[#C70412] focus:ring-1 focus:ring-[#C70412]/30 outline-none font-normal"
-                required
               />
             </div>
 
             {/* Email */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
-                Email
+                Email <span className="text-[#C70412]">*</span>
               </label>
               <input
                 type="email"
@@ -263,7 +263,7 @@ export const RegisterPage: React.FC = () => {
             {/* Nomor hanphone (Whatsapp) */}
             <div>
               <label className="block text-[14px] text-[#374151] mb-1.5 font-normal">
-                Nomor handphone (Whatsapp)
+                Nomor handphone (Whatsapp) <span className="text-[#C70412]">*</span>
               </label>
               <div className="relative flex items-center h-[48px] border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30 overflow-hidden px-3.5">
                 {/* Immutable Country Code Prefix */}
@@ -296,7 +296,7 @@ export const RegisterPage: React.FC = () => {
             {/* Speciality */}
             <div className="pt-1">
               <label className="block text-[14px] text-[#374151] mb-2 font-normal">
-                Speciality
+                Speciality <span className="text-[#C70412]">*</span>
               </label>
               <div className="space-y-2.5">
                 {SPECIALITIES.map((spec) => {

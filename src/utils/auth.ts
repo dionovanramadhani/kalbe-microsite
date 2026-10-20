@@ -168,4 +168,7 @@ export function logout(): void {
   localStorage.removeItem('kalbe_remember_me');
   sessionStorage.removeItem('kalbe_welcome_pending');
   sessionStorage.removeItem('kalbe_welcome_shown');
+  sessionStorage.removeItem('kalbe_poster_pending');
+  sessionStorage.removeItem('kalbe_poster_shown');
+  sessionStorage.removeItem('kalbe_from_login');
 }

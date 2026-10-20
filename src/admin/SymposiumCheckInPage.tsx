@@ -393,9 +393,10 @@ export const SymposiumCheckInPage: React.FC = () => {
     fetchSymposiums();
   }, [fetchSymposiums]);
 
-  // Target URL for post-test redirect
+  // Target URL for symposium check-in & post-test redirect
   const getSymposiumPostTestUrl = (symposiumId: string): string => {
-    return `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(symposiumId)}`;
+    const origin = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+    return `${origin}/sympo-checkin?symposium_id=${encodeURIComponent(symposiumId)}`;
   };
 
   // Generate QR Code image for modal when opened
