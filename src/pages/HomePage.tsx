@@ -182,6 +182,7 @@ export const HomePage: React.FC = () => {
   const hasDismissedPosterModalRef = useRef<boolean>(false);
   const [selectedSymposiumForUpcoming, setSelectedSymposiumForUpcoming] =
     useState<KalbeSymposiumResponse | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   const morinagaSympo = useMemo(() => {
     return (
@@ -209,6 +210,7 @@ export const HomePage: React.FC = () => {
     setHasUnclaimedMysteryBoxState(checkHasUnclaimedMysteryBox());
     setHasMysteryBox(hasUserMysteryBox());
     setMysteryBoxClaimed(isMysteryBoxClaimed());
+    setIsLoadingData(true);
 
     // Fetch live state from backend APIs
     Promise.all([
@@ -217,7 +219,7 @@ export const HomePage: React.FC = () => {
       getKalbeUserHistory().catch(() => [] as KalbeHistoryItemResponse[]),
       getKalbeSymposiumToday().catch(() => null as KalbeSymposiumResponse | null),
     ])
-      .then(([booths, sympos, historyList, sympoToday]) => {
+      .then(async ([booths, sympos, historyList, sympoToday]) => {
         if (!isMounted) return;
         if (booths && booths.length > 0) setApiBooths(booths);
         if (sympos && sympos.length > 0) setApiSymposiums(sympos);
@@ -303,7 +305,7 @@ export const HomePage: React.FC = () => {
 
         // Alur urutan modal di HomePage:
         // 1. WelcomeModal (jika isWelcomePending)
-        // 2. Poster Modal (jika morinaga symposium punya poster dan welcome modal sudah tidak pending)
+        // 2. Poster Modal: LANGSUNG tampilkan tanpa delay saat data poster tersedia!
         // 3. SymposiumStartedModal (jika tidak ada poster / setelah poster ditutup dan symposium sedang berlangsung)
         const hasPoster = Boolean(
           currentMorinagaSympo?.poster && currentMorinagaSympo.poster.trim() !== "",
@@ -355,9 +357,18 @@ export const HomePage: React.FC = () => {
             !h.reward_type?.includes("mystery"),
         ).length;
         setUnclaimedRewardsCount(unclaimedCount);
+
+        // Delay 2 detik khusus untuk transisi skeleton card/misi di background
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (!isMounted) return;
+        setIsLoadingData(false);
       })
-      .catch((err) => {
+      .catch(async (err) => {
         console.warn("Failed to fetch user state in HomePage:", err);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
       });
 
     return () => {
@@ -823,81 +834,98 @@ export const HomePage: React.FC = () => {
 
         {/* Right Buttons: Klaim Hadiah & Mystery Box */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* 1. Klaim Hadiah Button */}
-          <button
-            onClick={handleClaimReward}
-            className="relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 cursor-pointer transition-transform active:scale-95 hover:brightness-105 select-none"
-            style={{
-              backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-            }}
-          >
-            {unclaimedRewardsCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
-                {unclaimedRewardsCount}
-              </span>
-            )}
-            <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
-              <img
-                src="/assets/reward-icon-red.webp"
-                alt="Klaim Hadiah"
-                className={`w-[38px] h-[38px] object-contain drop-shadow-sm ${
-                  unclaimedRewardsCount > 0 ? "animate-bell-shake" : ""
-                }`}
-              />
-            </div>
-            <div className="w-full h-[18px] flex items-center justify-center mt-4">
-              <span className="text-[8px] font-bold text-[#FF1D1D] tracking-tight whitespace-nowrap leading-none">
-                Klaim Hadiah
-              </span>
-            </div>
-          </button>
+          {isLoadingData ? (
+            <>
+              {/* Skeleton Klaim Hadiah Button */}
+              <div className="relative w-[73px] h-[68px] shrink-0 rounded-2xl bg-white/80 border border-red-100 flex flex-col items-center justify-center gap-1.5 p-1.5 shadow-sm animate-pulse">
+                <div className="w-[32px] h-[32px] rounded-full bg-red-100/80" />
+                <div className="w-[46px] h-[8px] rounded bg-red-100/70" />
+              </div>
+              {/* Skeleton Mystery Box Button */}
+              <div className="relative w-[73px] h-[68px] shrink-0 rounded-2xl bg-white/80 border border-red-100 flex flex-col items-center justify-center gap-1.5 p-1.5 shadow-sm animate-pulse">
+                <div className="w-[32px] h-[32px] rounded-full bg-red-100/80" />
+                <div className="w-[46px] h-[8px] rounded bg-red-100/70" />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* 1. Klaim Hadiah Button */}
+              <button
+                onClick={handleClaimReward}
+                className="relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 cursor-pointer transition-transform active:scale-95 hover:brightness-105 select-none"
+                style={{
+                  backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
+                  backgroundSize: "100% 100%",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
+                {unclaimedRewardsCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
+                    {unclaimedRewardsCount}
+                  </span>
+                )}
+                <div className="w-full flex-1 flex items-center justify-center translate-y-[10px]">
+                  <img
+                    src="/assets/reward-icon-red.webp"
+                    alt="Klaim Hadiah"
+                    className={`w-[38px] h-[38px] object-contain drop-shadow-sm ${
+                      unclaimedRewardsCount > 0 ? "animate-bell-shake" : ""
+                    }`}
+                  />
+                </div>
+                <div className="w-full h-[18px] flex items-center justify-center mt-4">
+                  <span className="text-[8px] font-bold text-[#FF1D1D] tracking-tight whitespace-nowrap leading-none">
+                    Klaim Hadiah
+                  </span>
+                </div>
+              </button>
 
-          {/* 2. Mystery Box Button (Hanya tampil jika user telah memiliki mystery box) */}
-          {hasMysteryBox && (
-            <button
-              onClick={() => {
-                if (!mysteryBoxClaimed) {
-                  navigate("/mystery-box");
-                }
-              }}
-              disabled={mysteryBoxClaimed}
-              className={`relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 select-none transition-all ${
-                mysteryBoxClaimed
-                  ? "opacity-50 grayscale cursor-not-allowed pointer-events-none"
-                  : "cursor-pointer transition-transform active:scale-95 hover:brightness-105"
-              }`}
-              style={{
-                backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              {hasUnclaimedMysteryBoxState && !mysteryBoxClaimed && (
-                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10.5px] font-extrabold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
-                  !
-                </span>
-              )}
-              <div className="w-full flex-1 flex items-center justify-center translate-y-[6px]">
-                <img
-                  src="/assets/mystery-box.webp"
-                  alt="Mystery Box"
-                  className={`w-[42px] h-[42px] object-contain drop-shadow-sm ${
-                    !mysteryBoxClaimed ? "animate-bell-shake-delayed" : ""
+              {/* 2. Mystery Box Button (Hanya tampil jika user telah memiliki mystery box) */}
+              {hasMysteryBox && (
+                <button
+                  onClick={() => {
+                    if (!mysteryBoxClaimed) {
+                      navigate("/mystery-box");
+                    }
+                  }}
+                  disabled={mysteryBoxClaimed}
+                  className={`relative w-[73px] h-[68px] shrink-0 flex flex-col items-center justify-between pb-1.5 select-none transition-all ${
+                    mysteryBoxClaimed
+                      ? "opacity-50 grayscale cursor-not-allowed pointer-events-none"
+                      : "cursor-pointer transition-transform active:scale-95 hover:brightness-105"
                   }`}
-                />
-              </div>
-              <div className="w-full h-[18px] flex items-center justify-center mt-3">
-                <span
-                  className={`text-[8px] font-bold tracking-tight whitespace-nowrap leading-none ${
-                    mysteryBoxClaimed ? "text-gray-400" : "text-[#FF1D1D]"
-                  }`}
+                  style={{
+                    backgroundImage: `url('/assets/reward-claim-bg-new.webp')`,
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                  }}
                 >
-                  Mystery Box
-                </span>
-              </div>
-            </button>
+                  {hasUnclaimedMysteryBoxState && !mysteryBoxClaimed && (
+                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#FF1D1D] text-white text-[10.5px] font-extrabold rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 leading-none">
+                      !
+                    </span>
+                  )}
+                  <div className="w-full flex-1 flex items-center justify-center translate-y-[6px]">
+                    <img
+                      src="/assets/mystery-box.webp"
+                      alt="Mystery Box"
+                      className={`w-[42px] h-[42px] object-contain drop-shadow-sm ${
+                        !mysteryBoxClaimed ? "animate-bell-shake-delayed" : ""
+                      }`}
+                    />
+                  </div>
+                  <div className="w-full h-[18px] flex items-center justify-center mt-3">
+                    <span
+                      className={`text-[8px] font-bold tracking-tight whitespace-nowrap leading-none ${
+                        mysteryBoxClaimed ? "text-gray-400" : "text-[#FF1D1D]"
+                      }`}
+                    >
+                      Mystery Box
+                    </span>
+                  </div>
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -975,120 +1003,145 @@ export const HomePage: React.FC = () => {
 
           {/* Mission Items List */}
           <div className="relative z-10 flex-1 flex flex-col gap-7 py-0.5 min-h-0 mt-1">
-            {missions.map((mission) => {
-              const isClickable = !mission.isCompleted && !mission.disabled;
-              return (
-                <div
-                  key={mission.id}
-                  onClick={() => {
-                    if (isClickable) {
-                      handleEnterMission(mission);
-                    }
-                  }}
-                  className={`flex items-start gap-2 py-0.5 px-1.5 rounded-xl transition-all ${
-                    isClickable
-                      ? "cursor-pointer"
-                      : mission.disabled && !mission.isCompleted
-                        ? "cursor-not-allowed opacity-60"
-                        : "cursor-default"
-                  }`}
-                >
-                  {/* Left: Hexagonal Futuristic Icon */}
-                  <div className="shrink-0 flex items-center justify-center pt-0.5">
-                    <img
-                      src={mission.icon}
-                      alt={mission.title}
-                      className="w-[56px] h-[56px] object-contain drop-shadow-sm pointer-events-none"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        const fallback =
-                          mission.id === "morinaga-booth" ||
-                          mission.type === "booth-morinaga"
-                            ? DEFAULT_BOOTH_ICON
-                            : mission.id === "morinaga-sympo" ||
-                                mission.type === "symposium"
-                              ? DEFAULT_SYMPO_ICON
-                              : DEFAULT_EARLY_LIFE_ICON;
-                        if (target.src !== fallback && !target.src.endsWith(fallback)) {
-                          target.src = fallback;
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold text-[#535252] mb-1 truncate">
-                      {mission.title}
+            {isLoadingData ? (
+              <>
+                {[1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2 py-0.5 px-1.5 rounded-xl animate-pulse"
+                  >
+                    {/* Left: Hexagonal Futuristic Icon Placeholder */}
+                    <div className="shrink-0 flex items-center justify-center pt-0.5">
+                      <div className="w-[56px] h-[56px] rounded-2xl bg-gray-200/90 shadow-sm" />
                     </div>
 
-                    {/* Detailing pill aligned side-by-side with MASUK / SELESAI button */}
-                    <div className="flex items-center gap-1.5">
-                      {mission.isCompleted ? (
-                        <div
-                          className="flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] font-medium text-white shadow-sm"
-                          style={{ backgroundColor: "#24B500" }}
-                        >
-                          <span className="truncate">Selesai</span>
-                        </div>
-                      ) : (
-                        <div
-                          className={`flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
-                            mission.disabled
-                              ? "border border-gray-300 bg-gray-100 text-[#888888]"
-                              : "border border-[#F87171] bg-white text-[#444444]"
-                          }`}
-                        >
-                          <span className="truncate">{mission.subtitle}</span>
-                        </div>
-                      )}
-
-                      {/* Button MASUK / SELESAI sejajar dengan Detailing */}
-                      {mission.isCompleted ? (
-                        <div
-                          className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center select-none"
-                          style={{
-                            backgroundImage: `url('/assets/check-in-green.webp')`,
-                            backgroundSize: "contain",
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "center",
-                          }}
-                        >
-                          <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
-                            SELESAI
-                          </span>
-                        </div>
-                      ) : (
-                        <button
-                          disabled={mission.disabled}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!mission.disabled) {
-                              handleEnterMission(mission);
-                            }
-                          }}
-                          className={`relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all ${
-                            mission.disabled
-                              ? "cursor-not-allowed opacity-50 grayscale pointer-events-none"
-                              : "cursor-pointer active:scale-95 hover:brightness-110"
-                          }`}
-                          style={{
-                            backgroundImage: `url('/assets/check-in-red.webp')`,
-                            backgroundSize: "contain",
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "center",
-                          }}
-                        >
-                          <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
-                            MASUK
-                          </span>
-                        </button>
-                      )}
+                    {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="h-4 bg-gray-200/90 rounded-md w-36 mb-1.5" />
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex-1 h-[28px] rounded-full bg-gray-200/80" />
+                        <div className="w-[76px] h-[28px] rounded-full bg-gray-200/90 shrink-0" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                ))}
+              </>
+            ) : (
+              missions.map((mission) => {
+                const isClickable = !mission.isCompleted && !mission.disabled;
+                return (
+                  <div
+                    key={mission.id}
+                    onClick={() => {
+                      if (isClickable) {
+                        handleEnterMission(mission);
+                      }
+                    }}
+                    className={`flex items-start gap-2 py-0.5 px-1.5 rounded-xl transition-all ${
+                      isClickable
+                        ? "cursor-pointer"
+                        : mission.disabled && !mission.isCompleted
+                          ? "cursor-not-allowed opacity-60"
+                          : "cursor-default"
+                    }`}
+                  >
+                    {/* Left: Hexagonal Futuristic Icon */}
+                    <div className="shrink-0 flex items-center justify-center pt-0.5">
+                      <img
+                        src={mission.icon}
+                        alt={mission.title}
+                        className="w-[56px] h-[56px] object-contain drop-shadow-sm pointer-events-none"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fallback =
+                            mission.id === "morinaga-booth" ||
+                            mission.type === "booth-morinaga"
+                              ? DEFAULT_BOOTH_ICON
+                              : mission.id === "morinaga-sympo" ||
+                                  mission.type === "symposium"
+                                ? DEFAULT_SYMPO_ICON
+                                : DEFAULT_EARLY_LIFE_ICON;
+                          if (target.src !== fallback && !target.src.endsWith(fallback)) {
+                            target.src = fallback;
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* Right: Title on top, Subtitle Pill & MASUK Button aligned horizontally below */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-[#535252] mb-1 truncate">
+                        {mission.title}
+                      </div>
+
+                      {/* Detailing pill aligned side-by-side with MASUK / SELESAI button */}
+                      <div className="flex items-center gap-1.5">
+                        {mission.isCompleted ? (
+                          <div
+                            className="flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] font-medium text-white shadow-sm"
+                            style={{ backgroundColor: "#24B500" }}
+                          >
+                            <span className="truncate">Selesai</span>
+                          </div>
+                        ) : (
+                          <div
+                            className={`flex-1 min-w-0 flex items-center rounded-full px-3.5 h-[28px] text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
+                              mission.disabled
+                                ? "border border-gray-300 bg-gray-100 text-[#888888]"
+                                : "border border-[#F87171] bg-white text-[#444444]"
+                            }`}
+                          >
+                            <span className="truncate">{mission.subtitle}</span>
+                          </div>
+                        )}
+
+                        {/* Button MASUK / SELESAI sejajar dengan Detailing */}
+                        {mission.isCompleted ? (
+                          <div
+                            className="relative w-[76px] h-[28px] shrink-0 flex items-center justify-center select-none"
+                            style={{
+                              backgroundImage: `url('/assets/check-in-green.webp')`,
+                              backgroundSize: "contain",
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "center",
+                            }}
+                          >
+                            <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
+                              SELESAI
+                            </span>
+                          </div>
+                        ) : (
+                          <button
+                            disabled={mission.disabled}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!mission.disabled) {
+                                handleEnterMission(mission);
+                              }
+                            }}
+                            className={`relative w-[76px] h-[28px] shrink-0 flex items-center justify-center transition-all ${
+                              mission.disabled
+                                ? "cursor-not-allowed opacity-50 grayscale pointer-events-none"
+                                : "cursor-pointer active:scale-95 hover:brightness-110"
+                            }`}
+                            style={{
+                              backgroundImage: `url('/assets/check-in-red.webp')`,
+                              backgroundSize: "contain",
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "center",
+                            }}
+                          >
+                            <span className="text-white font-bold text-[11px] tracking-wider uppercase drop-shadow-sm">
+                              MASUK
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -1275,9 +1328,7 @@ export const HomePage: React.FC = () => {
             const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
               isSessionToday(s.start_at, s.end_at),
             );
-            setPodcastSessions(
-              today.length > 0 ? today : morinagaBooth.podcast.sessions || [],
-            );
+            setPodcastSessions(today);
           } else if (morinagaBooth?.id) {
             try {
               const pod = await getKalbeBoothPodcastByRefID(morinagaBooth.id);
@@ -1287,7 +1338,7 @@ export const HomePage: React.FC = () => {
                 const today = (pod.sessions || []).filter((s) =>
                   isSessionToday(s.start_at, s.end_at),
                 );
-                setPodcastSessions(today.length > 0 ? today : pod.sessions || []);
+                setPodcastSessions(today);
               }
             } catch {
               // fallback to defaults

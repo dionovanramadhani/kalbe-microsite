@@ -77,6 +77,8 @@ export const MysteryBoxPage: React.FC = () => {
     setLoading(true);
     try {
       const histories = await getKalbeUserHistory();
+      // 2 detik delay setelah berhasil di get
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       const mbItems = histories.filter(
         (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery"),
       );
@@ -101,6 +103,7 @@ export const MysteryBoxPage: React.FC = () => {
       }
     } catch (e) {
       console.warn("Failed to fetch mystery box from API:", e);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     setRewards([]);
@@ -243,11 +246,21 @@ export const MysteryBoxPage: React.FC = () => {
           >
             {/* Rewards List Container */}
             {loading ? (
-              <div className="w-full flex-1 flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-8 h-8 border-3 border-[#C70412] border-t-transparent rounded-full animate-spin" />
-                <span className="text-[12px] text-gray-500 font-medium">
-                  Memuat data Mystery Box...
-                </span>
+              <div className="w-full flex-1 overflow-hidden space-y-3 pt-1 pb-2 flex flex-col">
+                {[1].map((idx) => (
+                  <div
+                    key={idx}
+                    className="w-full bg-white rounded-[14px] border border-gray-200/90 p-3 flex items-center justify-between gap-2.5 shadow-sm animate-pulse"
+                  >
+                    <div className="w-[46px] h-[46px] rounded-xl bg-gray-200/90 shrink-0" />
+                    <div className="flex-1 space-y-2 py-0.5">
+                      <div className="w-32 h-3.5 bg-gray-200/90 rounded" />
+                      <div className="w-44 h-2.5 bg-gray-200/70 rounded" />
+                      <div className="w-24 h-2 bg-gray-200/60 rounded mt-1" />
+                    </div>
+                    <div className="w-[64px] h-[28px] rounded-lg bg-gray-200/90 shrink-0" />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="w-full flex-1 overflow-y-auto pr-0.5 space-y-3 pt-1 pb-2 scrollbar-none flex flex-col">

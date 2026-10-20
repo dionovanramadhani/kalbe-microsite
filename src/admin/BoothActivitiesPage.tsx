@@ -33,6 +33,7 @@ interface ActivityItemDraft {
 
 interface PodcastSessionDraft {
   speaker: string;
+  host: string;
   start_at: string;
   end_at: string;
 }
@@ -159,7 +160,11 @@ export function BoothActivitiesPage() {
         pod.name.toLowerCase().includes(podcastSearch.toLowerCase()) ||
         (pod.topic || '').toLowerCase().includes(podcastSearch.toLowerCase()) ||
         (boothMap.get(pod.ref_id) || '').toLowerCase().includes(podcastSearch.toLowerCase()) ||
-        (pod.sessions || []).some((s) => s.speaker.toLowerCase().includes(podcastSearch.toLowerCase()));
+        (pod.sessions || []).some(
+          (s) =>
+            s.speaker.toLowerCase().includes(podcastSearch.toLowerCase()) ||
+            (s.host || '').toLowerCase().includes(podcastSearch.toLowerCase())
+        );
       const matchesBooth = selectedBoothFilter === 'all' || pod.ref_id === selectedBoothFilter;
       return matchesSearch && matchesBooth;
     });
@@ -370,6 +375,7 @@ export function BoothActivitiesPage() {
     setPodcastSessions([
       {
         speaker: '',
+        host: '',
         start_at: toLocalInputValue(now.toISOString()),
         end_at: toLocalInputValue(oneHourLater.toISOString()),
       },
@@ -388,12 +394,14 @@ export function BoothActivitiesPage() {
       pod.sessions && pod.sessions.length > 0
         ? pod.sessions.map((sess) => ({
             speaker: sess.speaker,
+            host: sess.host || '',
             start_at: toLocalInputValue(sess.start_at),
             end_at: toLocalInputValue(sess.end_at),
           }))
         : [
             {
               speaker: '',
+              host: '',
               start_at: toLocalInputValue(now.toISOString()),
               end_at: toLocalInputValue(oneHourLater.toISOString()),
             },
@@ -409,6 +417,7 @@ export function BoothActivitiesPage() {
       ...prev,
       {
         speaker: '',
+        host: '',
         start_at: toLocalInputValue(now.toISOString()),
         end_at: toLocalInputValue(oneHourLater.toISOString()),
       },
@@ -448,6 +457,7 @@ export function BoothActivitiesPage() {
       .filter((s) => s.speaker.trim() !== '' && s.start_at && s.end_at)
       .map((s) => ({
         speaker: s.speaker.trim(),
+        host: s.host.trim() ? s.host.trim() : null,
         start_at: new Date(s.start_at).toISOString(),
         end_at: new Date(s.end_at).toISOString(),
       }));
@@ -868,6 +878,11 @@ export function BoothActivitiesPage() {
                                 <div style={{ fontWeight: 600, color: 'var(--admin-text)' }}>
                                   👨‍⚕️ {sess.speaker}
                                 </div>
+                                {sess.host && (
+                                  <div style={{ color: 'var(--admin-text-secondary)', fontSize: 11, marginTop: 1 }}>
+                                    🎙️ Host: {sess.host}
+                                  </div>
+                                )}
                                 <div style={{ color: 'var(--admin-text-muted)', fontSize: 11, marginTop: 2 }}>
                                   🕒{' '}
                                   {new Date(sess.start_at).toLocaleTimeString('id-ID', {
@@ -1306,6 +1321,17 @@ export function BoothActivitiesPage() {
                             value={sess.speaker}
                             onChange={(e) => handleUpdatePodcastSession(idx, 'speaker', e.target.value)}
                             required
+                          />
+                        </div>
+
+                        <div className="admin-field">
+                          <label style={{ fontSize: 12 }}>Host (Opsional)</label>
+                          <input
+                            className="admin-input"
+                            style={{ padding: '8px 12px', fontSize: 13 }}
+                            placeholder="Contoh: dr. Jane Smith"
+                            value={sess.host}
+                            onChange={(e) => handleUpdatePodcastSession(idx, 'host', e.target.value)}
                           />
                         </div>
 

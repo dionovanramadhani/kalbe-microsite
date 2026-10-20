@@ -54,7 +54,9 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
       getKalbeBoothPodcastByRefID(boothId),
       getKalbeBoothActivityByRefID(boothId),
     ])
-      .then(([podcastRes, activityRes]) => {
+      .then(async ([podcastRes, activityRes]) => {
+        // 2 detik delay setelah berhasil di get
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         if (!isMounted) return;
         if (podcastRes.status === "fulfilled") {
           setPodcast(podcastRes.value);
@@ -64,7 +66,8 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
         }
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         if (isMounted) setIsLoading(false);
       });
 
@@ -73,12 +76,35 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
     };
   }, [isOpen, boothId]);
 
+  const defaultPodcast: KalbeBoothPodcastResponse = useMemo(
+    () => ({
+      id: "",
+      name: "Moritalks Podcast",
+      topic: "Alergi & Gastro",
+      ref_id: boothId || "",
+      created_at: "",
+      updated_at: "",
+      sessions: [],
+    }),
+    [boothId]
+  );
+
+  const activePodcast = podcast || boothData?.podcast || defaultPodcast;
+
+  // Filter sesi podcast hari ini (tidak peduli sudah selesai atau belum mulai, semua sesi hari ini diambil)
   const todaySessions = useMemo(() => {
-    return (podcast?.sessions || []).filter((s) => isSessionToday(s.start_at, s.end_at));
-  }, [podcast]);
+    return (activePodcast?.sessions || []).filter((s) => isSessionToday(s.start_at, s.end_at));
+  }, [activePodcast]);
+
+  // Sesi yang akan ditampilkan: hanya sesi hari ini (tidak peduli sudah selesai atau belum mulai, tapi tetap podcast yang ditampilkan adalah podcast hari ini)
+  const sessionsToDisplay = useMemo(() => {
+    return todaySessions;
+  }, [todaySessions]);
 
   const sortedActivities = useMemo(() => {
-    return [...(activity?.activity_items || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    return [...(activity?.activity_items || [])]
+      .filter((item) => !item.name.toLowerCase().includes("podcast"))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [activity]);
 
   if (!isRendered) return null;
@@ -226,39 +252,46 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
           {/* Activity Buttons List */}
           <div className="relative z-10 flex flex-col items-center gap-2.5 w-full max-h-[220px] overflow-y-auto no-scrollbar">
             {isLoading && !podcast && !activity ? (
-              <div className="py-4 text-xs text-gray-400 font-medium animate-pulse">
-                Memuat aktivitas...
+              <div className="w-full flex flex-col items-center gap-2.5 py-1">
+                {[1, 2].map((idx) => (
+                  <div
+                    key={idx}
+                    className="w-[235px] sm:w-[245px] h-[46px] rounded-xl bg-gray-200/90 animate-pulse flex items-center justify-between px-4 shrink-0 shadow-sm"
+                  >
+                    <div className="w-5 h-5 rounded-md bg-gray-300/80" />
+                    <div className="w-28 h-3.5 rounded bg-gray-300/80" />
+                    <div className="w-4 h-4 rounded-full bg-gray-300/80" />
+                  </div>
+                ))}
               </div>
             ) : (
               <>
-                {/* 1. Podcast Button: Tampilkan hanya jika ada sesi podcast hari ini */}
-                {todaySessions.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onMoritalksPodcast && podcast) {
-                        onMoritalksPodcast(podcast, todaySessions);
-                      }
-                    }}
-                    className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                {/* 1. Podcast Button: Tetap selalu ditampilkan meskipun hari ini sudah selesai atau belum mulai */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onMoritalksPodcast) {
+                      onMoritalksPodcast(activePodcast, sessionsToDisplay);
+                    }
+                  }}
+                  className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
+                  style={{
+                    backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                >
+                  <span
                     style={{
-                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                      backgroundSize: "100% 100%",
-                      backgroundRepeat: "no-repeat",
+                      color: "#FA132D",
+                      fontSize: "12px",
+                      fontWeight: "bold",
                     }}
+                    className="truncate text-center w-full"
                   >
-                    <span
-                      style={{
-                        color: "#FA132D",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                      }}
-                      className="truncate text-center w-full"
-                    >
-                      {podcast?.name || "Moritalks Podcast"}
-                    </span>
-                  </button>
-                )}
+                    {activePodcast.name || "Moritalks Podcast"}
+                  </span>
+                </button>
 
                 {/* 2. List Aktifitas dari Booth Activity API */}
                 {sortedActivities.map((item) => (
@@ -293,74 +326,6 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                     </span>
                   </button>
                 ))}
-
-                {/* Fallback jika boothId belum tersedia atau kedua API tidak memiliki data sama sekali */}
-                {!boothId && todaySessions.length === 0 && sortedActivities.length === 0 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onMoritalksPodcast && onMoritalksPodcast({ id: "", name: "Moritalks Podcast", topic: "Alergi & Gastro", ref_id: "", created_at: "", updated_at: "" }, [])}
-                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
-                      style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                        backgroundSize: "100% 100%",
-                        backgroundRepeat: "no-repeat",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#FA132D",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Moritalks Podcast
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={onMoritalksAwardPresentation}
-                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
-                      style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                        backgroundSize: "100% 100%",
-                        backgroundRepeat: "no-repeat",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#FA132D",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Moritalks Award Presentation
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={onPhotoboothHighAngel}
-                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
-                      style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                        backgroundSize: "100% 100%",
-                        backgroundRepeat: "no-repeat",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#FA132D",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Photobooth High Angel
-                      </span>
-                    </button>
-                  </>
-                )}
               </>
             )}
           </div>

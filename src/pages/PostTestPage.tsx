@@ -148,6 +148,9 @@ export const PostTestPage: React.FC = () => {
           }
 
           if (isSubscribed && detail && detail.questions && detail.questions.length > 0) {
+            // 2 detik delay setelah data berhasil di get
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            if (!isSubscribed) return;
             setPostTestDetail(detail);
             const mappedQuestions: QuestionItem[] = detail.questions.map((q, qIdx) => ({
               id: q.id,
@@ -169,6 +172,8 @@ export const PostTestPage: React.FC = () => {
       }
 
       if (isSubscribed) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (!isSubscribed) return;
         setQuestions(getFallbackQuestions());
         setLoading(false);
       }
@@ -378,9 +383,23 @@ export const PostTestPage: React.FC = () => {
 
             {/* Questions List (Scrollable if screen is small) */}
             {loading ? (
-              <div className="w-full flex-1 flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-8 h-8 border-3 border-[#C70412] border-t-transparent rounded-full animate-spin" />
-                <span className="text-[12px] text-gray-500 font-medium">Memuat soal post-test...</span>
+              <div className="w-full flex-1 overflow-hidden space-y-5 pt-1 pb-2">
+                {[1, 2, 3].map((idx) => (
+                  <div key={idx} className="w-full animate-pulse space-y-3">
+                    <div className="flex items-start gap-2">
+                      <div className="w-[22px] h-[22px] rounded-full bg-gray-200/90 shrink-0" />
+                      <div className="w-3/4 h-4 bg-gray-200/90 rounded mt-0.5" />
+                    </div>
+                    <div className="pl-7 space-y-2.5">
+                      {[1, 2, 3].map((optIdx) => (
+                        <div key={optIdx} className="flex items-center gap-2.5">
+                          <div className="w-[17px] h-[17px] rounded-full bg-gray-200/80 shrink-0" />
+                          <div className="w-1/2 h-3.5 bg-gray-200/70 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div

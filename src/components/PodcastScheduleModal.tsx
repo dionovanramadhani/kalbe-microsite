@@ -12,22 +12,6 @@ export interface PodcastScheduleModalProps {
   sessions?: KalbeBoothPodcastSession[];
 }
 
-interface PodcastSessionItem {
-  speaker: string;
-  time: string;
-}
-
-const DEFAULT_PODCAST_SESSIONS: PodcastSessionItem[] = [
-  {
-    speaker: "Sesi 1 - Prof Budi",
-    time: "10.00 – 10.10 WIB",
-  },
-  {
-    speaker: "Sesi 2 - Dr. Ariani",
-    time: "14.00 – 14.10 WIB",
-  },
-];
-
 export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
   isOpen,
   onClose,
@@ -38,6 +22,20 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose, { duration: 280 });
 
   if (!isRendered) return null;
+
+  const formatSpeaker = (speaker: string) => {
+    let clean = speaker.replace(/^sesi\s*\d+[\s\-:]*/i, "").trim();
+    if (!clean) clean = "Pembicara";
+    if (/pembicara/i.test(clean)) return clean;
+    return `${clean} (Pembicara)`;
+  };
+
+  const formatHost = (host: string) => {
+    let clean = host.replace(/^host[\s\-:]*/i, "").trim();
+    if (!clean) return "";
+    if (/host/i.test(clean)) return clean;
+    return `${clean} (Host)`;
+  };
 
   return (
     <div className={`absolute inset-0 z-[60] flex flex-col justify-end overflow-hidden ${isClosing ? "pointer-events-none" : ""}`}>
@@ -73,7 +71,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
             <img
               src="/assets/clock-red.webp"
               alt="Jadwal Podcast"
-              className="w-[150px] sm:w-[160px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
+              className="w-[145px] sm:w-[155px] h-auto object-contain drop-shadow-sm pointer-events-none select-none"
             />
           </div>
 
@@ -102,88 +100,95 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
           </p>
 
           {/* Sessions List */}
-          <div className="w-full flex flex-col items-center space-y-4 max-h-[260px] overflow-y-auto no-scrollbar">
-            {sessions && sessions.length > 0
-              ? sessions.map((session, index) => {
-                  const speakerLabel = session.speaker.toLowerCase().startsWith("sesi")
-                    ? session.speaker
-                    : `Sesi ${index + 1} - ${session.speaker}`;
-                  const formattedTime =
-                    formatTimeRangeWIB(session.start_at, session.end_at) || "10.00 – 10.10 WIB";
+          <div className="w-full flex flex-col items-center space-y-6 max-h-[300px] overflow-y-auto no-scrollbar">
+            {sessions && sessions.length > 0 ? (
+              sessions.map((session, index) => {
+                const formattedTime = (
+                  formatTimeRangeWIB(session.start_at, session.end_at) || "10.00 - 10.10 WIB"
+                ).replace("–", "-");
 
-                  return (
-                    <div key={session.id || index} className="w-full flex flex-col items-center">
-                      {/* sesi 1.... -> #777777 medium 14px */}
-                      <span
-                        style={{
-                          color: "#777777",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                        }}
-                        className="mb-2 text-center leading-tight"
-                      >
-                        {speakerLabel}
-                      </span>
-
-                      {/* jam -> #D41025 bold 20px */}
-                      <div
-                        className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
-                        style={{
-                          backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                          backgroundSize: "100% 100%",
-                          backgroundRepeat: "no-repeat",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "#D41025",
-                            fontSize: "20px",
-                            fontWeight: "bold",
-                          }}
-                          className="tracking-wide leading-none"
-                        >
-                          {formattedTime}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              : DEFAULT_PODCAST_SESSIONS.map((session, index) => (
-                  <div key={index} className="w-full flex flex-col items-center">
-                    {/* sesi 1.... -> #777777 medium 14px */}
+                return (
+                  <div key={session.id || index} className="w-full flex flex-col items-center">
+                    {/* Sesi 1 / Sesi 2 -> Bold 14px #222222 */}
                     <span
                       style={{
-                        color: "#777777",
+                        color: "#222222",
                         fontSize: "14px",
-                        fontWeight: 500,
+                        fontWeight: "bold",
                       }}
-                      className="mb-2 text-center leading-tight"
+                      className="mb-1 text-center leading-tight"
                     >
-                      {session.speaker}
+                      Sesi {index + 1}
                     </span>
 
-                    {/* jam -> #D41025 bold 20px */}
-                    <div
-                      className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
+                    {/* Pembicara -> Normal 14px #555555 */}
+                    <span
                       style={{
-                        backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                        backgroundSize: "100% 100%",
-                        backgroundRepeat: "no-repeat",
+                        color: "#555555",
+                        fontSize: "14px",
+                        fontWeight: 400,
                       }}
+                      className="mb-0.5 text-center leading-tight"
                     >
+                      {formatSpeaker(session.speaker)}
+                    </span>
+
+                    {/* Host jika ada -> Normal 14px #555555 */}
+                    {session.host && session.host.trim() !== "" ? (
+                      <span
+                        style={{
+                          color: "#555555",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                        }}
+                        className="mb-3 text-center leading-tight"
+                      >
+                        {formatHost(session.host)}
+                      </span>
+                    ) : (
+                      <div className="mb-2.5" />
+                    )}
+
+                    {/* Time box: Octagon Chamfered SVG with background #FDECED, border #F52037, text 20px bold #D41025 */}
+                    <div className="relative w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3">
+                      <svg
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        viewBox="0 0 245 46"
+                        fill="none"
+                        preserveAspectRatio="none"
+                      >
+                        <polygon
+                          points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                          fill="#FDECED"
+                        />
+                        <polygon
+                          points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                          stroke="#F52037"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                       <span
                         style={{
                           color: "#D41025",
                           fontSize: "20px",
                           fontWeight: "bold",
                         }}
-                        className="tracking-wide leading-none"
+                        className="relative z-10 tracking-wide leading-none"
                       >
-                        {session.time}
+                        {formattedTime}
                       </span>
                     </div>
                   </div>
-                ))}
+                );
+              })
+            ) : (
+              <div className="py-8 flex flex-col items-center justify-center text-center px-4">
+                <p className="text-gray-500 font-medium text-sm leading-relaxed">
+                  Belum ada jadwal podcast untuk hari ini.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

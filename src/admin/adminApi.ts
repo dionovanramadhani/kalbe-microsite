@@ -520,6 +520,7 @@ export async function uploadKalbeMedia(file: File): Promise<ApiResponse<{ url: s
 export interface KalbeBoothPodcastSession {
   id?: string;
   speaker: string;
+  host?: string | null;
   podcast_id?: string;
   start_at: string;
   end_at: string;
@@ -544,6 +545,7 @@ export interface KalbeBoothPodcastRequest {
   ref_id: string; // Booth ID
   sessions?: Array<{
     speaker: string;
+    host?: string | null;
     start_at: string;
     end_at: string;
   }>;

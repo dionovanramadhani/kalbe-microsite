@@ -165,23 +165,33 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                   </span>
                 )}
 
-                {/* Time: jam -> #D41025 20px bold */}
+                {/* Time box: Octagon Chamfered SVG with background #FDECED, border #F52037, text 20px bold #D41025 */}
                 {formattedTime && (
-                  <div
-                    className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3"
-                    style={{
-                      backgroundImage: `url('/assets/morinaga-booth-activity-button-white.webp')`,
-                      backgroundSize: "100% 100%",
-                      backgroundRepeat: "no-repeat",
-                    }}
-                  >
+                  <div className="relative w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3">
+                    <svg
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                      viewBox="0 0 245 46"
+                      fill="none"
+                      preserveAspectRatio="none"
+                    >
+                      <polygon
+                        points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                        fill="#FDECED"
+                      />
+                      <polygon
+                        points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                        stroke="#F52037"
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                     <span
                       style={{
                         color: "#D41025",
                         fontSize: "20px",
                         fontWeight: "bold",
                       }}
-                      className="tracking-wide leading-none"
+                      className="relative z-10 tracking-wide leading-none"
                     >
                       {formattedTime}
                     </span>
