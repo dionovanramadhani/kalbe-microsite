@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { isTokenValid, setAuthSession, getToken, getUserData, logout } from "../utils/auth";
+import { setAuthSession } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
 
 export interface MasterDoctorItem {
@@ -88,20 +88,6 @@ export const LoginPage: React.FC = () => {
       regState?.toastMessage ||
       "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
   });
-
-  // ── Redirect to /home if user is already logged in with valid token AND session ──
-  useEffect(() => {
-    const token = getToken();
-    const user = getUserData();
-    if (token && isTokenValid(token)) {
-      if (user) {
-        navigate("/home", { replace: true });
-      } else {
-        // Orphaned token without user session -> clean it to prevent false redirect
-        logout();
-      }
-    }
-  }, [navigate]);
 
   // ── Debounce Master Doctor Search API Call ─────────────────────────────────
   useEffect(() => {
