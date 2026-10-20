@@ -278,7 +278,7 @@ export const HomePage: React.FC = () => {
 
         const isPostTestFinished = Boolean(
           hasPostTestSuccess ||
-          (isSympoApiCompleted !== null ? isSympoApiCompleted : isPostTestCompleted())
+          (isSympoApiCompleted !== null ? isSympoApiCompleted : isPostTestCompleted()),
         );
         const isMorinagaFinished = Boolean(
           morinagaBooth?.is_completed ||
@@ -879,16 +879,16 @@ export const HomePage: React.FC = () => {
                   !
                 </span>
               )}
-              <div className="w-full flex-1 flex items-center justify-center translate-y-[4px]">
+              <div className="w-full flex-1 flex items-center justify-center translate-y-[6px]">
                 <img
-                  src="/assets/mystery-box-svg.svg"
+                  src="/assets/mystery-box.webp"
                   alt="Mystery Box"
-                  className={`w-[52px] h-[52px] object-contain drop-shadow-sm ${
+                  className={`w-[42px] h-[42px] object-contain drop-shadow-sm ${
                     !mysteryBoxClaimed ? "animate-bell-shake-delayed" : ""
                   }`}
                 />
               </div>
-              <div className="w-full h-[18px] flex items-center justify-center mt-[2.5px]">
+              <div className="w-full h-[18px] flex items-center justify-center mt-3">
                 <span
                   className={`text-[8px] font-bold tracking-tight whitespace-nowrap leading-none ${
                     mysteryBoxClaimed ? "text-gray-400" : "text-[#FF1D1D]"
@@ -1162,8 +1162,8 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
-        containerClassName="max-w-[361px] h-[500px] max-h-[94%] aspect-[361/500] flex flex-col items-center justify-center px-5 pt-5 pb-8"
-        imageSrc="/assets/mistery-box.webp"
+        containerClassName="max-w-[361px] h-[540px] max-h-[96%] aspect-[361/540] flex flex-col items-center justify-center px-5 pt-5 pb-10"
+        imageSrc="/assets/mystery-box.webp"
         imageAlt="Mystery Box Morinaga"
         imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"

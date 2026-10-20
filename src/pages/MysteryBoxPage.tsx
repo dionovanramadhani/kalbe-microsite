@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar } from "lucide-react";
 import { RewardModal } from "../components/RewardModal";
-import {
-  claimReward as claimRewardInStore,
-} from "../data/rewardStore";
+import { claimReward as claimRewardInStore } from "../data/rewardStore";
 import {
   getKalbeUserHistory,
   claimKalbeHistoryReward,
@@ -33,8 +31,18 @@ const formatDate = (dateStr?: string | null): string => {
     if (!isNaN(d.getTime())) {
       const day = d.getDate();
       const months = [
-        "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-        "Jul", "Agt", "Sep", "Okt", "Nov", "Des",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agt",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
       ];
       const month = months[d.getMonth()];
       const year = d.getFullYear();
@@ -70,7 +78,7 @@ export const MysteryBoxPage: React.FC = () => {
     try {
       const histories = await getKalbeUserHistory();
       const mbItems = histories.filter(
-        (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery")
+        (h) => h.reward_type === "mystery_box" || h.reward_type?.includes("mystery"),
       );
       if (mbItems.length > 0) {
         setRewards(
@@ -86,7 +94,7 @@ export const MysteryBoxPage: React.FC = () => {
             icon: item.reward?.picture || "/assets/mistery-box.webp",
             rewardImage: item.reward?.picture || "/assets/mystery-box-reward.webp",
             rewardName: item.reward?.name || "Hadiah Eksklusif Mystery Box",
-          }))
+          })),
         );
         setLoading(false);
         return;
@@ -165,14 +173,14 @@ export const MysteryBoxPage: React.FC = () => {
         prev.map((item) =>
           item.id === selectedReward.id
             ? { ...item, claimed: true, rewardName: claimedName, rewardImage: claimedImg }
-            : item
-        )
+            : item,
+        ),
       );
 
       setSelectedReward((prev) =>
         prev
           ? { ...prev, claimed: true, rewardName: claimedName, rewardImage: claimedImg }
-          : null
+          : null,
       );
 
       setShowPinModal(false);
@@ -180,7 +188,10 @@ export const MysteryBoxPage: React.FC = () => {
     } catch (err: unknown) {
       console.warn("Claim mystery box failed:", err);
       const errMsg = err instanceof Error ? err.message : "";
-      if (errMsg.toLowerCase().includes("pin") || errMsg.toLowerCase().includes("invalid")) {
+      if (
+        errMsg.toLowerCase().includes("pin") ||
+        errMsg.toLowerCase().includes("invalid")
+      ) {
         setPinError("PIN yang Anda masukkan salah.");
       } else {
         setPinError(errMsg || "Gagal mengklaim Mystery Box. Silakan coba lagi.");
@@ -240,80 +251,84 @@ export const MysteryBoxPage: React.FC = () => {
               </div>
             ) : (
               <div className="w-full flex-1 overflow-y-auto pr-0.5 space-y-3 pt-1 pb-2 scrollbar-none flex flex-col">
-              {rewards.length === 0 ? (
-                <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
-                  <img
-                    src="/assets/mystery-box-reward.webp"
-                    alt="Belum Ada Mystery Box"
-                    className="w-[110px] h-auto object-contain mb-3 opacity-60 grayscale"
-                  />
-                  <h3 className="text-[14px] font-bold text-[#4B5563] mb-1">
-                    Belum Ada Mystery Box
-                  </h3>
-                  <p className="text-[11.5px] text-gray-400 max-w-[240px] leading-relaxed">
-                    Selesaikan seluruh aktivitas (Morinaga Sympo, Morinaga Booth, & Kalbe
-                    Early Life Solutions) untuk mendapatkan Mystery Box Anda!
-                  </p>
-                </div>
-              ) : (
-                rewards.map((item) => (
-                  <div
-                    key={item.id}
-                    className="w-full bg-white rounded-[14px] border border-gray-200/90 p-3 flex items-center justify-between gap-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-red-200 transition-colors"
-                  >
-                    {/* Left: Futuristic Hex Icon Container */}
-                    <div className="w-[46px] h-[46px] shrink-0 flex items-center justify-center">
-                      <img
-                        src={item.icon || "/assets/mistery-box.webp"}
-                        alt={item.title}
-                        className="w-full h-full object-contain drop-shadow-sm"
-                        onError={(e) => {
-                          e.currentTarget.src = "/assets/mistery-box.webp";
-                        }}
-                      />
-                    </div>
-
-                    {/* Center: Info text */}
-                    <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
-                      <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight">
-                        {item.title}
-                      </h3>
-                      <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5">
-                        {item.subtitle}
-                      </p>
-                      <div className="flex items-center gap-1 text-[8px] text-[#83939A] mt-1">
-                        <Calendar className="w-2.5 h-2.5 text-gray-400" />
-                        <span>{item.date}</span>
-                      </div>
-                    </div>
-
-                    {/* Right: Pill Claim Button */}
-                    <button
-                      onClick={() => handleOpenClaim(item)}
-                      disabled={item.claimed || !item.isClaimable}
-                      className={`h-[28px] px-3.5 rounded-full font-bold text-[11px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
-                        item.claimed
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : !item.isClaimable
-                          ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
-                          : "bg-[#E50014] text-white hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
-                      }`}
-                      title={
-                        item.claimed
-                          ? "Hadiah sudah diklaim"
-                          : !item.isClaimable
-                          ? "Reward belum tersedia dari admin"
-                          : "Klaim reward hadiah ini"
-                      }
-                    >
-                      {item.claimed ? "Claimed" : !item.isClaimable ? "Belum Tersedia" : "Claim"}
-                    </button>
+                {rewards.length === 0 ? (
+                  <div className="my-auto flex flex-col items-center justify-center text-center px-4 py-8">
+                    <img
+                      src="/assets/mystery-box-reward.webp"
+                      alt="Belum Ada Mystery Box"
+                      className="w-[110px] h-auto object-contain mb-3 opacity-60 grayscale"
+                    />
+                    <h3 className="text-[14px] font-bold text-[#4B5563] mb-1">
+                      Belum Ada Mystery Box
+                    </h3>
+                    <p className="text-[11.5px] text-gray-400 max-w-[240px] leading-relaxed">
+                      Selesaikan seluruh aktivitas (Morinaga Sympo, Morinaga Booth, &
+                      Kalbe Early Life Solutions) untuk mendapatkan Mystery Box Anda!
+                    </p>
                   </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+                ) : (
+                  rewards.map((item) => (
+                    <div
+                      key={item.id}
+                      className="w-full bg-white rounded-[14px] border border-gray-200/90 p-3 flex items-center justify-between gap-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-red-200 transition-colors"
+                    >
+                      {/* Left: Futuristic Hex Icon Container */}
+                      <div className="w-[46px] h-[46px] shrink-0 flex items-center justify-center">
+                        <img
+                          src={item.icon || "/assets/mistery-box.webp"}
+                          alt={item.title}
+                          className="w-full h-full object-contain drop-shadow-sm"
+                          onError={(e) => {
+                            e.currentTarget.src = "/assets/mistery-box.webp";
+                          }}
+                        />
+                      </div>
+
+                      {/* Center: Info text */}
+                      <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
+                        <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight">
+                          {item.title}
+                        </h3>
+                        <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5">
+                          {item.subtitle}
+                        </p>
+                        <div className="flex items-center gap-1 text-[8px] text-[#83939A] mt-1">
+                          <Calendar className="w-2.5 h-2.5 text-gray-400" />
+                          <span>{item.date}</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Pill Claim Button */}
+                      <button
+                        onClick={() => handleOpenClaim(item)}
+                        disabled={item.claimed || !item.isClaimable}
+                        className={`h-[28px] px-3.5 rounded-full font-bold text-[11px] tracking-wide flex items-center justify-center shrink-0 transition-all ${
+                          item.claimed
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : !item.isClaimable
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
+                              : "bg-[#E50014] text-white hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
+                        }`}
+                        title={
+                          item.claimed
+                            ? "Hadiah sudah diklaim"
+                            : !item.isClaimable
+                              ? "Reward belum tersedia dari admin"
+                              : "Klaim reward hadiah ini"
+                        }
+                      >
+                        {item.claimed
+                          ? "Claimed"
+                          : !item.isClaimable
+                            ? "Belum Tersedia"
+                            : "Claim"}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Futuristic Red Camera Overlay Frame */}
           <div
@@ -410,16 +425,24 @@ export const MysteryBoxPage: React.FC = () => {
           setShowRewardSuccessModal(false);
           setClaimedRewardInfo(null);
         }}
-        imageSrc={claimedRewardInfo?.image || selectedReward?.rewardImage || "/assets/mystery-box-reward.webp"}
-        imageAlt={claimedRewardInfo?.name || selectedReward?.rewardName || "Mystery Box Morinaga"}
+        imageSrc={
+          claimedRewardInfo?.image ||
+          selectedReward?.rewardImage ||
+          "/assets/mystery-box-reward.webp"
+        }
+        imageAlt={
+          claimedRewardInfo?.name || selectedReward?.rewardName || "Mystery Box Morinaga"
+        }
         imageClassName="max-w-[185px] max-h-[145px] w-auto h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle={
           <span>
             Anda mendapatkan <br />
             <span className="font-bold text-[#C70412]">
-              {claimedRewardInfo?.name || selectedReward?.rewardName || "MYSTERY BOX Morinaga"}
-            </span>
+              {claimedRewardInfo?.name ||
+                selectedReward?.rewardName ||
+                "MYSTERY BOX Morinaga"}
+            </span>{" "}
           </span>
         }
         buttonText="OKE"

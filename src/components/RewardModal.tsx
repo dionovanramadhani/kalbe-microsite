@@ -55,7 +55,9 @@ export const RewardModal: React.FC<RewardModalProps> = ({
   if (!isRendered) return null;
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Dark backdrop with blur */}
       <div
         onClick={handleClose}
@@ -68,9 +70,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
         className={`relative z-10 w-full drop-shadow-2xl ${
           containerClassName ||
           "max-w-[361px] h-[456px] max-h-[92%] aspect-[361/456] flex flex-col items-center justify-center px-5 pt-6 pb-7"
-        } ${
-          isClosing ? "animate-modal-out" : "animate-modal-in"
-        } ${cardClassName || ""}`}
+        } ${isClosing ? "animate-modal-out" : "animate-modal-in"} ${cardClassName || ""}`}
         style={{
           backgroundImage: `url('/assets/modal-background.webp')`,
           backgroundSize: "100% 100%",
@@ -88,7 +88,11 @@ export const RewardModal: React.FC<RewardModalProps> = ({
 
         {/* Top Image / Graphic (if provided) */}
         {imageSrc && (
-          <div className={imageContainerClassName || "w-full flex justify-center shrink-0 mb-3"}>
+          <div
+            className={
+              imageContainerClassName || "w-full flex justify-center shrink-0 mb-3"
+            }
+          >
             <img src={imageSrc} alt={imageAlt} className={imageClassName} />
           </div>
         )}
@@ -97,7 +101,9 @@ export const RewardModal: React.FC<RewardModalProps> = ({
         {children ? (
           children
         ) : (
-          <div className={`w-full flex flex-col items-center text-center px-2 ${bodyClassName || "mb-4"}`}>
+          <div
+            className={`w-full flex flex-col items-center text-center px-2 ${bodyClassName || "mb-4"}`}
+          >
             <h2
               className={
                 titleClassName ||
@@ -152,9 +158,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({
                 </span>
               </button>
               {footerNote && (
-                <div className="mt-2.5 w-full flex justify-center">
-                  {footerNote}
-                </div>
+                <div className="mt-2.5 w-full flex justify-center">{footerNote}</div>
               )}
             </div>
           )

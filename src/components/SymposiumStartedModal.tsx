@@ -19,7 +19,9 @@ export const SymposiumStartedModal: React.FC<SymposiumStartedModalProps> = ({
   if (!isRendered) return null;
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Dark backdrop with blur confined strictly to mobile viewport */}
       <div
         onClick={handleClose}
@@ -50,7 +52,7 @@ export const SymposiumStartedModal: React.FC<SymposiumStartedModalProps> = ({
           {/* Futuristic Rocket Graphic + MORINAGA SYMPO Badge */}
           <div className="w-full max-w-[310px] flex justify-center shrink-0 drop-shadow-lg -mb-2">
             <img
-              src="/assets/morinaga-sympo-image.webp"
+              src="/assets/morinaga-sympo-image-new.webp"
               alt="Morinaga Sympo"
               className="w-full h-auto object-contain pointer-events-none select-none"
             />

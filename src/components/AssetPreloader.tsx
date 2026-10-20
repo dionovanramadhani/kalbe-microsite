@@ -40,7 +40,7 @@ const PRELOAD_ASSET_IMAGES = [
   "/assets/reward-box.webp",
   "/assets/reward-dummy-symposium.webp",
   "/assets/morinaga-booth-reward.webp",
-  "/assets/mistery-box.webp",
+  "/assets/mystery-box.webp",
   "/assets/mystery-box-reward.webp",
   "/assets/post-test-arrow.webp",
 ];

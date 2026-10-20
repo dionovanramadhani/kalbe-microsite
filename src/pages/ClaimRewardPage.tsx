@@ -76,8 +76,7 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     rewardImage = "/assets/reward-box.webp";
     rewardName = "Paket Spesial Morinaga";
   } else if (type === "booth") {
-    const boothName =
-      item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
+    const boothName = item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
     title = boothName;
     subtitle = `Mengikuti ${boothName}`;
     icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon.webp";
@@ -85,9 +84,7 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     rewardName = "Hadiah Booth Morinaga";
   } else if (type.includes("early") || type.includes("life")) {
     const earlyLifeName =
-      item.booth?.name ||
-      item.booth?.detailing_title ||
-      "Kalbe Early Life Solutions";
+      item.booth?.name || item.booth?.detailing_title || "Kalbe Early Life Solutions";
     title = earlyLifeName;
     subtitle = `Mengikuti ${earlyLifeName}`;
     icon = item.booth?.icon || item.booth?.logo || "/assets/kalbe-60th-icon.webp";
@@ -101,10 +98,7 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     rewardName = "Hadiah Eksklusif Mystery Box";
   } else {
     const defaultName =
-      item.symposium?.title ||
-      item.booth?.name ||
-      item.booth?.detailing_title ||
-      "Acara";
+      item.symposium?.title || item.booth?.name || item.booth?.detailing_title || "Acara";
     title = defaultName;
     subtitle = `Mengikuti ${defaultName}`;
   }
@@ -356,10 +350,10 @@ export const ClaimRewardPage: React.FC = () => {
                       <div className="flex-1 min-w-0 pr-1 flex flex-col gap-0.5">
                         <h3 className="text-[12px] font-semibold text-[#5A5A5A] leading-tight truncate">
                           {item.rewardType === "booth"
-                            ? (item.booth?.name || item.title)
+                            ? item.booth?.name || item.title
                             : item.rewardType === "symposium"
-                            ? (item.symposium?.title || item.title)
-                            : item.title}
+                              ? item.symposium?.title || item.title
+                              : item.title}
                         </h3>
                         <p className="text-[10px] text-[#5A5A5A] leading-tight mt-0.5 line-clamp-2">
                           {item.subtitle}
@@ -378,18 +372,22 @@ export const ClaimRewardPage: React.FC = () => {
                           item.claimed
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : !item.isClaimable
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
-                            : "bg-[#E50014] text-white hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
+                              : "bg-[#E50014] text-white hover:bg-[#C70412] active:scale-95 cursor-pointer shadow-sm shadow-red-500/20"
                         }`}
                         title={
                           item.claimed
                             ? "Hadiah sudah diklaim"
                             : !item.isClaimable
-                            ? "Reward belum tersedia dari admin"
-                            : "Klaim reward hadiah ini"
+                              ? "Reward belum tersedia dari admin"
+                              : "Klaim reward hadiah ini"
                         }
                       >
-                        {item.claimed ? "Claimed" : !item.isClaimable ? "Belum Tersedia" : "Claim"}
+                        {item.claimed
+                          ? "Claimed"
+                          : !item.isClaimable
+                            ? "Belum Tersedia"
+                            : "Claim"}
                       </button>
                     </div>
                   ))
