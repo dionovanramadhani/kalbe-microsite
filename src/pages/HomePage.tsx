@@ -1266,9 +1266,9 @@ export const HomePage: React.FC = () => {
         // description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
         footerContent={
           <p className="text-[12px] font-bold text-[#D41025] text-center leading-snug">
-            Silahkan Ambil Hadiah di
+            Silahkan redeem Hadiah di
             <br />
-            Booth Morinaga
+            Booth Morinaga.
           </p>
         }
         cardClassName={shouldAnimateMysteryBox ? "animate-popup-scale-up" : ""}
