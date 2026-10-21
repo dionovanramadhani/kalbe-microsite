@@ -61,7 +61,7 @@ const formatDate = (dateStr?: string | null): string => {
 const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardItem => {
   let title: string;
   let subtitle: string;
-  let icon = "/assets/morinaga-sympo-icon.webp";
+  let icon = "/assets/morinaga-sympo-icon-new.png";
   let rewardImage = "/assets/reward-box.webp";
   let rewardName = "Special Reward";
 
@@ -72,14 +72,16 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
     title = sympoName;
     subtitle = `Mengikuti ${sympoName}`;
     icon =
-      item.symposium?.icon || item.symposium?.logo || "/assets/morinaga-sympo-icon.webp";
+      item.symposium?.icon ||
+      item.symposium?.logo ||
+      "/assets/morinaga-sympo-icon-new.png";
     rewardImage = "/assets/reward-box.webp";
     rewardName = "Paket Spesial Morinaga";
   } else if (type === "booth") {
     const boothName = item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
     title = boothName;
-    subtitle = `Mengikuti ${boothName}`;
-    icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon.webp";
+    subtitle = `Mengikuti detailing ${boothName}`;
+    icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon-new.png";
     rewardImage = "/assets/morinaga-booth-reward.webp";
     rewardName = "Hadiah Booth Morinaga";
   } else if (type.includes("early") || type.includes("life")) {
@@ -358,8 +360,8 @@ export const ClaimRewardPage: React.FC = () => {
                           onError={(e) => {
                             e.currentTarget.src =
                               item.rewardType === "booth"
-                                ? "/assets/morinaga-booth-icon.webp"
-                                : "/assets/morinaga-sympo-icon.webp";
+                                ? "/assets/morinaga-booth-icon-new.png"
+                                : "/assets/morinaga-sympo-icon-new.png";
                           }}
                         />
                       </div>

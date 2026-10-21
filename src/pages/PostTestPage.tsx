@@ -313,6 +313,11 @@ export const PostTestPage: React.FC = () => {
     // Saat OK ditekan, unlock reward, mark completed, dan navigasi ke home untuk menampilkan modal congratulation
     unlockReward("morinaga-sympo");
     setPostTestCompleted(true);
+    sessionStorage.removeItem("kalbe_scanned_from_external_qr");
+    sessionStorage.removeItem("kalbe_external_sympo_id");
+    sessionStorage.removeItem("kalbe_scanned_from_device");
+    sessionStorage.removeItem("kalbe_sympo_scanned");
+    sessionStorage.removeItem("kalbe_scanned_symposium_id");
     setSymposiumJoined(true);
     navigate("/home", {
       state: {

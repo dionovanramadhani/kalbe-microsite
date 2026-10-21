@@ -13,8 +13,6 @@ import {
   unlockReward,
 } from "../data/rewardStore";
 import {
-  setSymposiumJoined,
-  isSymposiumJoined,
   getSymposiumMasterData,
 } from "../data/symposiumStore";
 import { Toast, type ToastType } from "../components/Toast";
@@ -58,19 +56,24 @@ const parseQrData = (
   // 0. Check if scanned content directly matches an uploaded booth or symposium QR code content or URL
   const boothByQr = booths.find(
     (b) =>
-      (b.qr_code_content && (b.qr_code_content.trim() === trimmed || b.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
-      (b.qr_code && b.qr_code.trim() === trimmed)
+      (b.qr_code_content &&
+        (b.qr_code_content.trim() === trimmed ||
+          b.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
+      (b.qr_code && b.qr_code.trim() === trimmed),
   );
   if (boothByQr) {
     boothId = boothByQr.id;
     const bName = boothByQr.name.toLowerCase();
-    detectedType = bName.includes("early") || bName.includes("life") ? "early-life" : "booth";
+    detectedType =
+      bName.includes("early") || bName.includes("life") ? "early-life" : "booth";
   }
 
   const sympoByQr = sympos.find(
     (s) =>
-      (s.qr_code_content && (s.qr_code_content.trim() === trimmed || s.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
-      (s.qr_code && s.qr_code.trim() === trimmed)
+      (s.qr_code_content &&
+        (s.qr_code_content.trim() === trimmed ||
+          s.qr_code_content.trim().toLowerCase() === trimmed.toLowerCase())) ||
+      (s.qr_code && s.qr_code.trim() === trimmed),
   );
   if (sympoByQr) {
     sympoId = sympoByQr.id;
@@ -235,7 +238,9 @@ const parseQrData = (
     } else if (
       upper.includes("MORINAGA_BOOTH") ||
       upper.includes("MORINAGA") ||
-      (upper.includes("BOOTH") && !upper.includes("EARLY") && !upper.includes("SYMPOSIUM"))
+      (upper.includes("BOOTH") &&
+        !upper.includes("EARLY") &&
+        !upper.includes("SYMPOSIUM"))
     ) {
       detectedType = "booth";
     } else if (
@@ -246,9 +251,15 @@ const parseQrData = (
     ) {
       detectedType = "symposium";
     } else if (boothId) {
-      if (boothId.toLowerCase().includes("early") || boothId.toLowerCase().includes("life")) {
+      if (
+        boothId.toLowerCase().includes("early") ||
+        boothId.toLowerCase().includes("life")
+      ) {
         detectedType = "early-life";
-      } else if (boothId.toLowerCase().includes("morinaga") || boothId.toLowerCase().includes("booth")) {
+      } else if (
+        boothId.toLowerCase().includes("morinaga") ||
+        boothId.toLowerCase().includes("booth")
+      ) {
         detectedType = "booth";
       }
     } else if (sympoId) {
@@ -305,7 +316,9 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
               if (isMounted) {
                 setQrDataUrl(activeSympo.qr_code);
                 setModalTitle(title);
-                setTargetUrl(`${window.location.origin}/post-test?symposium_id=${encodeURIComponent(activeSympo.id)}`);
+                setTargetUrl(
+                  `${window.location.origin}/post-test?symposium_id=${encodeURIComponent(activeSympo.id)}`,
+                );
               }
               return;
             }
@@ -320,9 +333,11 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
           const isEarly = activeScanType === "early-life";
           const target = booths.find((b) =>
             isEarly
-              ? b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life")
+              ? b.name.toLowerCase().includes("early") ||
+                b.name.toLowerCase().includes("life")
               : b.name.toLowerCase().includes("morinaga") ||
-                (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
+                (!b.name.toLowerCase().includes("early") &&
+                  b.name.toLowerCase().includes("booth")),
           );
 
           if (target) {
@@ -332,7 +347,9 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
                 setQrDataUrl(target.qr_code);
                 setModalTitle(title);
                 const typeStr = isEarly ? "early-life" : "morinaga";
-                setTargetUrl(`${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=${typeStr}&name=${encodeURIComponent(target.name)}`);
+                setTargetUrl(
+                  `${window.location.origin}/booth-checkin?booth_id=${encodeURIComponent(target.id)}&type=${typeStr}&name=${encodeURIComponent(target.name)}`,
+                );
               }
               return;
             }
@@ -373,7 +390,9 @@ const SampleQrModal: React.FC<SampleQrModalProps> = ({
   if (!isRendered) return null;
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-center justify-center p-5 ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center p-5 ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Dark backdrop */}
       <div
         onClick={handleClose}
@@ -469,8 +488,12 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         ? "booth"
         : "symposium");
 
-  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() => getCachedKalbeBooths());
-  const [apiSympos, setApiSympos] = useState<KalbeSymposiumResponse[]>(() => getCachedKalbeSymposiums());
+  const [apiBooths, setApiBooths] = useState<KalbeBoothResponse[]>(() =>
+    getCachedKalbeBooths(),
+  );
+  const [apiSympos, setApiSympos] = useState<KalbeSymposiumResponse[]>(() =>
+    getCachedKalbeSymposiums(),
+  );
   const apiBoothsRef = useRef<KalbeBoothResponse[]>(apiBooths);
   const apiSymposRef = useRef<KalbeSymposiumResponse[]>(apiSympos);
 
@@ -504,34 +527,37 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
   }, []);
 
   const fallbackLogo = useMemo(() => {
-    if (activeScanType === "early-life") return "/assets/kalbe-early-life-solution-logo-scaner.webp";
+    if (activeScanType === "early-life")
+      return "/assets/kalbe-early-life-solution-logo-scaner.webp";
     if (activeScanType === "booth") return "/assets/morinaga-booth-image-2.webp";
     return "/assets/morinaga-sympo-image.webp";
   }, [activeScanType]);
 
   const bannerLogo = useMemo(() => {
     if (activeScanType === "early-life") {
-      const match = apiBooths.find(
-        (b) =>
-          b.name.toLowerCase().includes("early life") ||
-          b.name.toLowerCase().includes("kalbe early") ||
-          b.name.toLowerCase().includes("early")
-      ) || apiBooths[0];
-      return match?.logo || fallbackLogo;
+      const match =
+        apiBooths.find(
+          (b) =>
+            b.name.toLowerCase().includes("early life") ||
+            b.name.toLowerCase().includes("kalbe early") ||
+            b.name.toLowerCase().includes("early"),
+        ) || apiBooths[0];
+      return match?.image_title || match?.logo || fallbackLogo;
     }
     if (activeScanType === "booth") {
       const match = apiBooths.find(
         (b) =>
           b.name.toLowerCase().includes("morinaga") &&
-          !b.name.toLowerCase().includes("early")
+          !b.name.toLowerCase().includes("early"),
       );
-      return match?.logo || fallbackLogo;
+      return match?.image_title || match?.logo || fallbackLogo;
     }
-    const match = apiSympos.find(
-      (s) =>
-        s.title.toLowerCase().includes("morinaga") ||
-        s.title.toLowerCase().includes("sympo")
-    ) || apiSympos[0];
+    const match =
+      apiSympos.find(
+        (s) =>
+          s.title.toLowerCase().includes("morinaga") ||
+          s.title.toLowerCase().includes("sympo"),
+      ) || apiSympos[0];
     return match?.logo || fallbackLogo;
   }, [activeScanType, apiBooths, apiSympos, fallbackLogo]);
 
@@ -561,21 +587,6 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       }
       if (activeSympo?.is_completed || isPostTestCompleted()) {
         navigate("/home", { replace: true });
-        return;
-      }
-      if (
-        isSymposiumJoined() ||
-        sessionStorage.getItem("kalbe_scanned_from_device") === "true" ||
-        sessionStorage.getItem("kalbe_sympo_scanned") === "true"
-      ) {
-        const targetSympoId =
-          sessionStorage.getItem("kalbe_scanned_symposium_id") ||
-          localStorage.getItem("kalbe_scanned_symposium_id") ||
-          activeSympo?.id;
-        navigate(
-          `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
-          { replace: true }
-        );
         return;
       }
     } else if (activeScanType === "booth" && isBoothDetailingCompleted()) {
@@ -675,22 +686,25 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
     }
   }, []);
 
-  const playScanSound = useCallback((isSuccess: boolean = true) => {
-    // 1. Try playing audio file first
-    try {
-      const audio = new Audio("/assets/sound-effect/beep.mp3");
-      audio.volume = 0.85;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Fallback to Web Audio synthesizer if audio file autoplay is restricted
-          playSynthesizedTone(isSuccess);
-        });
+  const playScanSound = useCallback(
+    (isSuccess: boolean = true) => {
+      // 1. Try playing audio file first
+      try {
+        const audio = new Audio("/assets/sound-effect/beep.mp3");
+        audio.volume = 0.85;
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Fallback to Web Audio synthesizer if audio file autoplay is restricted
+            playSynthesizedTone(isSuccess);
+          });
+        }
+      } catch {
+        playSynthesizedTone(isSuccess);
       }
-    } catch {
-      playSynthesizedTone(isSuccess);
-    }
-  }, [playSynthesizedTone]);
+    },
+    [playSynthesizedTone],
+  );
 
   const onScanSuccess = useCallback(
     async (decodedText: string): Promise<boolean> => {
@@ -717,11 +731,7 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       }
 
       // Smart parse QR Code with dynamic booth & symposium resolution
-      const qrResult = parseQrData(
-        decodedText,
-        currentBooths,
-        currentSympos,
-      );
+      const qrResult = parseQrData(decodedText, currentBooths, currentSympos);
 
       // Validasi ketat: QR harus valid dan jenisnya HARUS COCOK dengan scanner saat ini!
       const isCorrectScan = qrResult.isValid && qrResult.type === activeScanType;
@@ -767,7 +777,9 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
         let detectedBoothId = qrResult.boothId;
         if (!detectedBoothId) {
           const target = currentBooths.find(
-            (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
+            (b) =>
+              b.name.toLowerCase().includes("early") ||
+              b.name.toLowerCase().includes("life"),
           );
           if (target) detectedBoothId = target.id;
         }
@@ -794,7 +806,8 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           const target = currentBooths.find(
             (b) =>
               b.name.toLowerCase().includes("morinaga") ||
-              (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
+              (!b.name.toLowerCase().includes("early") &&
+                b.name.toLowerCase().includes("booth")),
           );
           if (target) detectedBoothId = target.id;
         }
@@ -839,13 +852,6 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           }
         }
 
-        setSymposiumJoined(true);
-        sessionStorage.setItem("kalbe_scanned_from_device", "true");
-        sessionStorage.setItem("kalbe_sympo_scanned", "true");
-        if (matchedSympo?.id) {
-          sessionStorage.setItem("kalbe_scanned_symposium_id", matchedSympo.id);
-          localStorage.setItem("kalbe_scanned_symposium_id", matchedSympo.id);
-        }
         let targetPath = "/post-test";
         if (qrResult.sympoId || matchedSympo?.id) {
           targetPath = `/post-test?symposium_id=${encodeURIComponent(qrResult.sympoId || matchedSympo!.id)}`;
@@ -1011,7 +1017,8 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
 
     if (activeScanType === "early-life") {
       const target = apiBoothsRef.current.find(
-        (b) => b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
+        (b) =>
+          b.name.toLowerCase().includes("early") || b.name.toLowerCase().includes("life"),
       );
       if (target) {
         onScanSuccess(
@@ -1030,7 +1037,8 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       const target = apiBoothsRef.current.find(
         (b) =>
           b.name.toLowerCase().includes("morinaga") ||
-          (!b.name.toLowerCase().includes("early") && b.name.toLowerCase().includes("booth")),
+          (!b.name.toLowerCase().includes("early") &&
+            b.name.toLowerCase().includes("booth")),
       );
       if (target) {
         onScanSuccess(
@@ -1082,7 +1090,11 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       </button> */}
 
       {/* Top Banner: Kalbe Early Life Solutions, Morinaga Booth, or Morinaga Sympo Badge */}
-      <div className="w-full flex justify-center pt-3.5 pb-1 shrink-0 z-10">
+      <div
+        className={`w-full flex justify-center pb-1 shrink-0 z-10 ${
+          activeScanType === "symposium" ? "pt-12 sm:pt-14" : "pt-8 sm:pt-9"
+        }`}
+      >
         <div
           className={
             activeScanType === "early-life"

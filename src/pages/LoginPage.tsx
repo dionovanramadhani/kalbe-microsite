@@ -469,10 +469,11 @@ export const LoginPage: React.FC = () => {
       sessionStorage.removeItem("kalbe_poster_shown");
       sessionStorage.setItem("kalbe_poster_pending", "true");
 
-      if (redirectUrl?.includes("sympo-checkin") || redirectUrl?.includes("symposium")) {
-        sessionStorage.setItem("kalbe_scanned_from_device", "true");
-        sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      if (redirectUrl?.includes("sympo-checkin")) {
+        sessionStorage.setItem("kalbe_scanned_from_external_qr", "true");
       }
+      sessionStorage.removeItem("kalbe_scanned_from_device");
+      sessionStorage.removeItem("kalbe_sympo_scanned");
 
       if (redirectUrl && redirectUrl.startsWith("/")) {
         navigate(redirectUrl, { replace: true });

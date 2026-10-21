@@ -20,8 +20,14 @@ export interface BoothMenuModalProps {
   boothData?: KalbeBoothResponse | null;
   logo?: string | null;
   onStartDetailing?: () => void;
-  onMoritalksPodcast?: (podcast: KalbeBoothPodcastResponse, todaySessions: KalbeBoothPodcastSession[]) => void;
-  onSelectActivity?: (activityItem: KalbeBoothActivityItem, allItems?: KalbeBoothActivityItem[]) => void;
+  onMoritalksPodcast?: (
+    podcast: KalbeBoothPodcastResponse,
+    todaySessions: KalbeBoothPodcastSession[],
+  ) => void;
+  onSelectActivity?: (
+    activityItem: KalbeBoothActivityItem,
+    allItems?: KalbeBoothActivityItem[],
+  ) => void;
   onMoritalksAwardPresentation?: (allItems?: KalbeBoothActivityItem[]) => void;
   onPhotoboothHighAngel?: () => void;
 }
@@ -86,14 +92,16 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
       updated_at: "",
       sessions: [],
     }),
-    [boothId]
+    [boothId],
   );
 
   const activePodcast = podcast || boothData?.podcast || defaultPodcast;
 
   // Filter sesi podcast hari ini (tidak peduli sudah selesai atau belum mulai, semua sesi hari ini diambil)
   const todaySessions = useMemo(() => {
-    return (activePodcast?.sessions || []).filter((s) => isSessionToday(s.start_at, s.end_at));
+    return (activePodcast?.sessions || []).filter((s) =>
+      isSessionToday(s.start_at, s.end_at),
+    );
   }, [activePodcast]);
 
   // Sesi yang akan ditampilkan: hanya sesi hari ini (tidak peduli sudah selesai atau belum mulai, tapi tetap podcast yang ditampilkan adalah podcast hari ini)
@@ -140,7 +148,9 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   if (!isRendered) return null;
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}>
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+    >
       {/* Dark backdrop with blur */}
       <div
         onClick={handleClose}
@@ -151,27 +161,28 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
 
       {/* Modal Wrapper */}
       <div
-        className={`relative z-10 w-full max-w-[345px] sm:max-w-[355px] flex flex-col items-center pt-28 ${
+        className={`relative z-10 w-full max-w-[345px] sm:max-w-[355px] flex flex-col items-center pt-20 ${
           isClosing ? "animate-modal-out" : "animate-modal-in"
         }`}
       >
         {/* Floating Red Circular Close Button (welcoming pop-up style) */}
         <button
           onClick={handleClose}
-          className="absolute top-2 right-1 z-20 w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
+          className="absolute top-6 right-1 z-20 w-9 h-9 rounded-full bg-white text-[#E50014] border-4 border-[#E50014] flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer hover:bg-red-50"
           title="Tutup Modal"
         >
           <X className="w-5 h-5 stroke-[2.8]" />
         </button>
 
         {/* Top Header Badge: Dynamic Logo with Fallback */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[210px] shrink-0 flex items-center justify-center drop-shadow-lg z-10 pointer-events-none select-none">
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 w-[210px] shrink-0 flex items-center justify-center drop-shadow-lg z-10 pointer-events-none select-none">
           <img
-            src={boothData?.logo || logo || "/assets/morinaga-booth-image-2.webp"}
+            src={boothData?.image_title || logo || "/assets/morinaga-booth-image-2.webp"}
             alt={boothData?.name || "Morinaga Booth"}
             onError={(e) => {
               if (
-                e.currentTarget.src !== window.location.origin + "/assets/morinaga-booth-image-2.webp" &&
+                e.currentTarget.src !==
+                  window.location.origin + "/assets/morinaga-booth-image-2.webp" &&
                 !e.currentTarget.src.endsWith("/assets/morinaga-booth-image-2.webp")
               ) {
                 e.currentTarget.src = "/assets/morinaga-booth-image-2.webp";

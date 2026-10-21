@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getToken } from "../utils/auth";
 import { getKalbeSymposiumToday } from "../utils/kalbeApi";
-import { setSymposiumJoined } from "../data/symposiumStore";
 
 export const SympoCheckInRedirectPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,11 +13,9 @@ export const SympoCheckInRedirectPage: React.FC = () => {
 
     const token = getToken();
     if (!token) {
-      sessionStorage.setItem("kalbe_scanned_from_device", "true");
-      sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      sessionStorage.setItem("kalbe_scanned_from_external_qr", "true");
       if (symposiumId) {
-        sessionStorage.setItem("kalbe_scanned_symposium_id", symposiumId);
-        localStorage.setItem("kalbe_scanned_symposium_id", symposiumId);
+        sessionStorage.setItem("kalbe_external_sympo_id", symposiumId);
       }
       const currentUrl = `/sympo-checkin${window.location.search}`;
       navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`, { replace: true });
@@ -37,13 +34,10 @@ export const SympoCheckInRedirectPage: React.FC = () => {
           }
         }
 
-        // Tandai bahwa user sudah scan QR symposium dari device, tanpa otomatis mencatat partisipan/kehadiran
-        setSymposiumJoined(true);
-        sessionStorage.setItem("kalbe_scanned_from_device", "true");
-        sessionStorage.setItem("kalbe_sympo_scanned", "true");
+        // Tandai bahwa user sudah scan QR symposium dari luar microsite (external QR scan)
+        sessionStorage.setItem("kalbe_scanned_from_external_qr", "true");
         if (targetSympoId) {
-          sessionStorage.setItem("kalbe_scanned_symposium_id", targetSympoId);
-          localStorage.setItem("kalbe_scanned_symposium_id", targetSympoId);
+          sessionStorage.setItem("kalbe_external_sympo_id", targetSympoId);
         }
 
         if (isMounted) {

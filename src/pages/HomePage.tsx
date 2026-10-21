@@ -14,8 +14,6 @@ import { SymposiumPosterModal } from "../components/SymposiumPosterModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
 import {
   isSymposiumUpcoming,
-  isSymposiumJoined,
-  setSymposiumJoined,
 } from "../data/symposiumStore";
 import {
   getUnclaimedRewardsCount,
@@ -227,7 +225,7 @@ export const HomePage: React.FC = () => {
     return true;
   });
 
-  // Handle direct access via symposium link or QR code parameter
+  // Handle direct access via symposium link or QR code parameter (hanya jika ada param external scan di URL)
   useEffect(() => {
     const sympoIdFromUrl =
       searchParams.get("symposium_id") || searchParams.get("sympo_id");
@@ -238,23 +236,30 @@ export const HomePage: React.FC = () => {
       searchParams.get("symposium") === "true";
 
     if (sympoIdFromUrl || isSympoSource) {
-      setSymposiumJoined(true);
-      sessionStorage.setItem("kalbe_scanned_from_device", "true");
-      sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      sessionStorage.setItem("kalbe_scanned_from_external_qr", "true");
       if (sympoIdFromUrl) {
-        sessionStorage.setItem("kalbe_scanned_symposium_id", sympoIdFromUrl);
-        localStorage.setItem("kalbe_scanned_symposium_id", sympoIdFromUrl);
-      }
-      if (currentUser?.id) {
-        localStorage.setItem(`kalbe_sympo_scanned_${currentUser.id}`, "true");
+        sessionStorage.setItem("kalbe_external_sympo_id", sympoIdFromUrl);
       }
     }
-  }, [searchParams, currentUser?.id]);
-
+  }, [searchParams]);
 
   // Re-sync state whenever user navigates to HomePage or switches user session
   useEffect(() => {
     let isMounted = true;
+
+    // Bersihkan legacy storage bypass lama jika ada di browser user
+    try {
+      if (currentUser?.id) {
+        localStorage.removeItem(`kalbe_sympo_scanned_${currentUser.id}`);
+        localStorage.removeItem(`kalbe_symposium_joined_${currentUser.id}`);
+      }
+      localStorage.removeItem("kalbe_symposium_joined");
+      localStorage.removeItem("kalbe_scanned_symposium_id");
+      sessionStorage.removeItem("kalbe_scanned_from_device");
+      sessionStorage.removeItem("kalbe_sympo_scanned");
+    } catch {
+      // ignore
+    }
 
     // Initial local read for instant render
     setPostTestDone(isPostTestCompleted() || hasPostTestSuccess);
@@ -302,11 +307,6 @@ export const HomePage: React.FC = () => {
           sympos[0];
         morinagaSympoRef.current = currentMorinagaSympo;
 
-        // Jika user check-in symposium (via admin atau scan), tandai hasJoinedSymposium
-        const hasSympoHistory = historyList.some((h) => h.reward_type === "symposium");
-        if (hasSympoHistory) {
-          setSymposiumJoined(true);
-        }
 
         const hasMorinagaHistory = historyList.some(
           (h) =>
@@ -428,6 +428,7 @@ export const HomePage: React.FC = () => {
     hasBoothSuccess,
     hasEarlyLifeSuccess,
     isWelcomePending,
+    currentUser?.id,
   ]);
 
   const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(
@@ -793,18 +794,13 @@ export const HomePage: React.FC = () => {
         return;
       }
 
-      const isSympoScanned =
-        isSymposiumJoined() ||
-        sessionStorage.getItem("kalbe_scanned_from_device") === "true" ||
-        sessionStorage.getItem("kalbe_sympo_scanned") === "true" ||
-        (currentUser?.id
-          ? localStorage.getItem(`kalbe_sympo_scanned_${currentUser.id}`) === "true"
-          : false);
+      // Bypass scan ke post-test HANYA jika user melakukan scan QR di luar microsite (external QR scan)
+      const hasScannedExternal =
+        sessionStorage.getItem("kalbe_scanned_from_external_qr") === "true";
 
-      if (isSympoScanned) {
+      if (hasScannedExternal) {
         const targetSympoId =
-          sessionStorage.getItem("kalbe_scanned_symposium_id") ||
-          localStorage.getItem("kalbe_scanned_symposium_id") ||
+          sessionStorage.getItem("kalbe_external_sympo_id") ||
           sympo?.id;
         navigate(
           `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
@@ -812,6 +808,7 @@ export const HomePage: React.FC = () => {
         return;
       }
 
+      // Flow normal jika user tidak scan di luar microsite: klik symposium -> scan -> post test
       navigate("/symposium", { state: { todaySymposium: sympo } });
       return;
     }
