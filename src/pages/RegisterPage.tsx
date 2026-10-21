@@ -60,12 +60,7 @@ export const RegisterPage: React.FC = () => {
 
     const cleanDigits = phone.trim().replace(/\D/g, "");
 
-    if (
-      !fullName.trim() ||
-      !practicePlace.trim() ||
-      !email.trim() ||
-      !cleanDigits
-    ) {
+    if (!fullName.trim() || !practicePlace.trim() || !email.trim() || !cleanDigits) {
       showToast("error", "Silakan lengkapi semua data formulir pendaftaran.");
       return;
     }
@@ -109,7 +104,10 @@ export const RegisterPage: React.FC = () => {
         };
         console.log("[1. API External Register PROD] Sending payload:", externalPayload);
         externalEventResponse = await registerExternalMorinagaEvent(externalPayload);
-        console.log("[1. API External Register PROD] Received response:", externalEventResponse);
+        console.log(
+          "[1. API External Register PROD] Received response:",
+          externalEventResponse,
+        );
 
         // Jika API external mengembalikan error (misal code 400 atau status gagal), tampilkan pesan error di toaster
         if (externalEventResponse) {
@@ -136,7 +134,10 @@ export const RegisterPage: React.FC = () => {
       const reqHeaders: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      if (BASE_URL.includes("ngrok") || (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))) {
+      if (
+        BASE_URL.includes("ngrok") ||
+        (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+      ) {
         reqHeaders["ngrok-skip-browser-warning"] = "true";
       }
 
@@ -172,7 +173,8 @@ export const RegisterPage: React.FC = () => {
         if (errorMsg === "email already registered") {
           errorMsg = "Email sudah terdaftar. Silakan gunakan email lain atau masuk.";
         } else if (errorMsg === "phone number already registered") {
-          errorMsg = "Nomor handphone sudah terdaftar. Silakan gunakan nomor lain atau masuk.";
+          errorMsg =
+            "Nomor handphone sudah terdaftar. Silakan gunakan nomor lain atau masuk.";
         }
 
         showToast("error", errorMsg);
@@ -236,10 +238,7 @@ export const RegisterPage: React.FC = () => {
       sessionStorage.removeItem("kalbe_sympo_scanned");
 
       // Success Registration Toast
-      showToast(
-        "success",
-        "Registrasi berhasil! Mengalihkan ke beranda..."
-      );
+      showToast("success", "Registrasi berhasil! Mengalihkan ke beranda...");
 
       // Redirect to homepage after brief delay so user sees toast
       setTimeout(() => {
@@ -263,6 +262,7 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
+    // Test
     <div
       className="relative h-full w-full flex flex-col bg-cover bg-top select-none overflow-y-auto"
       style={{
@@ -473,7 +473,11 @@ export const RegisterPage: React.FC = () => {
           <div className="text-center text-[13px] text-[#374151] mt-6">
             <span>Sudah punya akun? </span>
             <Link
-              to={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
+              to={
+                redirectUrl
+                  ? `/login?redirect=${encodeURIComponent(redirectUrl)}`
+                  : "/login"
+              }
               state={{}}
               className="font-bold text-[#E59A00] hover:text-[#C88500] transition-colors"
             >
