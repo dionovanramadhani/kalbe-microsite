@@ -1,4 +1,4 @@
-import { getToken, getUserData } from './auth';
+import { getToken, getUserData } from "./auth";
 import type {
   KalbeBoothResponse,
   KalbeSymposiumResponse,
@@ -6,7 +6,7 @@ import type {
   KalbeBoothPodcastSession,
   KalbeBoothActivityResponse,
   KalbeBoothActivityItem,
-} from '../admin/adminApi';
+} from "../admin/adminApi";
 
 export type {
   KalbeBoothResponse,
@@ -17,15 +17,18 @@ export type {
   KalbeBoothActivityItem,
 };
 
-const getBaseUrl = (): string => (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const getBaseUrl = (): string =>
+  (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 let _cachedBooths: KalbeBoothResponse[] | null = null;
 let _cachedSymposiums: KalbeSymposiumResponse[] | null = null;
 let _cachedSymposiumToday: KalbeSymposiumResponse | null = null;
 
 export const getCachedKalbeBooths = (): KalbeBoothResponse[] => _cachedBooths || [];
-export const getCachedKalbeSymposiums = (): KalbeSymposiumResponse[] => _cachedSymposiums || [];
-export const getCachedKalbeSymposiumToday = (): KalbeSymposiumResponse | null => _cachedSymposiumToday;
+export const getCachedKalbeSymposiums = (): KalbeSymposiumResponse[] =>
+  _cachedSymposiums || [];
+export const getCachedKalbeSymposiumToday = (): KalbeSymposiumResponse | null =>
+  _cachedSymposiumToday;
 
 /**
  * Fetch all active Kalbe Booths from the backend API
@@ -35,27 +38,30 @@ export async function getKalbeBoothsList(): Promise<KalbeBoothResponse[]> {
   const token = getToken();
   const user = getUserData();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const query = new URLSearchParams();
-  query.append('page', '1');
-  query.append('limit', '50');
-  query.append('is_active', 'true');
+  query.append("page", "1");
+  query.append("limit", "50");
+  query.append("is_active", "true");
   if (user?.id) {
-    query.append('user_id', String(user.id));
+    query.append("user_id", String(user.id));
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/booths?${query.toString()}`, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -77,27 +83,30 @@ export async function getKalbeSymposiumsList(): Promise<KalbeSymposiumResponse[]
   const token = getToken();
   const user = getUserData();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const query = new URLSearchParams();
-  query.append('page', '1');
-  query.append('limit', '50');
-  query.append('is_active', 'true');
+  query.append("page", "1");
+  query.append("limit", "50");
+  query.append("is_active", "true");
   if (user?.id) {
-    query.append('user_id', String(user.id));
+    query.append("user_id", String(user.id));
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/symposiums?${query.toString()}`, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -120,25 +129,28 @@ export async function getKalbeSymposiumToday(): Promise<KalbeSymposiumResponse |
   const token = getToken();
   const user = getUserData();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const query = new URLSearchParams();
   if (user?.id) {
-    query.append('user_id', String(user.id));
+    query.append("user_id", String(user.id));
   }
 
-  const queryString = query.toString() ? `?${query.toString()}` : '';
+  const queryString = query.toString() ? `?${query.toString()}` : "";
   const res = await fetch(`${baseUrl}/api/v1/kalbe/symposium/today${queryString}`, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -200,25 +212,33 @@ export interface SubmitKalbePostTestResponse {
 /**
  * Fetch Post Test details by symposium ref_id
  */
-export async function getKalbePostTestByRefID(refId: string): Promise<KalbePostTestDetail | null> {
+export async function getKalbePostTestByRefID(
+  refId: string,
+): Promise<KalbePostTestDetail | null> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
-  const res = await fetch(`${baseUrl}/api/v1/kalbe/post-test/ref/${encodeURIComponent(refId)}`, {
-    method: 'GET',
-    headers,
-  });
+  const res = await fetch(
+    `${baseUrl}/api/v1/kalbe/post-test/ref/${encodeURIComponent(refId)}`,
+    {
+      method: "GET",
+      headers,
+    },
+  );
 
   if (!res.ok) {
     if (res.status === 404) {
@@ -234,23 +254,28 @@ export async function getKalbePostTestByRefID(refId: string): Promise<KalbePostT
 /**
  * Fetch Post Test details by its post_test_id
  */
-export async function getKalbePostTestByID(id: string): Promise<KalbePostTestDetail | null> {
+export async function getKalbePostTestByID(
+  id: string,
+): Promise<KalbePostTestDetail | null> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/post-test/${encodeURIComponent(id)}`, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -268,31 +293,38 @@ export async function getKalbePostTestByID(id: string): Promise<KalbePostTestDet
 /**
  * Submit post test answers
  */
-export async function submitKalbePostTest(payload: SubmitKalbePostTestPayload): Promise<SubmitKalbePostTestResponse> {
+export async function submitKalbePostTest(
+  payload: SubmitKalbePostTestPayload,
+): Promise<SubmitKalbePostTestResponse> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/post-test/submit`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || `Failed to submit post test: status ${res.status}`);
+    throw new Error(
+      errBody.message || `Failed to submit post test: status ${res.status}`,
+    );
   }
 
   const json = await res.json();
@@ -342,28 +374,31 @@ export interface KalbeClaimHistoryResponseData {
 export async function getKalbeUserHistory(
   rewardType?: string,
   page: number = 1,
-  limit: number = 100
+  limit: number = 100,
 ): Promise<KalbeHistoryItemResponse[]> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const user = getUserData();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const query = new URLSearchParams();
-  query.append('page', String(page));
-  query.append('limit', String(limit));
+  query.append("page", String(page));
+  query.append("limit", String(limit));
   if (rewardType) {
-    query.append('reward_type', rewardType);
+    query.append("reward_type", rewardType);
   }
   // Note: we do NOT pass is_claimed to fetch both claimed and unclaimed records
 
@@ -372,7 +407,7 @@ export async function getKalbeUserHistory(
     : `${baseUrl}/api/v1/kalbe/history?${query.toString()}`;
 
   const res = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -390,21 +425,24 @@ export async function getKalbeUserHistory(
 export async function claimKalbeHistoryReward(
   historyId: string,
   pin: string,
-  rewardId?: string
+  rewardId?: string,
 ): Promise<KalbeClaimHistoryResponseData> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const body: KalbeClaimHistoryPayload = { pin };
@@ -412,11 +450,14 @@ export async function claimKalbeHistoryReward(
     body.reward_id = rewardId;
   }
 
-  const res = await fetch(`${baseUrl}/api/v1/kalbe/history/${encodeURIComponent(historyId)}/claim`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(
+    `${baseUrl}/api/v1/kalbe/history/${encodeURIComponent(historyId)}/claim`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    },
+  );
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
@@ -434,27 +475,32 @@ export async function insertKalbeBoothParticipant(boothId: string): Promise<unkn
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/participant/booth`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ booth_id: boothId }),
   });
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || `Failed to check in booth participant: status ${res.status}`);
+    throw new Error(
+      errBody.message || `Failed to check in booth participant: status ${res.status}`,
+    );
   }
 
   const json = await res.json();
@@ -464,31 +510,38 @@ export async function insertKalbeBoothParticipant(boothId: string): Promise<unkn
 /**
  * Insert authenticated participant into Kalbe symposium
  */
-export async function insertKalbeSymposiumParticipant(symposiumId: string): Promise<unknown> {
+export async function insertKalbeSymposiumParticipant(
+  symposiumId: string,
+): Promise<unknown> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/participant/symposium`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ symposium_id: symposiumId }),
   });
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || `Failed to check in symposium participant: status ${res.status}`);
+    throw new Error(
+      errBody.message || `Failed to check in symposium participant: status ${res.status}`,
+    );
   }
 
   const json = await res.json();
@@ -502,19 +555,22 @@ export async function getKalbeMysteryBox(): Promise<KalbeHistoryItemResponse | n
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/mystery-box`, {
-    method: 'GET',
+    method: "GET",
     headers,
   });
 
@@ -531,21 +587,24 @@ export async function getKalbeMysteryBox(): Promise<KalbeHistoryItemResponse | n
  */
 export async function claimKalbeMysteryBox(
   pin: string,
-  rewardId?: string
+  rewardId?: string,
 ): Promise<KalbeClaimHistoryResponseData> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
   const body: KalbeClaimHistoryPayload = { pin };
@@ -554,14 +613,16 @@ export async function claimKalbeMysteryBox(
   }
 
   const res = await fetch(`${baseUrl}/api/v1/kalbe/mystery-box/claim`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || `Failed to claim mystery box: status ${res.status}`);
+    throw new Error(
+      errBody.message || `Failed to claim mystery box: status ${res.status}`,
+    );
   }
 
   const json = await res.json();
@@ -573,25 +634,33 @@ export async function claimKalbeMysteryBox(
 /**
  * Fetch Booth Podcast details by booth ref_id
  */
-export async function getKalbeBoothPodcastByRefID(refId: string): Promise<KalbeBoothPodcastResponse | null> {
+export async function getKalbeBoothPodcastByRefID(
+  refId: string,
+): Promise<KalbeBoothPodcastResponse | null> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
-  const res = await fetch(`${baseUrl}/api/v1/kalbe/booth-podcast/ref/${encodeURIComponent(refId)}`, {
-    method: 'GET',
-    headers,
-  });
+  const res = await fetch(
+    `${baseUrl}/api/v1/kalbe/booth-podcast/ref/${encodeURIComponent(refId)}`,
+    {
+      method: "GET",
+      headers,
+    },
+  );
 
   if (!res.ok) {
     if (res.status === 404) {
@@ -607,25 +676,33 @@ export async function getKalbeBoothPodcastByRefID(refId: string): Promise<KalbeB
 /**
  * Fetch Booth Activity details by booth ref_id
  */
-export async function getKalbeBoothActivityByRefID(refId: string): Promise<KalbeBoothActivityResponse | null> {
+export async function getKalbeBoothActivityByRefID(
+  refId: string,
+): Promise<KalbeBoothActivityResponse | null> {
   const baseUrl = getBaseUrl();
   const token = getToken();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (baseUrl.includes('ngrok') || (typeof window !== 'undefined' && window.location.hostname.includes('ngrok'))) {
-    headers['ngrok-skip-browser-warning'] = 'true';
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
   }
 
-  const res = await fetch(`${baseUrl}/api/v1/kalbe/booth-activity/ref/${encodeURIComponent(refId)}`, {
-    method: 'GET',
-    headers,
-  });
+  const res = await fetch(
+    `${baseUrl}/api/v1/kalbe/booth-activity/ref/${encodeURIComponent(refId)}`,
+    {
+      method: "GET",
+      headers,
+    },
+  );
 
   if (!res.ok) {
     if (res.status === 404) {
@@ -641,25 +718,28 @@ export async function getKalbeBoothActivityByRefID(refId: string): Promise<Kalbe
 /**
  * Format ISO datetime strings to Indonesian time format "HH.mm – HH.mm WIB"
  */
-export function formatTimeRangeWIB(startAt?: string | null, endAt?: string | null): string {
-  if (!startAt && !endAt) return '';
+export function formatTimeRangeWIB(
+  startAt?: string | null,
+  endAt?: string | null,
+): string {
+  if (!startAt && !endAt) return "";
 
   const formatSingle = (iso?: string | null): string => {
-    if (!iso) return '';
+    if (!iso) return "";
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
+    if (isNaN(d.getTime())) return "";
     try {
-      return new Intl.DateTimeFormat('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        hour: '2-digit',
-        minute: '2-digit',
+      return new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: false,
       })
         .format(d)
-        .replace(':', '.');
+        .replace(":", ".");
     } catch {
-      const h = String(d.getHours()).padStart(2, '0');
-      const m = String(d.getMinutes()).padStart(2, '0');
+      const h = String(d.getHours()).padStart(2, "0");
+      const m = String(d.getMinutes()).padStart(2, "0");
       return `${h}.${m}`;
     }
   };
@@ -669,29 +749,29 @@ export function formatTimeRangeWIB(startAt?: string | null, endAt?: string | nul
 
   if (start && end) return `${start} – ${end} WIB`;
   if (start) return `${start} WIB`;
-  return '';
+  return "";
 }
 
 /**
  * Format start time to WIB string (e.g. "Pukul 14.00 WIB")
  */
 export function formatSymposiumStartTime(startAt?: string | null): string {
-  if (!startAt) return 'Pukul 10.00 WIB';
+  if (!startAt) return "Pukul 10.00 WIB";
   const d = new Date(startAt);
-  if (isNaN(d.getTime())) return 'Pukul 10.00 WIB';
+  if (isNaN(d.getTime())) return "Pukul 10.00 WIB";
   try {
-    const formatted = new Intl.DateTimeFormat('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      hour: '2-digit',
-      minute: '2-digit',
+    const formatted = new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     })
       .format(d)
-      .replace(':', '.');
+      .replace(":", ".");
     return `Pukul ${formatted} WIB`;
   } catch {
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
     return `Pukul ${h}.${m} WIB`;
   }
 }
@@ -709,7 +789,9 @@ export function isSymposiumStarted(sympo?: KalbeSymposiumResponse | null): boole
 /**
  * Check if symposium has already ended based on ended_at / end_date
  */
-export function isSymposiumEnded(sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null): boolean {
+export function isSymposiumEnded(
+  sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null,
+): boolean {
   if (!sympo) return false;
   const endIso = sympo.ended_at || sympo.end_date;
   if (endIso) {
@@ -724,7 +806,9 @@ export function isSymposiumEnded(sympo?: (KalbeSymposiumResponse & { end_date?: 
 /**
  * Check if symposium is currently active and ongoing (started_at <= now <= ended_at)
  */
-export function isSymposiumOngoingNow(sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null): boolean {
+export function isSymposiumOngoingNow(
+  sympo?: (KalbeSymposiumResponse & { end_date?: string }) | null,
+): boolean {
   if (!sympo?.started_at) return false;
   const now = new Date();
   const start = new Date(sympo.started_at);
@@ -750,18 +834,18 @@ export function isSessionToday(startAt?: string | null, endAt?: string | null): 
     const d = new Date(iso);
     if (isNaN(d.getTime())) return null;
     try {
-      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
     } catch {
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
   };
 
   const todayStr = (() => {
     const now = new Date();
     try {
-      return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      return now.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
     } catch {
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     }
   })();
 
@@ -808,8 +892,8 @@ export async function registerExternalMorinagaEvent(
   const morinagaBaseUrl = (
     import.meta.env.VITE_MORINAGA_API_URL || "https://medical-api.morinaga.id"
   ).replace(/\/$/, "");
-  const eventSlug =
-    import.meta.env.VITE_MORINAGA_EVENT_SLUG || "pitika-2026-xiv-palembang-5";
+  const eventSlug = "pitika-2026-xiv-palembang-5-testing";
+  // import.meta.env.VITE_MORINAGA_EVENT_SLUG || "pitika-2026-xiv-palembang-5";
   const username = import.meta.env.VITE_MORINAGA_USERNAME || "mWPa9WrCHQ";
   const password = import.meta.env.VITE_MORINAGA_PASSWORD || "r5Zl6pThBb";
   const authHeader = "Basic " + btoa(`${username}:${password}`);
@@ -859,4 +943,3 @@ export async function registerExternalMorinagaEvent(
     }
   }
 }
-
