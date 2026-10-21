@@ -416,7 +416,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         }`}
       >
         {/* Floating Red Circular Close Button right above the drawer top */}
-        <div className="w-full max-w-[420px] flex justify-end px-5 mb-2 pointer-events-none">
+        <div className="w-full max-w-[450px] sm:max-w-[470px] flex justify-end px-4 sm:px-5 mb-2 pointer-events-none">
           <button
             type="button"
             onClick={handleClose}
@@ -429,7 +429,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
         {/* Drawer Body Container */}
         {isPhotobooth ? (
-          <div className="w-full max-w-[420px] bg-white rounded-t-[32px] px-5 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
+          <div className="w-full max-w-[450px] sm:max-w-[470px] bg-white rounded-t-[32px] px-5 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
             {activityItem?.activity_image && (
               <div className="w-full rounded-[20px] overflow-hidden bg-black/5 mb-4 shadow-sm flex items-center justify-center border border-gray-100">
                 <img
@@ -463,7 +463,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
             )}
           </div>
         ) : (
-          <div className="w-full max-w-[420px] bg-white rounded-t-[32px] pt-6 pb-5 px-5 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
+          <div className="w-full max-w-[450px] sm:max-w-[470px] bg-white rounded-t-[32px] pt-6 pb-5 px-3 sm:px-5 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
             {/* Top Header Graphic from response (fallback to MoriTalks Awards logo) */}
             {headerImage && (
               <div className="w-full flex justify-center shrink-0 mb-3.5">
@@ -524,16 +524,16 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                           >
                             JURI
                           </h3>
-                          <div className="flex flex-col items-center text-center gap-1 px-2">
+                          <div className="flex flex-col items-center text-center gap-1 w-full px-1">
                             {slideJudges.map((judge, jIdx) => (
                               <span
                                 key={jIdx}
                                 style={{
                                   color: "#555555",
-                                  fontSize: "13.5px",
+                                  fontSize: "13px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug max-w-[320px] font-normal"
+                                className="leading-snug font-normal w-full text-center"
                               >
                                 {judge}
                               </span>
@@ -562,14 +562,14 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
                           {/* Host ONLY */}
                           {sess.host && (
-                            <div className="flex flex-col items-center text-center mb-3 px-2">
+                            <div className="flex flex-col items-center text-center mb-3 w-full px-1">
                               <span
                                 style={{
                                   color: "#555555",
-                                  fontSize: "13.5px",
+                                  fontSize: "13px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug max-w-[320px] font-normal"
+                                className="leading-snug font-normal w-full text-center"
                               >
                                 {sess.host}
                               </span>
