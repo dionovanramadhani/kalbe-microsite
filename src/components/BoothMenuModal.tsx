@@ -85,7 +85,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   const defaultPodcast: KalbeBoothPodcastResponse = useMemo(
     () => ({
       id: "",
-      name: "Moritalks Podcast",
+      name: "MoriTalks Podcast",
       topic: "Alergi & Gastro",
       ref_id: boothId || "",
       created_at: "",
@@ -330,7 +330,9 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                     }}
                     className="truncate text-center w-full"
                   >
-                    {activePodcast.name || "Moritalks Podcast"}
+                    {activePodcast.name
+                      ? activePodcast.name.replace(/Moritalks/g, "MoriTalks")
+                      : "MoriTalks Podcast"}
                   </span>
                 </button>
 
@@ -363,8 +365,8 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                       {activity?.name &&
                       (activity.name.toLowerCase().includes("award") ||
                         activity.name.toLowerCase().includes("presentation"))
-                        ? activity.name
-                        : "Moritalks Award Presentation"}
+                        ? activity.name.replace(/Moritalks/g, "MoriTalks")
+                        : "MoriTalks Award Presentation"}
                     </span>
                   </button>
                 )}
@@ -458,7 +460,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                           }}
                           className="truncate text-center w-full"
                         >
-                          Moritalks Award Presentation
+                          MoriTalks Award Presentation
                         </span>
                       </button>
 

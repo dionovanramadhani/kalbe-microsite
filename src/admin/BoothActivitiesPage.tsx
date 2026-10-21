@@ -1378,7 +1378,7 @@ export function BoothActivitiesPage() {
                     </label>
                     <input
                       className="admin-input"
-                      placeholder="Contoh: Moritalks Podcast"
+                      placeholder="Contoh: MoriTalks Podcast"
                       value={podcastName}
                       onChange={(e) => setPodcastName(e.target.value)}
                       required

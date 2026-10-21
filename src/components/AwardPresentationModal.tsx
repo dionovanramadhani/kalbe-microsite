@@ -65,7 +65,7 @@ function getDateKeyWIB(iso?: string | null): string {
   }
 }
 
-// Format speaker to "<Name> (Juri)"
+// Clean speaker name by removing any "(Juri)" or "(juri)" suffix
 function getJudgesList(item: KalbeBoothActivityItem): string[] {
   let list: string[] = [];
   if (item.speakers && Array.isArray(item.speakers) && item.speakers.length > 0) {
@@ -77,8 +77,10 @@ function getJudgesList(item: KalbeBoothActivityItem): string[] {
       .filter(Boolean);
   }
   return list.map((name) => {
-    const trimmed = name.trim();
-    return trimmed.toLowerCase().includes("(juri)") ? trimmed : `${trimmed} (Juri)`;
+    return name
+      .replace(/\s*\(juri\)\s*$/i, "")
+      .replace(/\s*\(juri\)\s*/gi, " ")
+      .trim();
   });
 }
 
@@ -154,61 +156,61 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
           id: "mock-1",
           name: "Sesi 1",
           order: 1,
-          start_at: "2026-10-25T13:30:00+07:00",
-          end_at: "2026-10-25T13:45:00+07:00",
+          start_at: "2026-10-25T13:20:00+07:00",
+          end_at: "2026-10-25T13:35:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr. Nova Lestarina Ayu Aisyah",
+          host: "dr.Ronald Rompies, Sp.A, Subsp.NPM(K)",
         },
         {
           id: "mock-2",
           name: "Sesi 2",
           order: 2,
+          start_at: "2026-10-25T13:35:00+07:00",
+          end_at: "2026-10-25T13:50:00+07:00",
+          speakers: [
+            "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
+            "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
+          ],
+          host: "dr.Riza Noviandi, Sp.A, Subsp. Neuro (K)",
+        },
+        {
+          id: "mock-3",
+          name: "Sesi 3",
+          order: 3,
           start_at: "2026-10-25T14:00:00+07:00",
           end_at: "2026-10-25T14:15:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr. Nova Lestarina Ayu Aisyah",
-        },
-        {
-          id: "mock-3",
-          name: "Sesi 3",
-          order: 3,
-          start_at: "2026-10-25T14:30:00+07:00",
-          end_at: "2026-10-25T14:45:00+07:00",
-          speakers: [
-            "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
-            "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
-          ],
-          host: "dr. Nova Lestarina Ayu Aisyah",
+          host: "dr.Ronald Rompies, Sp.A, Subsp.NPM(K)",
         },
         {
           id: "mock-4",
           name: "Sesi 1",
           order: 4,
-          start_at: "2026-10-26T13:30:00+07:00",
-          end_at: "2026-10-26T13:45:00+07:00",
+          start_at: "2026-10-26T13:20:00+07:00",
+          end_at: "2026-10-26T13:35:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr. Nova Lestarina Ayu Aisyah",
+          host: "dr.Ronald Rompies, Sp.A, Subsp.NPM(K)",
         },
         {
           id: "mock-5",
           name: "Sesi 2",
           order: 5,
-          start_at: "2026-10-26T14:00:00+07:00",
-          end_at: "2026-10-26T14:15:00+07:00",
+          start_at: "2026-10-26T13:35:00+07:00",
+          end_at: "2026-10-26T13:50:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr. Nova Lestarina Ayu Aisyah",
+          host: "dr.Riza Noviandi, Sp.A, Subsp. Neuro (K)",
         },
       ];
     }
@@ -499,120 +501,144 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                   transform: `translateX(-${currentSlide * 100}%)`,
                 }}
               >
-                {slides.map((slide, sIdx) => (
-                  <div
-                    key={sIdx}
-                    className="w-full shrink-0 h-full max-h-[50vh] sm:max-h-[54vh] overflow-y-auto overscroll-contain no-scrollbar flex flex-col items-center px-1 pb-2"
-                  >
-                    {slide.sessions.map((sess, sessIdx) => (
-                      <div key={sessIdx} className="w-full flex flex-col items-center">
-                        {sessIdx > 0 && (
-                          <div className="w-full border-t border-dashed border-gray-300 my-4 shrink-0" />
-                        )}
+                {slides.map((slide, sIdx) => {
+                  const slideJudges = Array.from(
+                    new Set(slide.sessions.flatMap((s) => s.judges).filter(Boolean)),
+                  );
 
-                        {/* Session Title: "Sesi 1" / "Sesi 2" */}
-                        <h3
-                          style={{
-                            color: "#222222",
-                            fontSize: "17px",
-                            fontWeight: "bold",
-                          }}
-                          className="text-center tracking-tight leading-snug mb-3.5"
-                        >
-                          {sess.title}
-                        </h3>
+                  return (
+                    <div
+                      key={sIdx}
+                      className="w-full shrink-0 h-full max-h-[50vh] sm:max-h-[54vh] overflow-y-auto overscroll-contain no-scrollbar flex flex-col items-center px-1 pb-2"
+                    >
+                      {/* Top Juri Section formatted like session title */}
+                      {slideJudges.length > 0 && (
+                        <div className="flex flex-col items-center mb-5 w-full shrink-0">
+                          <h3
+                            style={{
+                              color: "#222222",
+                              fontSize: "17px",
+                              fontWeight: "bold",
+                            }}
+                            className="text-center tracking-tight leading-snug mb-1.5"
+                          >
+                            Juri
+                          </h3>
+                          <div className="flex flex-col items-center text-center gap-1 px-2">
+                            {slideJudges.map((judge, jIdx) => (
+                              <span
+                                key={jIdx}
+                                style={{
+                                  color: "#555555",
+                                  fontSize: "13.5px",
+                                  fontWeight: 400,
+                                }}
+                                className="leading-snug max-w-[320px] font-normal"
+                              >
+                                {judge}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                        {/* Judges & Host List */}
-                        <div className="flex flex-col items-center text-center gap-1.5 mb-5 px-2">
-                          {sess.judges.map((judge, jIdx) => (
-                            <span
-                              key={jIdx}
-                              style={{
-                                color: "#555555",
-                                fontSize: "14px",
-                                fontWeight: 400,
-                              }}
-                              className="leading-snug max-w-[320px] font-normal"
-                            >
-                              {judge}
-                            </span>
-                          ))}
+                      {slide.sessions.map((sess, sessIdx) => (
+                        <div key={sessIdx} className="w-full flex flex-col items-center">
+                          {sessIdx > 0 && (
+                            <div className="w-full border-t border-dashed border-gray-300 my-4 shrink-0" />
+                          )}
+
+                          {/* Session Title: "Sesi 1" / "Sesi 2" */}
+                          <h3
+                            style={{
+                              color: "#222222",
+                              fontSize: "17px",
+                              fontWeight: "bold",
+                            }}
+                            className="text-center tracking-tight leading-snug mb-1.5"
+                          >
+                            {sess.title}
+                          </h3>
+
+                          {/* Host ONLY */}
                           {sess.host && (
-                            <span
+                            <div className="flex flex-col items-center text-center mb-3 px-2">
+                              <span
+                                style={{
+                                  color: "#555555",
+                                  fontSize: "13.5px",
+                                  fontWeight: 400,
+                                }}
+                                className="leading-snug max-w-[320px] font-normal"
+                              >
+                                {sess.host}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Day & Date Header: DAY 1 (25 OKTOBER 2026) */}
+                          <div
+                            style={{
+                              color: "#D41025",
+                              fontSize: "13.5px",
+                              fontWeight: "bold",
+                            }}
+                            className="text-center tracking-wide uppercase mb-2"
+                          >
+                            {slide.dayDateLabel}
+                          </div>
+
+                          {/* Time Badge: Chamfered Octagon SVG */}
+                          {sess.formattedTime && (
+                            <div className="relative w-[235px] sm:w-[245px] h-[44px] flex items-center justify-center shrink-0 select-none shadow-xs px-3">
+                              <svg
+                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                viewBox="0 0 245 46"
+                                fill="none"
+                                preserveAspectRatio="none"
+                              >
+                                <polygon
+                                  points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                                  fill="#FDECED"
+                                />
+                                <polygon
+                                  points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
+                                  stroke="#F52037"
+                                  strokeWidth="2"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              <span
+                                style={{
+                                  color: "#D41025",
+                                  fontSize: "18px",
+                                  fontWeight: "bold",
+                                }}
+                                className="relative z-10 tracking-wide leading-none"
+                              >
+                                {sess.formattedTime}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Optional Description */}
+                          {sess.description && (
+                            <p
                               style={{
-                                color: "#555555",
-                                fontSize: "14px",
-                                fontWeight: 400,
+                                color: "#444444",
+                                fontSize: "13px",
+                                textAlign: "justify",
                               }}
-                              className="leading-snug max-w-[320px] font-normal"
+                              className="mt-3 leading-relaxed px-3"
                             >
-                              {sess.host}
-                            </span>
+                              {sess.description}
+                            </p>
                           )}
                         </div>
-
-                        {/* Day & Date Header: DAY 1 (25 Oktober 2026) */}
-                        <div
-                          style={{
-                            color: "#D41025",
-                            fontSize: "14px",
-                            fontWeight: "bold",
-                          }}
-                          className="text-center tracking-wide uppercase mb-2"
-                        >
-                          {slide.dayDateLabel}
-                        </div>
-
-                        {/* Time Badge: Chamfered Octagon SVG */}
-                        {sess.formattedTime && (
-                          <div className="relative w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center shrink-0 select-none shadow-xs px-3">
-                            <svg
-                              className="absolute inset-0 w-full h-full pointer-events-none"
-                              viewBox="0 0 245 46"
-                              fill="none"
-                              preserveAspectRatio="none"
-                            >
-                              <polygon
-                                points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
-                                fill="#FDECED"
-                              />
-                              <polygon
-                                points="13,1.5 232,1.5 243.5,13 243.5,33 232,44.5 13,44.5 1.5,33 1.5,13"
-                                stroke="#F52037"
-                                strokeWidth="2"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            <span
-                              style={{
-                                color: "#D41025",
-                                fontSize: "20px",
-                                fontWeight: "bold",
-                              }}
-                              className="relative z-10 tracking-wide leading-none"
-                            >
-                              {sess.formattedTime}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Optional Description */}
-                        {sess.description && (
-                          <p
-                            style={{
-                              color: "#444444",
-                              fontSize: "13px",
-                              textAlign: "justify",
-                            }}
-                            className="mt-3 leading-relaxed px-3"
-                          >
-                            {sess.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

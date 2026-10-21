@@ -644,7 +644,7 @@ export const HomePage: React.FC = () => {
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
   const [showPhotoboothModal, setShowPhotoboothModal] = useState(false);
   const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
-  const [podcastTitle, setPodcastTitle] = useState<string>("Moritalks Podcast");
+  const [podcastTitle, setPodcastTitle] = useState<string>("MoriTalks Podcast");
   const [podcastTopic, setPodcastTopic] = useState<string>("Alergi & Gastro");
   const [podcastImage, setPodcastImage] = useState<string | null>(null);
   const [selectedActivityItem, setSelectedActivityItem] =
@@ -1330,7 +1330,7 @@ export const HomePage: React.FC = () => {
         }}
         onMoritalksPodcast={(_podcast, sessions) => {
           setPodcastSessions(sessions);
-          setPodcastTitle(_podcast.name || "Moritalks Podcast");
+          setPodcastTitle((_podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
           setPodcastTopic(_podcast.topic || "");
           setPodcastImage(_podcast.image || null);
           setShowBoothMenuModal(false);
@@ -1367,7 +1367,7 @@ export const HomePage: React.FC = () => {
         onClose={() => setShowBoothDrawer(false)}
         onPodcastScheduleClick={async () => {
           if (morinagaBooth?.podcast) {
-            setPodcastTitle(morinagaBooth.podcast.name || "Moritalks Podcast");
+            setPodcastTitle((morinagaBooth.podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
             setPodcastTopic(morinagaBooth.podcast.topic || "");
             setPodcastImage(morinagaBooth.podcast.image || null);
             const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
@@ -1378,7 +1378,7 @@ export const HomePage: React.FC = () => {
             try {
               const pod = await getKalbeBoothPodcastByRefID(morinagaBooth.id);
               if (pod) {
-                setPodcastTitle(pod.name || "Moritalks Podcast");
+                setPodcastTitle((pod.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
                 setPodcastTopic(pod.topic || "");
                 setPodcastImage(pod.image || null);
                 const today = (pod.sessions || []).filter((s) =>

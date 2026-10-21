@@ -81,7 +81,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
           <div className="w-full flex justify-center shrink-0 mb-3.5">
             <img
               src={headerImage}
-              alt={podcastTitle || "Moritalks Podcast"}
+              alt={podcastTitle || "MoriTalks Podcast"}
               onError={(e) => {
                 if (
                   e.currentTarget.src !==
