@@ -102,7 +102,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
               fontSize: "16px",
               fontWeight: "bold",
             }}
-            className="tracking-tight text-center leading-tight mb-4 shrink-0"
+            className="tracking-tight text-center leading-tight mb-4 shrink-0 uppercase"
           >
             Topik:{" "}
             {topic?.trim() ? topic.trim().replace(/^topik:\s*/i, "") : "Alergi & Gastro"}
@@ -128,7 +128,7 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                         fontSize: "15px",
                         fontWeight: "bold",
                       }}
-                      className="mb-1 text-center leading-tight"
+                      className="mb-1 text-center leading-tight uppercase"
                     >
                       Sesi {index + 1}
                     </span>
