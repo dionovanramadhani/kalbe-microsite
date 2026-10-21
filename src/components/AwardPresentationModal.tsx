@@ -549,9 +549,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               {sess.judges.map((judge, jIdx) => (
                                 <div
                                   key={jIdx}
-                                  className="w-full min-h-[40px] px-4 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-2.5"
+                                  className="w-full min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-2.5"
                                 >
-                                  <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                                  <span className="text-[#222222] font-semibold text-[11.5px] sm:text-[12.5px] leading-tight tracking-tight">
                                     {judge}
                                   </span>
                                 </div>
@@ -567,8 +567,8 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               </div>
 
                               {/* Host Name Pill Container - width full */}
-                              <div className="w-full min-h-[40px] px-4 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
-                                <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                              <div className="w-full min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
+                                <span className="text-[#222222] font-semibold text-[11.5px] sm:text-[12.5px] leading-tight tracking-tight">
                                   {sess.host}
                                 </span>
                               </div>
