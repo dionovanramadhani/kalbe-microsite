@@ -674,6 +674,51 @@ export async function getKalbeBoothPodcastByRefID(
 }
 
 /**
+ * Fetch all Kalbe Booth Podcasts
+ */
+export async function getKalbeBoothPodcastsList(
+  refId?: string,
+): Promise<KalbeBoothPodcastResponse[]> {
+  const baseUrl = getBaseUrl();
+  const token = getToken();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  if (
+    baseUrl.includes("ngrok") ||
+    (typeof window !== "undefined" && window.location.hostname.includes("ngrok"))
+  ) {
+    headers["ngrok-skip-browser-warning"] = "true";
+  }
+
+  const query = new URLSearchParams();
+  query.append("page", "1");
+  query.append("limit", "50");
+
+  const res = await fetch(`${baseUrl}/api/v1/kalbe/booth-podcasts?${query.toString()}`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch booth podcasts: status ${res.status}`);
+  }
+
+  const json = await res.json();
+  const podcasts: KalbeBoothPodcastResponse[] = json.data || [];
+  if (refId) {
+    const filtered = podcasts.filter((p) => p.ref_id === refId);
+    if (filtered.length > 0) return filtered;
+  }
+  return podcasts;
+}
+
+/**
  * Fetch Booth Activity details by booth ref_id
  */
 export async function getKalbeBoothActivityByRefID(

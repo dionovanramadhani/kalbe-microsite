@@ -36,12 +36,12 @@ import {
   getCachedKalbeSymposiums,
   getCachedKalbeSymposiumToday,
   getKalbeUserHistory,
-  getKalbeBoothPodcastByRefID,
-  isSessionToday,
+  getKalbeBoothPodcastsList,
   formatSymposiumStartTime,
   isSymposiumEnded,
   isSymposiumOngoingNow,
   type KalbeHistoryItemResponse,
+  type KalbeBoothPodcastResponse,
   type KalbeBoothPodcastSession,
   type KalbeBoothActivityItem,
 } from "../utils/kalbeApi";
@@ -639,6 +639,7 @@ export const HomePage: React.FC = () => {
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
   const [showPhotoboothModal, setShowPhotoboothModal] = useState(false);
+  const [allBoothPodcasts, setAllBoothPodcasts] = useState<KalbeBoothPodcastResponse[]>([]);
   const [podcastSessions, setPodcastSessions] = useState<KalbeBoothPodcastSession[]>([]);
   const [podcastTitle, setPodcastTitle] = useState<string>("MoriTalks Podcast");
   const [podcastTopic, setPodcastTopic] = useState<string>("Alergi & Gastro");
@@ -1323,7 +1324,12 @@ export const HomePage: React.FC = () => {
           setShowBoothMenuModal(false);
           navigate("/booth-scan");
         }}
-        onMoritalksPodcast={(_podcast, sessions) => {
+        onMoritalksPodcast={(_podcast, sessions, allPodcasts) => {
+          if (allPodcasts && allPodcasts.length > 0) {
+            setAllBoothPodcasts(allPodcasts);
+          } else if (_podcast) {
+            setAllBoothPodcasts([_podcast]);
+          }
           setPodcastSessions(sessions);
           setPodcastTitle(
             (_podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"),
@@ -1363,35 +1369,34 @@ export const HomePage: React.FC = () => {
         boothData={morinagaBooth}
         onClose={() => setShowBoothDrawer(false)}
         onPodcastScheduleClick={async () => {
-          if (morinagaBooth?.podcast) {
-            setPodcastTitle(
-              (morinagaBooth.podcast.name || "MoriTalks Podcast").replace(
-                /Moritalks/g,
-                "MoriTalks",
-              ),
-            );
-            setPodcastTopic(morinagaBooth.podcast.topic || "");
-            setPodcastImage(morinagaBooth.podcast.image || null);
-            const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
-              isSessionToday(s.start_at, s.end_at),
-            );
-            setPodcastSessions(today);
-          } else if (morinagaBooth?.id) {
+          if (morinagaBooth?.id) {
             try {
-              const pod = await getKalbeBoothPodcastByRefID(morinagaBooth.id);
-              if (pod) {
+              const pods = await getKalbeBoothPodcastsList(morinagaBooth.id);
+              if (pods && pods.length > 0) {
+                setAllBoothPodcasts(pods);
+                const pod = pods[0];
                 setPodcastTitle(
                   (pod.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"),
                 );
                 setPodcastTopic(pod.topic || "");
                 setPodcastImage(pod.image || null);
-                const today = (pod.sessions || []).filter((s) =>
-                  isSessionToday(s.start_at, s.end_at),
+                setPodcastSessions(pod.sessions || []);
+              } else if (morinagaBooth.podcast) {
+                setAllBoothPodcasts([morinagaBooth.podcast]);
+                setPodcastTitle(
+                  (morinagaBooth.podcast.name || "MoriTalks Podcast").replace(
+                    /Moritalks/g,
+                    "MoriTalks",
+                  ),
                 );
-                setPodcastSessions(today);
+                setPodcastTopic(morinagaBooth.podcast.topic || "");
+                setPodcastImage(morinagaBooth.podcast.image || null);
+                setPodcastSessions(morinagaBooth.podcast.sessions || []);
               }
             } catch {
-              // fallback to defaults
+              if (morinagaBooth.podcast) {
+                setAllBoothPodcasts([morinagaBooth.podcast]);
+              }
             }
           }
           setShowPodcastScheduleModal(true);
@@ -1416,6 +1421,7 @@ export const HomePage: React.FC = () => {
       {/* 8. MoriTalks Morinaga Podcast Schedule Modal */}
       <PodcastScheduleModal
         isOpen={showPodcastScheduleModal}
+        podcasts={allBoothPodcasts}
         podcastTitle={podcastTitle}
         topic={podcastTopic}
         image={podcastImage}

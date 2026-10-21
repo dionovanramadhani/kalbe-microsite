@@ -12,19 +12,30 @@ export interface AwardPresentationModalProps {
 }
 
 interface SlideSession {
+  id: string;
   item: KalbeBoothActivityItem;
   title: string;
   judges: string[];
   host: string | null;
   formattedTime: string;
+  dayNumber: number;
+  dayDateLabel: string;
   activity_image?: string | null;
   description?: string | null;
 }
 
 interface SlideGroup {
+  id: string;
   dayNumber: number;
   dayDateLabel: string;
   sessions: SlideSession[];
+}
+function cleanPersonName(name?: string | null): string {
+  if (!name) return "";
+  return name
+    .replace(/\s*\((?:pembicara|speaker|host|juri|finalist)\)\s*$/i, "")
+    .replace(/\s*\((?:pembicara|speaker|host|juri|finalist)\)\s*/gi, " ")
+    .trim();
 }
 
 // Format date in Indonesian (WIB, Asia/Jakarta) -> e.g. "25 Oktober 2026"
@@ -76,23 +87,16 @@ function getJudgesList(item: KalbeBoothActivityItem): string[] {
       .map((s) => s.trim())
       .filter(Boolean);
   }
-  return list.map((name) => {
-    return name
-      .replace(/\s*\(juri\)\s*$/i, "")
-      .replace(/\s*\(juri\)\s*/gi, " ")
-      .trim();
-  });
+  return list.map((name) => cleanPersonName(name)).filter(Boolean);
 }
 
-// Format finalist to "<Name> (Finalist)"
+// Get host text
 function getHostText(item: KalbeBoothActivityItem): string | null {
   if (!item.host || item.host.trim() === "") return null;
-  let trimmed = item.host.trim();
-  trimmed = trimmed.replace(/\s*\(host\)\s*/gi, "").replace(/\s*\(finalist\)\s*/gi, "").trim();
-  return `${trimmed} (Finalist)`;
+  return cleanPersonName(item.host) || null;
 }
 
-// Determine session title (e.g. "Sesi 1")
+// Determine session title (e.g. "SESI 1")
 function getSessionTitle(item: KalbeBoothActivityItem, indexWithinDay: number): string {
   if (item.name) {
     const trimmed = item.name.trim();
@@ -100,13 +104,14 @@ function getSessionTitle(item: KalbeBoothActivityItem, indexWithinDay: number): 
     if (
       lower === "moritalks award" ||
       lower === "award presentation" ||
-      lower === "moritalks award"
+      lower.includes("moritalks award") ||
+      lower.includes("award")
     ) {
-      return `Sesi ${indexWithinDay + 1}`;
+      return `SESI ${indexWithinDay + 1}`;
     }
-    return trimmed;
+    return trimmed.toUpperCase();
   }
-  return `Sesi ${indexWithinDay + 1}`;
+  return `SESI ${indexWithinDay + 1}`;
 }
 
 export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
@@ -155,10 +160,10 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
       items = [
         {
           id: "mock-1",
-          name: "Sesi 1",
+          name: "SESI 1",
           order: 1,
-          start_at: "2026-10-25T13:20:00+07:00",
-          end_at: "2026-10-25T13:35:00+07:00",
+          start_at: "2026-10-25T13:30:00+07:00",
+          end_at: "2026-10-25T13:45:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
@@ -167,19 +172,19 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         },
         {
           id: "mock-2",
-          name: "Sesi 2",
+          name: "SESI 2",
           order: 2,
-          start_at: "2026-10-25T13:35:00+07:00",
-          end_at: "2026-10-25T13:50:00+07:00",
+          start_at: "2026-10-25T13:45:00+07:00",
+          end_at: "2026-10-25T14:00:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr.Riza Noviandi, Sp.A, Subsp. Neuro (K)",
+          host: "dr.Ronald Rompies, Sp.A, Subsp.NPM(K)",
         },
         {
           id: "mock-3",
-          name: "Sesi 3",
+          name: "SESI 3",
           order: 3,
           start_at: "2026-10-25T14:00:00+07:00",
           end_at: "2026-10-25T14:15:00+07:00",
@@ -191,10 +196,10 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         },
         {
           id: "mock-4",
-          name: "Sesi 1",
+          name: "SESI 1",
           order: 4,
-          start_at: "2026-10-26T13:20:00+07:00",
-          end_at: "2026-10-26T13:35:00+07:00",
+          start_at: "2026-10-26T13:30:00+07:00",
+          end_at: "2026-10-26T13:45:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
@@ -203,15 +208,15 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         },
         {
           id: "mock-5",
-          name: "Sesi 2",
+          name: "SESI 2",
           order: 5,
-          start_at: "2026-10-26T13:35:00+07:00",
-          end_at: "2026-10-26T13:50:00+07:00",
+          start_at: "2026-10-26T13:45:00+07:00",
+          end_at: "2026-10-26T14:00:00+07:00",
           speakers: [
             "Prof. dr. Badriul Hegar, Sp.A, Subsp. G.H. (K), PhD",
             "Prof. Dr. dr. Ahmad Suryawan, Sp.A, Subsp. T.K.P.S. (K)",
           ],
-          host: "dr.Riza Noviandi, Sp.A, Subsp. Neuro (K)",
+          host: "dr.Ronald Rompies, Sp.A, Subsp.NPM(K)",
         },
       ];
     }
@@ -219,8 +224,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
     return items;
   }, [activityItems, activityItem]);
 
-  // Group candidate items by date in WIB, and slice into max 2 sessions per slide
-  const slides = useMemo(() => {
+  // Group candidate items by date in WIB: 1 slide maks ada 2 sesi.
+  // Jika tersisa 1 sesi maka menjadi slide berikutnya, dan hari berikutnya pindah ke slide berikutnya.
+  const slides = useMemo<SlideGroup[]>(() => {
     const groupsMap = new Map<string, KalbeBoothActivityItem[]>();
 
     candidateItems.forEach((item) => {
@@ -256,22 +262,32 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
       const formattedDate = firstWithDate
         ? formatDateIndonesianWIB(firstWithDate.start_at)
         : "";
-      const dayDateLabel = formattedDate
+      const defaultDayDateLabel = formattedDate
         ? `DAY ${dayNumber} (${formattedDate})`
         : `DAY ${dayNumber}`;
 
-      // Chunk max 2 sessions per slide
+      // Chunk max 2 sessions per slide for this day
       for (let i = 0; i < dayItems.length; i += 2) {
         const chunk = dayItems.slice(i, i + 2);
         const sessions: SlideSession[] = chunk.map((item, localIdx) => {
           const indexWithinDay = i + localIdx;
+          const itemDate = item.start_at
+            ? formatDateIndonesianWIB(item.start_at)
+            : formattedDate;
+          const dayDateLabel = itemDate
+            ? `DAY ${dayNumber} (${itemDate})`
+            : defaultDayDateLabel;
+
           return {
+            id: item.id || `session-${dayIdx}-${indexWithinDay}`,
             item,
             title: getSessionTitle(item, indexWithinDay),
             judges: getJudgesList(item),
             host: getHostText(item),
             formattedTime:
               formatTimeRangeWIB(item.start_at, item.end_at) || "13.30 – 13.45 WIB",
+            dayNumber,
+            dayDateLabel,
             activity_image: item.activity_image,
             description:
               item.description &&
@@ -283,8 +299,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         });
 
         resultSlides.push({
+          id: `slide-day-${dayNumber}-chunk-${Math.floor(i / 2) + 1}`,
           dayNumber,
-          dayDateLabel,
+          dayDateLabel: defaultDayDateLabel,
           sessions,
         });
       }
@@ -300,7 +317,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
     }
   }, [slides.length, currentSlide]);
 
-  // Touch and Mouse swipe gesture handlers
+  // Touch & Mouse swipe gesture handlers
   const touchStartXRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
@@ -333,7 +350,6 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
     ) {
       const diffX = touchStartXRef.current - touchEndXRef.current;
       const diffY = touchStartYRef.current - touchEndYRef.current;
-      // Only horizontal movement triggers slide switch
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
         if (diffX > 0 && currentSlide < slides.length - 1) {
           setCurrentSlide((prev) => prev + 1);
@@ -389,12 +405,10 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
   if (!isRendered) return null;
 
-  // Header image from response (or fallback to MoriTalks grand final title)
-  const currentSlideData = slides[currentSlide];
   const headerImage =
-    currentSlideData?.sessions[0]?.activity_image ||
-    activityItem?.activity_image ||
-    "/assets/grand-final-title.webp";
+    activityItem?.activity_image && activityItem.activity_image.trim() !== ""
+      ? activityItem.activity_image.trim()
+      : "/assets/grand-final-title.webp";
 
   return (
     <div
@@ -416,8 +430,8 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
           isClosing ? "animate-drawer-down" : "animate-drawer-up"
         }`}
       >
-        {/* Floating Red Circular Close Button right above the drawer top */}
-        <div className="w-full max-w-[490px] sm:max-w-[520px] flex justify-end px-3 sm:px-5 mb-2 pointer-events-none">
+        {/* Floating Red Circular Close Button right above the drawer top - UNTOUCHED */}
+        <div className="w-full flex justify-end px-3 sm:px-4 mb-2 pointer-events-none">
           <button
             type="button"
             onClick={handleClose}
@@ -430,7 +444,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
         {/* Drawer Body Container */}
         {isPhotobooth ? (
-          <div className="w-full max-w-[490px] sm:max-w-[520px] bg-white rounded-t-[32px] px-4 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
+          <div className="w-full bg-white rounded-t-[32px] px-4 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
             {activityItem?.activity_image && (
               <div className="w-full rounded-[20px] overflow-hidden bg-black/5 mb-4 shadow-sm flex items-center justify-center border border-gray-100">
                 <img
@@ -464,28 +478,26 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
             )}
           </div>
         ) : (
-          <div className="w-full max-w-[490px] sm:max-w-[520px] bg-white rounded-t-[32px] pt-6 pb-5 px-2.5 sm:px-4 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
-            {/* Top Header Graphic from response (fallback to MoriTalks Awards logo) */}
-            {headerImage && (
-              <div className="w-full flex justify-center shrink-0 mb-3.5">
-                <img
-                  src={headerImage}
-                  alt="MoriTalks Awards Presentation"
-                  onError={(e) => {
-                    if (
-                      e.currentTarget.src !==
-                        window.location.origin + "/assets/grand-final-title.webp" &&
-                      !e.currentTarget.src.endsWith("/assets/grand-final-title.webp")
-                    ) {
-                      e.currentTarget.src = "/assets/grand-final-title.webp";
-                    }
-                  }}
-                  className="w-[200px] sm:w-[220px] max-h-[95px] object-contain pointer-events-none select-none drop-shadow-sm scale-125"
-                />
-              </div>
-            )}
+          <div className="w-full bg-white rounded-t-[32px] pt-6 pb-6 px-3 sm:px-4 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
+            {/* Top Header Graphic (MoriTalks Awards logo) */}
+            <div className="w-full flex justify-center shrink-0 mb-3">
+              <img
+                src={headerImage}
+                alt="MoriTalks Awards Presentation"
+                onError={(e) => {
+                  if (
+                    e.currentTarget.src !==
+                      window.location.origin + "/assets/grand-final-title.webp" &&
+                    !e.currentTarget.src.endsWith("/assets/grand-final-title.webp")
+                  ) {
+                    e.currentTarget.src = "/assets/grand-final-title.webp";
+                  }
+                }}
+                className="w-[220px] sm:w-[240px] max-h-[85px] scale-150 object-contain pointer-events-none select-none drop-shadow-sm"
+              />
+            </div>
 
-            {/* Slide Carousel Track - Sessions info area is scrollable */}
+            {/* Slide Carousel Track - Swipeable & Draggable */}
             <div
               className="w-full overflow-hidden flex-1 min-h-0 flex flex-col cursor-grab active:cursor-grabbing"
               onTouchStart={handleTouchStart}
@@ -503,93 +515,83 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                 }}
               >
                 {slides.map((slide, sIdx) => {
-                  const slideJudges = Array.from(
-                    new Set(slide.sessions.flatMap((s) => s.judges).filter(Boolean)),
-                  );
-
                   return (
                     <div
-                      key={sIdx}
+                      key={slide.id || sIdx}
                       className="w-full shrink-0 h-full max-h-[50vh] sm:max-h-[54vh] overflow-y-auto overscroll-contain no-scrollbar flex flex-col items-center px-1 pb-2"
                     >
-                      {/* Top Juri Section formatted like session title */}
-                      {slideJudges.length > 0 && (
-                        <div className="flex flex-col items-center mb-5 w-full shrink-0">
-                          <h3
-                            style={{
-                              color: "#222222",
-                              fontSize: "17px",
-                              fontWeight: "bold",
-                            }}
-                            className="text-center tracking-tight leading-snug mb-1.5"
-                          >
-                            JURI
-                          </h3>
-                          <div className="flex flex-col items-center text-center gap-1 w-full">
-                            {slideJudges.map((judge, jIdx) => (
-                              <span
-                                key={jIdx}
-                                style={{
-                                  color: "#555555",
-                                  fontWeight: 400,
-                                }}
-                                className="leading-snug font-normal w-full text-center tracking-tight text-[13px] sm:text-[15px]"
-                              >
-                                {judge}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {slide.sessions.map((sess, sessIdx) => (
-                        <div key={sessIdx} className="w-full flex flex-col items-center">
+                        <div key={sess.id || sessIdx} className="w-full flex flex-col items-center">
                           {sessIdx > 0 && (
                             <div className="w-full border-t border-dashed border-gray-300 my-4 shrink-0" />
                           )}
 
-                          {/* Session Title: "Sesi 1" / "Sesi 2" */}
-                          <h3
+                          {/* Session Title: "SESI 1" / "SESI 2" (Capslock requirement) */}
+                          <div
                             style={{
                               color: "#222222",
-                              fontSize: "17px",
-                              fontWeight: "bold",
+                              fontSize: "16px",
+                              fontWeight: 700,
                             }}
-                            className="uppercase text-center tracking-tight leading-snug mb-1.5"
+                            className="mb-2 text-center leading-tight tracking-wide uppercase"
                           >
                             {sess.title}
-                          </h3>
+                          </div>
 
-                          {/* Host ONLY */}
-                          {sess.host && (
-                            <div className="flex flex-col items-center text-center mb-3 w-full px-1">
-                              <span
-                                style={{
-                                  color: "#555555",
-                                  fontWeight: 400,
-                                }}
-                                className="leading-snug font-normal w-full text-center tracking-tight text-[13px] sm:text-[15px]"
-                              >
-                                {sess.host}
-                              </span>
+                          {/* JURI Red Badge */}
+                          {sess.judges.length > 0 && (
+                            <>
+                              <div className="inline-flex items-center justify-center px-8 py-1.5 rounded-full bg-[#EA001E] text-white text-[15px] sm:text-[15.5px] font-semibold uppercase tracking-wide mb-2 shadow-sm">
+                                JURI
+                              </div>
+
+                              {/* Judges Pill Containers - width full */}
+                              {sess.judges.map((judge, jIdx) => (
+                                <div
+                                  key={jIdx}
+                                  className="w-full min-h-[40px] px-4 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-2.5"
+                                >
+                                  <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                                    {judge}
+                                  </span>
+                                </div>
+                              ))}
+                            </>
+                          )}
+
+                          {/* FINALIST Red Badge (if exists) */}
+                          {sess.host && sess.host.trim() !== "" && (
+                            <>
+                              <div className="inline-flex items-center justify-center px-7 py-1.5 rounded-full bg-[#EA001E] text-white text-[15px] sm:text-[15.5px] font-semibold uppercase tracking-wide mb-2 mt-1 shadow-sm">
+                                FINALIST
+                              </div>
+
+                              {/* Host Name Pill Container - width full */}
+                              <div className="w-full min-h-[40px] px-4 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
+                                <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                                  {sess.host}
+                                </span>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Day & Date Header: DAY 1 (25 Oktober 2026) */}
+                          {sess.dayDateLabel && (
+                            <div
+                              style={{
+                                color: "#D41025",
+                                fontSize: "14px",
+                                fontWeight: "bold",
+                              }}
+                              className="text-center tracking-wide mb-2"
+                            >
+                              {sess.dayDateLabel}
                             </div>
                           )}
 
-                          {/* Day & Date Header: DAY 1 (25 OKTOBER 2026) */}
-                          <div
-                            style={{
-                              color: "#D41025",
-                              fontSize: "13.5px",
-                              fontWeight: "bold",
-                            }}
-                            className="text-center tracking-wide uppercase mb-2"
-                          >
-                            {slide.dayDateLabel}
-                          </div>
-
-                          {/* Time Badge: Chamfered Octagon SVG */}
+                          {/* Time Box: Octagon Chamfered SVG with background #FDECED, border #F52037 */}
                           {sess.formattedTime && (
-                            <div className="relative w-[235px] sm:w-[245px] h-[44px] flex items-center justify-center shrink-0 select-none shadow-xs px-3">
+                            <div className="relative w-[215px] sm:w-[230px] h-[44px] flex items-center justify-center shrink-0 select-none shadow-xs px-3 mb-1">
                               <svg
                                 className="absolute inset-0 w-full h-full pointer-events-none"
                                 viewBox="0 0 245 46"
@@ -643,7 +645,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
             {/* Pagination Dots Indicator */}
             {slides.length > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-3.5 mb-0.5 shrink-0">
+              <div className="flex items-center justify-center gap-2 mt-4 mb-0.5 shrink-0">
                 {slides.map((_, dotIdx) => (
                   <button
                     key={dotIdx}
@@ -651,7 +653,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                     onClick={() => setCurrentSlide(dotIdx)}
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
                       dotIdx === currentSlide
-                        ? "w-8 h-2.5 bg-[#E50014]"
+                        ? "w-8 h-2.5 bg-[#EA001E]"
                         : "w-2.5 h-2.5 bg-[#E2E8F0] hover:bg-gray-300"
                     }`}
                     aria-label={`Slide ${dotIdx + 1}`}

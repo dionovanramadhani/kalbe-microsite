@@ -4,8 +4,8 @@ import { X } from "lucide-react";
 import { useModalAnimation } from "../utils/useModalAnimation";
 import {
   getKalbeBoothPodcastByRefID,
+  getKalbeBoothPodcastsList,
   getKalbeBoothActivityByRefID,
-  isSessionToday,
   type KalbeBoothResponse,
   type KalbeBoothPodcastResponse,
   type KalbeBoothPodcastSession,
@@ -23,6 +23,7 @@ export interface BoothMenuModalProps {
   onMoritalksPodcast?: (
     podcast: KalbeBoothPodcastResponse,
     todaySessions: KalbeBoothPodcastSession[],
+    allPodcasts?: KalbeBoothPodcastResponse[],
   ) => void;
   onSelectActivity?: (
     activityItem: KalbeBoothActivityItem,
@@ -47,6 +48,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
   const { isRendered, isClosing, handleClose } = useModalAnimation(isOpen, onClose);
 
   const [podcast, setPodcast] = useState<KalbeBoothPodcastResponse | null>(null);
+  const [podcastsList, setPodcastsList] = useState<KalbeBoothPodcastResponse[]>([]);
   const [activity, setActivity] = useState<KalbeBoothActivityResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -57,15 +59,20 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
     setIsLoading(true);
 
     Promise.allSettled([
+      getKalbeBoothPodcastsList(boothId),
       getKalbeBoothPodcastByRefID(boothId),
       getKalbeBoothActivityByRefID(boothId),
     ])
-      .then(async ([podcastRes, activityRes]) => {
+      .then(async ([podcastsListRes, podcastRes, activityRes]) => {
         // 2 detik delay setelah berhasil di get
         await new Promise((resolve) => setTimeout(resolve, 2000));
         if (!isMounted) return;
-        if (podcastRes.status === "fulfilled") {
+        if (podcastsListRes.status === "fulfilled" && podcastsListRes.value.length > 0) {
+          setPodcastsList(podcastsListRes.value);
+          setPodcast(podcastsListRes.value[0]);
+        } else if (podcastRes.status === "fulfilled" && podcastRes.value) {
           setPodcast(podcastRes.value);
+          setPodcastsList([podcastRes.value]);
         }
         if (activityRes.status === "fulfilled") {
           setActivity(activityRes.value);
@@ -97,17 +104,10 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
 
   const activePodcast = podcast || boothData?.podcast || defaultPodcast;
 
-  // Filter sesi podcast hari ini (tidak peduli sudah selesai atau belum mulai, semua sesi hari ini diambil)
-  const todaySessions = useMemo(() => {
-    return (activePodcast?.sessions || []).filter((s) =>
-      isSessionToday(s.start_at, s.end_at),
-    );
-  }, [activePodcast]);
-
-  // Sesi yang akan ditampilkan: hanya sesi hari ini (tidak peduli sudah selesai atau belum mulai, tapi tetap podcast yang ditampilkan adalah podcast hari ini)
+  // Sesi podcast yang ditampilkan: semua sesi dari seluruh hari (sesuai flow multi-day carousel)
   const sessionsToDisplay = useMemo(() => {
-    return todaySessions;
-  }, [todaySessions]);
+    return activePodcast?.sessions || [];
+  }, [activePodcast]);
 
   const { awardItems, photoboothItems, otherItems } = useMemo(() => {
     const rawItems = activity?.activity_items || [];
@@ -312,7 +312,13 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                   type="button"
                   onClick={() => {
                     if (onMoritalksPodcast) {
-                      onMoritalksPodcast(activePodcast, sessionsToDisplay);
+                      const allPods =
+                        podcastsList.length > 0
+                          ? podcastsList
+                          : activePodcast
+                            ? [activePodcast]
+                            : [];
+                      onMoritalksPodcast(activePodcast, sessionsToDisplay, allPods);
                     }
                   }}
                   className="w-[235px] sm:w-[245px] h-[46px] flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 hover:brightness-105 shrink-0 px-3"
