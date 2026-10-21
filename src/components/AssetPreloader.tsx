@@ -37,6 +37,8 @@ const PRELOAD_ASSET_IMAGES = [
   "/assets/kalbe-early-life-solution-title-image.webp",
   "/assets/kalbe-early-life-solution-logo-scaner.webp",
   // Rewards & Box
+  "/assets/morinagasympo-gimmick.png",
+  "/assets/morinagabooth-gimmick.png",
   "/assets/reward-box.webp",
   "/assets/reward-dummy-symposium.webp",
   "/assets/morinaga-booth-reward.webp",

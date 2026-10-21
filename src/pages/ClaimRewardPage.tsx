@@ -75,14 +75,14 @@ const mapHistoryToRewardItem = (item: KalbeHistoryItemResponse): HistoryRewardIt
       item.symposium?.icon ||
       item.symposium?.logo ||
       "/assets/morinaga-sympo-icon-new.png";
-    rewardImage = "/assets/reward-box.webp";
+    rewardImage = "/assets/morinagasympo-gimmick.png";
     rewardName = "Paket Spesial Morinaga";
   } else if (type === "booth") {
     const boothName = item.booth?.name || item.booth?.detailing_title || "Morinaga Booth";
     title = boothName;
     subtitle = `Mengikuti detailing ${boothName}`;
     icon = item.booth?.icon || item.booth?.logo || "/assets/morinaga-booth-icon-new.png";
-    rewardImage = "/assets/morinaga-booth-reward.webp";
+    rewardImage = "/assets/morinagabooth-gimmick.png";
     rewardName = "Hadiah Booth Morinaga";
   } else if (type.includes("early") || type.includes("life")) {
     const earlyLifeName =

@@ -366,7 +366,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                       (activity.name.toLowerCase().includes("award") ||
                         activity.name.toLowerCase().includes("presentation"))
                         ? activity.name.replace(/Moritalks/g, "MoriTalks")
-                        : "MoriTalks Award Presentation"}
+                        : "MoriTalks Award"}
                     </span>
                   </button>
                 )}
@@ -460,7 +460,7 @@ export const BoothMenuModal: React.FC<BoothMenuModalProps> = ({
                           }}
                           className="truncate text-center w-full"
                         >
-                          MoriTalks Award Presentation
+                          MoriTalks Award
                         </span>
                       </button>
 

@@ -97,7 +97,7 @@ function getSessionTitle(item: KalbeBoothActivityItem, indexWithinDay: number): 
     const trimmed = item.name.trim();
     const lower = trimmed.toLowerCase();
     if (
-      lower === "moritalks award presentation" ||
+      lower === "moritalks award" ||
       lower === "award presentation" ||
       lower === "moritalks award"
     ) {
@@ -522,7 +522,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                             }}
                             className="text-center tracking-tight leading-snug mb-1.5"
                           >
-                            Juri
+                            JURI
                           </h3>
                           <div className="flex flex-col items-center text-center gap-1 px-2">
                             {slideJudges.map((judge, jIdx) => (
@@ -555,7 +555,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               fontSize: "17px",
                               fontWeight: "bold",
                             }}
-                            className="text-center tracking-tight leading-snug mb-1.5"
+                            className="uppercase text-center tracking-tight leading-snug mb-1.5"
                           >
                             {sess.title}
                           </h3>

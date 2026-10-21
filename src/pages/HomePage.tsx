@@ -12,9 +12,7 @@ import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumPosterModal } from "../components/SymposiumPosterModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
-import {
-  isSymposiumUpcoming,
-} from "../data/symposiumStore";
+import { isSymposiumUpcoming } from "../data/symposiumStore";
 import {
   getUnclaimedRewardsCount,
   hasUnclaimedMysteryBox as checkHasUnclaimedMysteryBox,
@@ -307,7 +305,6 @@ export const HomePage: React.FC = () => {
           sympos[0];
         morinagaSympoRef.current = currentMorinagaSympo;
 
-
         const hasMorinagaHistory = historyList.some(
           (h) =>
             h.reward_type === "booth" &&
@@ -501,7 +498,6 @@ export const HomePage: React.FC = () => {
       }
     }
   }, [showMysteryBoxModal]);
-
 
   const handleCloseWelcomeModal = () => {
     sessionStorage.removeItem("kalbe_welcome_pending");
@@ -800,8 +796,7 @@ export const HomePage: React.FC = () => {
 
       if (hasScannedExternal) {
         const targetSympoId =
-          sessionStorage.getItem("kalbe_external_sympo_id") ||
-          sympo?.id;
+          sessionStorage.getItem("kalbe_external_sympo_id") || sympo?.id;
         navigate(
           `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
         );
@@ -1190,9 +1185,9 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showPostTestModal}
         onClose={handleClosePostTestModal}
-        imageSrc="/assets/reward-box.webp"
-        imageAlt="Morinaga Reward Gift"
-        imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
+        imageSrc="/assets/morinagasympo-gimmick.png"
+        imageAlt="Morinaga Symposium Reward"
+        imageClassName="w-[185px] sm:w-[200px] max-h-[170px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle="Terima kasih telah menyelesaikan post-test Simposium Morinaga. hadiah eksklusif telah menanti!"
         // description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
@@ -1207,9 +1202,9 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showBoothCompletionModal}
         onClose={handleCloseBoothCompletionModal}
-        imageSrc="/assets/reward-box.webp"
-        imageAlt="Morinaga Reward Gift"
-        imageClassName="w-[185px] sm:w-[200px] h-auto object-contain drop-shadow-md pointer-events-none"
+        imageSrc="/assets/morinagabooth-gimmick.png"
+        imageAlt="Morinaga Booth Reward"
+        imageClassName="w-[185px] sm:w-[200px] max-h-[170px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle="Terima kasih telah mengikuti aktivitas pada booth Morinaga, hadiah eksklusif telah menanti!"
         // description="Anda telah menyelesaikan aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."
@@ -1330,7 +1325,9 @@ export const HomePage: React.FC = () => {
         }}
         onMoritalksPodcast={(_podcast, sessions) => {
           setPodcastSessions(sessions);
-          setPodcastTitle((_podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
+          setPodcastTitle(
+            (_podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"),
+          );
           setPodcastTopic(_podcast.topic || "");
           setPodcastImage(_podcast.image || null);
           setShowBoothMenuModal(false);
@@ -1367,7 +1364,12 @@ export const HomePage: React.FC = () => {
         onClose={() => setShowBoothDrawer(false)}
         onPodcastScheduleClick={async () => {
           if (morinagaBooth?.podcast) {
-            setPodcastTitle((morinagaBooth.podcast.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
+            setPodcastTitle(
+              (morinagaBooth.podcast.name || "MoriTalks Podcast").replace(
+                /Moritalks/g,
+                "MoriTalks",
+              ),
+            );
             setPodcastTopic(morinagaBooth.podcast.topic || "");
             setPodcastImage(morinagaBooth.podcast.image || null);
             const today = (morinagaBooth.podcast.sessions || []).filter((s) =>
@@ -1378,7 +1380,9 @@ export const HomePage: React.FC = () => {
             try {
               const pod = await getKalbeBoothPodcastByRefID(morinagaBooth.id);
               if (pod) {
-                setPodcastTitle((pod.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"));
+                setPodcastTitle(
+                  (pod.name || "MoriTalks Podcast").replace(/Moritalks/g, "MoriTalks"),
+                );
                 setPodcastTopic(pod.topic || "");
                 setPodcastImage(pod.image || null);
                 const today = (pod.sessions || []).filter((s) =>
@@ -1422,7 +1426,7 @@ export const HomePage: React.FC = () => {
         }}
       />
 
-      {/* 8b. MoriTalks Award Presentation Modal */}
+      {/* 8b. MoriTalks Award Modal */}
       <AwardPresentationModal
         isOpen={showAwardPresentationModal}
         activityItem={selectedActivityItem}
