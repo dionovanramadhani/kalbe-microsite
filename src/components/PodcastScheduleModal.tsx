@@ -424,8 +424,8 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                             </div>
 
                             {/* Speaker Name Pill Container */}
-                            <div className="w-full min-h-[40px] px-3.5 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3">
-                              <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                            <div className="w-full min-h-[36px] px-2 sm:px-2.5 py-1 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3">
+                              <span className="text-[#222222] font-semibold text-[10.5px] sm:text-[11.5px] leading-tight tracking-tight whitespace-nowrap">
                                 {cleanSpeakerName(sess.speaker)}
                               </span>
                             </div>
@@ -438,8 +438,8 @@ export const PodcastScheduleModal: React.FC<PodcastScheduleModalProps> = ({
                                 </div>
 
                                 {/* Host Name Pill Container */}
-                                <div className="w-full min-h-[40px] px-3.5 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
-                                  <span className="text-[#222222] font-semibold text-[13px] sm:text-[14px] leading-tight">
+                                <div className="w-full min-h-[36px] px-2 sm:px-2.5 py-1 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
+                                  <span className="text-[#222222] font-semibold text-[10.5px] sm:text-[11.5px] leading-tight tracking-tight whitespace-nowrap">
                                     {cleanPersonName(sess.host)}
                                   </span>
                                 </div>

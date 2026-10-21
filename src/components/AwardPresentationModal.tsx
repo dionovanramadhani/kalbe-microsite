@@ -224,8 +224,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
     return items;
   }, [activityItems, activityItem]);
 
-  // Group candidate items by date in WIB: 1 slide maks ada 2 sesi.
-  // Jika tersisa 1 sesi maka menjadi slide berikutnya, dan hari berikutnya pindah ke slide berikutnya.
+  // Group candidate items by date in WIB: 1 slide = 1 day (menampung semua sesi pada hari tersebut tanpa dibatasi)
   const slides = useMemo<SlideGroup[]>(() => {
     const groupsMap = new Map<string, KalbeBoothActivityItem[]>();
 
@@ -266,45 +265,41 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         ? `DAY ${dayNumber} (${formattedDate})`
         : `DAY ${dayNumber}`;
 
-      // Chunk max 2 sessions per slide for this day
-      for (let i = 0; i < dayItems.length; i += 2) {
-        const chunk = dayItems.slice(i, i + 2);
-        const sessions: SlideSession[] = chunk.map((item, localIdx) => {
-          const indexWithinDay = i + localIdx;
-          const itemDate = item.start_at
-            ? formatDateIndonesianWIB(item.start_at)
-            : formattedDate;
-          const dayDateLabel = itemDate
-            ? `DAY ${dayNumber} (${itemDate})`
-            : defaultDayDateLabel;
+      // 1 slide memuat seluruh sesi pada hari tersebut
+      const sessions: SlideSession[] = dayItems.map((item, localIdx) => {
+        const itemDate = item.start_at
+          ? formatDateIndonesianWIB(item.start_at)
+          : formattedDate;
+        const dayDateLabel = itemDate
+          ? `DAY ${dayNumber} (${itemDate})`
+          : defaultDayDateLabel;
 
-          return {
-            id: item.id || `session-${dayIdx}-${indexWithinDay}`,
-            item,
-            title: getSessionTitle(item, indexWithinDay),
-            judges: getJudgesList(item),
-            host: getHostText(item),
-            formattedTime:
-              formatTimeRangeWIB(item.start_at, item.end_at) || "13.30 – 13.45 WIB",
-            dayNumber,
-            dayDateLabel,
-            activity_image: item.activity_image,
-            description:
-              item.description &&
-              item.description.trim() !== "" &&
-              item.description.trim() !== "-"
-                ? item.description.trim()
-                : null,
-          };
-        });
-
-        resultSlides.push({
-          id: `slide-day-${dayNumber}-chunk-${Math.floor(i / 2) + 1}`,
+        return {
+          id: item.id || `session-${dayIdx}-${localIdx}`,
+          item,
+          title: getSessionTitle(item, localIdx),
+          judges: getJudgesList(item),
+          host: getHostText(item),
+          formattedTime:
+            formatTimeRangeWIB(item.start_at, item.end_at) || "13.30 – 13.45 WIB",
           dayNumber,
-          dayDateLabel: defaultDayDateLabel,
-          sessions,
-        });
-      }
+          dayDateLabel,
+          activity_image: item.activity_image,
+          description:
+            item.description &&
+            item.description.trim() !== "" &&
+            item.description.trim() !== "-"
+              ? item.description.trim()
+              : null,
+        };
+      });
+
+      resultSlides.push({
+        id: `slide-day-${dayNumber}`,
+        dayNumber,
+        dayDateLabel: defaultDayDateLabel,
+        sessions,
+      });
     });
 
     return resultSlides;
@@ -549,9 +544,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               {sess.judges.map((judge, jIdx) => (
                                 <div
                                   key={jIdx}
-                                  className="w-full min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-2.5"
+                                  className="w-full min-h-[36px] px-2 sm:px-2.5 py-1 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-2.5"
                                 >
-                                  <span className="text-[#222222] font-semibold text-[11.5px] sm:text-[12.5px] leading-tight tracking-tight">
+                                  <span className="text-[#222222] font-semibold text-[10px] sm:text-[11.5px] leading-tight tracking-tight whitespace-nowrap">
                                     {judge}
                                   </span>
                                 </div>
@@ -567,8 +562,8 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               </div>
 
                               {/* Host Name Pill Container - width full */}
-                              <div className="w-full min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
-                                <span className="text-[#222222] font-semibold text-[11.5px] sm:text-[12.5px] leading-tight tracking-tight">
+                              <div className="w-full min-h-[36px] px-2 sm:px-2.5 py-1 rounded-full border-2 border-[#EA001E] bg-white flex items-center justify-center text-center shadow-xs mb-3.5">
+                                <span className="text-[#222222] font-semibold text-[10px] sm:text-[11.5px] leading-tight tracking-tight whitespace-nowrap">
                                   {sess.host}
                                 </span>
                               </div>
