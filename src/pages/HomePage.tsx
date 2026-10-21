@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { getCurrentUser } from "../data/dummyUser";
 import { getUserName } from "../utils/auth";
 import { RewardModal } from "../components/RewardModal";
@@ -12,7 +12,11 @@ import { EarlyLifeDrawer } from "../components/EarlyLifeDrawer";
 import { WelcomeModal } from "../components/WelcomeModal";
 import { SymposiumPosterModal } from "../components/SymposiumPosterModal";
 import { SymposiumUpcomingModal } from "../components/SymposiumUpcomingModal";
-import { isSymposiumUpcoming, setSymposiumJoined } from "../data/symposiumStore";
+import {
+  isSymposiumUpcoming,
+  isSymposiumJoined,
+  setSymposiumJoined,
+} from "../data/symposiumStore";
 import {
   getUnclaimedRewardsCount,
   hasUnclaimedMysteryBox as checkHasUnclaimedMysteryBox,
@@ -128,6 +132,7 @@ const getInitialMorinagaPoster = (): string | null => {
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const hasPostTestSuccess = Boolean(location.state?.showPostTestSuccessModal);
   const hasBoothSuccess = Boolean(location.state?.showBoothSuccessModal);
   const hasEarlyLifeSuccess = Boolean(location.state?.showEarlyLifeSuccessModal);
@@ -221,6 +226,30 @@ export const HomePage: React.FC = () => {
     if (hasPostTestSuccess || hasBoothSuccess || hasEarlyLifeSuccess) return false;
     return true;
   });
+
+  // Handle direct access via symposium link or QR code parameter
+  useEffect(() => {
+    const sympoIdFromUrl =
+      searchParams.get("symposium_id") || searchParams.get("sympo_id");
+    const isSympoSource =
+      searchParams.get("source") === "symposium" ||
+      searchParams.get("type") === "symposium" ||
+      searchParams.get("from") === "symposium" ||
+      searchParams.get("symposium") === "true";
+
+    if (sympoIdFromUrl || isSympoSource) {
+      setSymposiumJoined(true);
+      sessionStorage.setItem("kalbe_scanned_from_device", "true");
+      sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      if (sympoIdFromUrl) {
+        sessionStorage.setItem("kalbe_scanned_symposium_id", sympoIdFromUrl);
+        localStorage.setItem("kalbe_scanned_symposium_id", sympoIdFromUrl);
+      }
+      if (currentUser?.id) {
+        localStorage.setItem(`kalbe_sympo_scanned_${currentUser.id}`, "true");
+      }
+    }
+  }, [searchParams, currentUser?.id]);
 
 
   // Re-sync state whenever user navigates to HomePage or switches user session
@@ -763,6 +792,26 @@ export const HomePage: React.FC = () => {
         setShowSymposiumUpcomingModal(true);
         return;
       }
+
+      const isSympoScanned =
+        isSymposiumJoined() ||
+        sessionStorage.getItem("kalbe_scanned_from_device") === "true" ||
+        sessionStorage.getItem("kalbe_sympo_scanned") === "true" ||
+        (currentUser?.id
+          ? localStorage.getItem(`kalbe_sympo_scanned_${currentUser.id}`) === "true"
+          : false);
+
+      if (isSympoScanned) {
+        const targetSympoId =
+          sessionStorage.getItem("kalbe_scanned_symposium_id") ||
+          localStorage.getItem("kalbe_scanned_symposium_id") ||
+          sympo?.id;
+        navigate(
+          `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
+        );
+        return;
+      }
+
       navigate("/symposium", { state: { todaySymposium: sympo } });
       return;
     }

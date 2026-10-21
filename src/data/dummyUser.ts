@@ -10,6 +10,7 @@ export interface User {
   practicePlace?: string;
   practiceAddress?: string;
   avatar?: string;
+  registration_response?: unknown;
 }
 
 // Default dummy users available locally

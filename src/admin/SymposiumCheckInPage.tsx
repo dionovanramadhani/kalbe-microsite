@@ -402,10 +402,17 @@ export const SymposiumCheckInPage: React.FC = () => {
   // Generate QR Code image for modal when opened
   useEffect(() => {
     if (qrModalItem) {
-      if (qrModalItem.qr_code) {
+      const hasSpecificSympoUrl =
+        qrModalItem.qr_code_content &&
+        (qrModalItem.qr_code_content.includes('sympo-checkin') ||
+          qrModalItem.qr_code_content.includes('symposium_id'));
+
+      if (qrModalItem.qr_code && hasSpecificSympoUrl) {
         setQrModalDataUrl(qrModalItem.qr_code);
       } else {
-        const targetUrl = getSymposiumPostTestUrl(qrModalItem.id);
+        const targetUrl = hasSpecificSympoUrl
+          ? qrModalItem.qr_code_content!
+          : getSymposiumPostTestUrl(qrModalItem.id);
         QRCode.toDataURL(targetUrl, {
           width: 300,
           margin: 1,
@@ -469,16 +476,27 @@ export const SymposiumCheckInPage: React.FC = () => {
   // Generate styled downloadable card for QR Code
   const generateSymposiumQRDataUrl = (item: KalbeSymposiumResponse): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const getQrSource = item.qr_code
-        ? Promise.resolve(item.qr_code)
-        : QRCode.toDataURL(getSymposiumPostTestUrl(item.id), {
-            width: 320,
-            margin: 1,
-            color: {
-              dark: '#1E1E1E',
-              light: '#ffffff',
-            },
-          });
+      const hasSpecificSympoUrl =
+        item.qr_code_content &&
+        (item.qr_code_content.includes('sympo-checkin') ||
+          item.qr_code_content.includes('symposium_id'));
+
+      const getQrSource =
+        item.qr_code && hasSpecificSympoUrl
+          ? Promise.resolve(item.qr_code)
+          : QRCode.toDataURL(
+              hasSpecificSympoUrl
+                ? item.qr_code_content!
+                : getSymposiumPostTestUrl(item.id),
+              {
+                width: 320,
+                margin: 1,
+                color: {
+                  dark: '#1E1E1E',
+                  light: '#ffffff',
+                },
+              }
+            );
 
       getQrSource
         .then((qrDataUrl) => {

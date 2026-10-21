@@ -83,13 +83,36 @@ export const LoginPage: React.FC = () => {
     show: boolean;
     type: ToastType;
     message: string;
-  }>({
-    show: Boolean(regState?.registrationSuccess),
-    type: "success",
-    message:
-      regState?.toastMessage ||
-      "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
+  }>(() => {
+    const justRegistered =
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("kalbe_just_registered") === "true";
+    if (regState?.registrationSuccess && justRegistered) {
+      sessionStorage.removeItem("kalbe_just_registered");
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, document.title);
+      }
+      return {
+        show: true,
+        type: "success",
+        message:
+          regState.toastMessage ||
+          "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
+      };
+    }
+    return {
+      show: false,
+      type: "success",
+      message: "",
+    };
   });
+
+  // Pastikan history state registrationSuccess langsung dibersihkan agar tidak muncul kembali saat reload / back
+  useEffect(() => {
+    if (location.state?.registrationSuccess) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // ── Debounce Master Doctor Search API Call ─────────────────────────────────
   useEffect(() => {
@@ -446,6 +469,11 @@ export const LoginPage: React.FC = () => {
       sessionStorage.removeItem("kalbe_poster_shown");
       sessionStorage.setItem("kalbe_poster_pending", "true");
 
+      if (redirectUrl?.includes("sympo-checkin") || redirectUrl?.includes("symposium")) {
+        sessionStorage.setItem("kalbe_scanned_from_device", "true");
+        sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      }
+
       if (redirectUrl && redirectUrl.startsWith("/")) {
         navigate(redirectUrl, { replace: true });
       } else {
@@ -698,10 +726,14 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Footer: Belum punya akun? DAFTAR */}
-          <div className="text-center text-[15px] sm:text-[16px] text-[#374151] pt-1">
+          <div className="text-center text-[15px] sm:text-[16px] text-[#374151] -mt-2">
             <span>Belum punya akun? </span>
             <Link
-              to="/register"
+              to={
+                redirectUrl
+                  ? `/register?redirect=${encodeURIComponent(redirectUrl)}`
+                  : "/register"
+              }
               className="font-extrabold text-[16px] sm:text-[17px] text-[#E59A00] hover:text-[#C88500] hover:underline transition-all tracking-wide ml-0.5 inline-block"
             >
               DAFTAR

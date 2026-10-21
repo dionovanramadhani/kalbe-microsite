@@ -1,14 +1,21 @@
-import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { saveRegisteredUser, type User } from "../data/dummyUser";
 import { logout } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
+import {
+  formatPhoneE164,
+  registerExternalMorinagaEvent,
+  type ExternalMorinagaRegisterPayload,
+} from "../utils/kalbeApi";
 
 const SPECIALITIES = ["PPDS", "GP", "DSA", "Other"];
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const regFullName = (location.state as { fullName?: string } | null)?.fullName || "";
   const [fullName, setFullName] = useState(regFullName);
   const [practicePlace, setPracticePlace] = useState("");
@@ -18,6 +25,16 @@ export const RegisterPage: React.FC = () => {
   const [speciality, setSpeciality] = useState<string>("");
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Bersihkan penanda registrasi sukses lama agar tidak muncul toaster palsu saat kembali ke login
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("kalbe_just_registered");
+      if (location.state?.registrationSuccess) {
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state]);
 
   // Toast State
   const [toast, setToast] = useState<{
@@ -71,8 +88,50 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     const fullPhoneNumber = `0${cleanDigits}`;
+    const e164Phone = formatPhoneE164(cleanDigits);
 
     try {
+      // 1. Panggil API External Morinaga Event Register (Production) terlebih dahulu
+      let externalEventResponse: Record<string, unknown> | null = null;
+      try {
+        const externalPayload: ExternalMorinagaRegisterPayload = {
+          micrositeId: "00000000-0000-0000-0000-000000000000",
+          partnerId: null,
+          fullName: fullName.trim(),
+          clinicLocation: practicePlace.trim(),
+          clinicAddress: practiceAddress.trim(),
+          email: email.trim(),
+          phone: e164Phone,
+          speciality: speciality,
+          acceptTnC: true,
+          source: "manual",
+          answeredQuestions: [],
+        };
+        console.log("[1. API External Register PROD] Sending payload:", externalPayload);
+        externalEventResponse = await registerExternalMorinagaEvent(externalPayload);
+        console.log("[1. API External Register PROD] Received response:", externalEventResponse);
+
+        // Jika API external mengembalikan error (misal code 400 atau status gagal), tampilkan pesan error di toaster
+        if (externalEventResponse) {
+          const code = Number(externalEventResponse.code);
+          const hasError =
+            code >= 400 ||
+            externalEventResponse.success === false ||
+            (code !== 200 && code !== 201 && Boolean(externalEventResponse.message));
+
+          if (hasError && externalEventResponse.message) {
+            const errorMsg = String(externalEventResponse.message);
+            showToast("error", errorMsg);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (extErr) {
+        console.warn("[1. API External Register PROD] Error occurred:", extErr);
+      }
+
+      // 2. Setelah itu, baru panggil API registrasi kita (Internal Backend)
+      console.log("[2. API Internal Register] Calling /api/kalbe/register...");
       const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
       const reqHeaders: Record<string, string> = {
         "Content-Type": "application/json",
@@ -132,6 +191,7 @@ export const RegisterPage: React.FC = () => {
         practicePlace: json?.data?.practice_place || practicePlace.trim(),
         practiceAddress: json?.data?.practice_place_address || practiceAddress.trim(),
         avatar: "/assets/docter-avatar.webp",
+        registration_response: externalEventResponse || json?.data?.registration_response,
       };
       saveRegisteredUser(userData);
 
@@ -141,9 +201,13 @@ export const RegisterPage: React.FC = () => {
         "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda."
       );
 
+      // Tandai registrasi sukses di sessionStorage hanya saat seluruh proses benar-benar berhasil
+      sessionStorage.setItem("kalbe_just_registered", "true");
+
       // Redirect to login after brief delay so user sees toast
+      const redirectParam = redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : "";
       setTimeout(() => {
-        navigate("/login", {
+        navigate(`/login${redirectParam}`, {
           state: {
             registrationSuccess: true,
             toastMessage:
@@ -152,6 +216,7 @@ export const RegisterPage: React.FC = () => {
         });
       }, 1600);
     } catch (err: unknown) {
+      sessionStorage.removeItem("kalbe_just_registered");
       console.error("Registration request error:", err);
       const message =
         err instanceof Error
@@ -374,7 +439,8 @@ export const RegisterPage: React.FC = () => {
           <div className="text-center text-[13px] text-[#374151] mt-6">
             <span>Sudah punya akun? </span>
             <Link
-              to="/login"
+              to={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
+              state={{}}
               className="font-bold text-[#E59A00] hover:text-[#C88500] transition-colors"
             >
               MASUK

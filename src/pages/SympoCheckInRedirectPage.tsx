@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getToken } from "../utils/auth";
-import {
-  insertKalbeSymposiumParticipant,
-  getKalbeSymposiumToday,
-} from "../utils/kalbeApi";
+import { getKalbeSymposiumToday } from "../utils/kalbeApi";
 import { setSymposiumJoined } from "../data/symposiumStore";
 
 export const SympoCheckInRedirectPage: React.FC = () => {
@@ -17,6 +14,12 @@ export const SympoCheckInRedirectPage: React.FC = () => {
 
     const token = getToken();
     if (!token) {
+      sessionStorage.setItem("kalbe_scanned_from_device", "true");
+      sessionStorage.setItem("kalbe_sympo_scanned", "true");
+      if (symposiumId) {
+        sessionStorage.setItem("kalbe_scanned_symposium_id", symposiumId);
+        localStorage.setItem("kalbe_scanned_symposium_id", symposiumId);
+      }
       const currentUrl = `/sympo-checkin${window.location.search}`;
       navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`, { replace: true });
       return;
@@ -34,27 +37,22 @@ export const SympoCheckInRedirectPage: React.FC = () => {
           }
         }
 
+        // Tandai bahwa user sudah scan QR symposium dari device, tanpa otomatis mencatat partisipan/kehadiran
+        setSymposiumJoined(true);
+        sessionStorage.setItem("kalbe_scanned_from_device", "true");
+        sessionStorage.setItem("kalbe_sympo_scanned", "true");
         if (targetSympoId) {
-          await insertKalbeSymposiumParticipant(targetSympoId).catch((err: unknown) => {
-            const msg = err instanceof Error ? err.message : "";
-            if (!msg.toLowerCase().includes("already")) {
-              console.warn("Insert symposium participant warning:", err);
-            }
-          });
+          sessionStorage.setItem("kalbe_scanned_symposium_id", targetSympoId);
+          localStorage.setItem("kalbe_scanned_symposium_id", targetSympoId);
         }
 
-        setSymposiumJoined(true);
-
         if (isMounted) {
-          navigate(
-            `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
-            { replace: true }
-          );
+          navigate("/home", { replace: true, state: { fromSympoScan: true } });
         }
       } catch (err: unknown) {
-        console.error("Failed to process symposium check-in:", err);
+        console.error("Failed to process symposium access:", err);
         if (isMounted) {
-          setErrorMessage("Gagal memproses check-in simposium. Mengalihkan ke Beranda...");
+          setErrorMessage("Gagal memproses akses simposium. Mengalihkan ke Beranda...");
           setTimeout(() => navigate("/home", { replace: true }), 2500);
         }
       }
@@ -79,15 +77,15 @@ export const SympoCheckInRedirectPage: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3">
               <span className="text-xl font-bold">!</span>
             </div>
-            <h2 className="text-[16px] font-bold text-gray-800 mb-1">Check-In Gagal</h2>
+            <h2 className="text-[16px] font-bold text-gray-800 mb-1">Gagal</h2>
             <p className="text-[12px] text-gray-500 leading-relaxed mb-2">{errorMessage}</p>
           </>
         ) : (
           <>
             <div className="w-10 h-10 border-3 border-[#C70412] border-t-transparent rounded-full animate-spin mb-4" />
-            <h2 className="text-[16px] font-bold text-[#C70412] mb-1">Check-In Simposium</h2>
+            <h2 className="text-[16px] font-bold text-[#C70412] mb-1">Akses Simposium</h2>
             <p className="text-[12px] text-gray-500 leading-relaxed">
-              Sedang memproses partisipasi simposium dan menyiapkan post-test...
+              Menyiapkan akses simposium dan mengalihkan ke Beranda...
             </p>
           </>
         )}

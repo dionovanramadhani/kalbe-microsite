@@ -12,14 +12,17 @@ import {
   setEarlyLifeDetailingCompleted,
   unlockReward,
 } from "../data/rewardStore";
-import { setSymposiumJoined, getSymposiumMasterData } from "../data/symposiumStore";
+import {
+  setSymposiumJoined,
+  isSymposiumJoined,
+  getSymposiumMasterData,
+} from "../data/symposiumStore";
 import { Toast, type ToastType } from "../components/Toast";
 import { useModalAnimation } from "../utils/useModalAnimation";
 import {
   getKalbeSymposiumsList,
   getKalbeBoothsList,
   insertKalbeBoothParticipant,
-  insertKalbeSymposiumParticipant,
   getCachedKalbeBooths,
   getCachedKalbeSymposiums,
 } from "../utils/kalbeApi";
@@ -558,6 +561,22 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
       }
       if (activeSympo?.is_completed || isPostTestCompleted()) {
         navigate("/home", { replace: true });
+        return;
+      }
+      if (
+        isSymposiumJoined() ||
+        sessionStorage.getItem("kalbe_scanned_from_device") === "true" ||
+        sessionStorage.getItem("kalbe_sympo_scanned") === "true"
+      ) {
+        const targetSympoId =
+          sessionStorage.getItem("kalbe_scanned_symposium_id") ||
+          localStorage.getItem("kalbe_scanned_symposium_id") ||
+          activeSympo?.id;
+        navigate(
+          `/post-test${targetSympoId ? `?symposium_id=${encodeURIComponent(targetSympoId)}` : ""}`,
+          { replace: true }
+        );
+        return;
       }
     } else if (activeScanType === "booth" && isBoothDetailingCompleted()) {
       navigate("/home", { replace: true });
@@ -820,18 +839,13 @@ export const SymposiumPage: React.FC<SymposiumPageProps> = ({ scanType }) => {
           }
         }
 
-        if (matchedSympo?.id) {
-          try {
-            await insertKalbeSymposiumParticipant(matchedSympo.id);
-          } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "";
-            if (!msg.toLowerCase().includes("already")) {
-              console.warn("Insert symposium participant error:", err);
-            }
-          }
-        }
-
         setSymposiumJoined(true);
+        sessionStorage.setItem("kalbe_scanned_from_device", "true");
+        sessionStorage.setItem("kalbe_sympo_scanned", "true");
+        if (matchedSympo?.id) {
+          sessionStorage.setItem("kalbe_scanned_symposium_id", matchedSympo.id);
+          localStorage.setItem("kalbe_scanned_symposium_id", matchedSympo.id);
+        }
         let targetPath = "/post-test";
         if (qrResult.sympoId || matchedSympo?.id) {
           targetPath = `/post-test?symposium_id=${encodeURIComponent(qrResult.sympoId || matchedSympo!.id)}`;

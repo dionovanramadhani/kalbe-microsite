@@ -770,3 +770,93 @@ export function isSessionToday(startAt?: string | null, endAt?: string | null): 
 
   return startDay === todayStr || endDay === todayStr;
 }
+
+/**
+ * Format phone number to E.164 (+62...) required by Morinaga external API
+ */
+export function formatPhoneE164(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("62")) {
+    return `+${digits}`;
+  }
+  if (digits.startsWith("0")) {
+    return `+62${digits.slice(1)}`;
+  }
+  return `+62${digits}`;
+}
+
+export interface ExternalMorinagaRegisterPayload {
+  micrositeId: string;
+  partnerId: string | null;
+  fullName: string;
+  clinicLocation: string;
+  clinicAddress: string;
+  email: string;
+  phone: string;
+  speciality: string;
+  acceptTnC: boolean;
+  source: string;
+  answeredQuestions: unknown[];
+}
+
+/**
+ * Register participant to Morinaga external event API (Production)
+ */
+export async function registerExternalMorinagaEvent(
+  payload: ExternalMorinagaRegisterPayload,
+): Promise<Record<string, unknown> | null> {
+  const morinagaBaseUrl = (
+    import.meta.env.VITE_MORINAGA_API_URL || "https://medical-api.morinaga.id"
+  ).replace(/\/$/, "");
+  const eventSlug =
+    import.meta.env.VITE_MORINAGA_EVENT_SLUG || "pitika-2026-xiv-palembang-5";
+  const username = import.meta.env.VITE_MORINAGA_USERNAME || "mWPa9WrCHQ";
+  const password = import.meta.env.VITE_MORINAGA_PASSWORD || "r5Zl6pThBb";
+  const authHeader = "Basic " + btoa(`${username}:${password}`);
+
+  const endpoint = `/api/external/magenta/events/${encodeURIComponent(eventSlug)}/register`;
+  const primaryUrl = `/morinaga-api${endpoint}`;
+  const directUrl = `${morinagaBaseUrl}${endpoint}`;
+
+  const jsonBody = JSON.stringify(payload);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    Authorization: authHeader,
+  };
+
+  try {
+    const res = await fetch(primaryUrl, {
+      method: "POST",
+      headers,
+      body: jsonBody,
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok) {
+      return data;
+    }
+    // If proxy failed with 404/502, try direct URL
+    if (res.status === 404 || res.status === 502) {
+      const fallbackRes = await fetch(directUrl, {
+        method: "POST",
+        headers,
+        body: jsonBody,
+      });
+      return await fallbackRes.json().catch(() => null);
+    }
+    return data;
+  } catch (err) {
+    try {
+      const fallbackRes = await fetch(directUrl, {
+        method: "POST",
+        headers,
+        body: jsonBody,
+      });
+      return await fallbackRes.json().catch(() => null);
+    } catch (fallbackErr) {
+      console.warn("Failed to call external Morinaga register API:", fallbackErr || err);
+      return null;
+    }
+  }
+}
+
