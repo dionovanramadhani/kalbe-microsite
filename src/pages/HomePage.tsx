@@ -1252,15 +1252,15 @@ export const HomePage: React.FC = () => {
       <RewardModal
         isOpen={showMysteryBoxModal}
         onClose={handleCloseMysteryBoxModal}
-        containerClassName="max-w-[361px] h-[420px] max-h-[96%] aspect-[361/520] flex flex-col items-center justify-center px-5 pt-5 pb-9"
+        containerClassName="max-w-[361px] h-[480px] max-h-[96%] aspect-[361/520] flex flex-col items-center justify-center px-5 pt-5 pb-9"
         imageSrc="/assets/mystery-box.webp"
         imageAlt="Mystery Box Morinaga"
         imageClassName="w-[185px] sm:w-[195px] h-auto object-contain drop-shadow-md pointer-events-none"
         title="Congratulations!"
         subtitle={
           <span>
-            Terima kasih telah mengikuti seluruh rangkaian, hadiah eksklusif telah
-            menanti!
+            Terima kasih telah mengikuti seluruh rangkaian aktivitas Morinaga. Selamat
+            anda mendapatkan Exclusive Mystery Box!
           </span>
         }
         // description="Anda telah menyelesaikan seluruh aktivitas dan mendapatkan reward sebagai bentuk apresiasi atas partisipasi Anda."

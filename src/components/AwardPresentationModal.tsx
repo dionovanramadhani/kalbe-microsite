@@ -84,11 +84,12 @@ function getJudgesList(item: KalbeBoothActivityItem): string[] {
   });
 }
 
-// Format host to "<Name> (Host)"
+// Format finalist to "<Name> (Finalist)"
 function getHostText(item: KalbeBoothActivityItem): string | null {
   if (!item.host || item.host.trim() === "") return null;
-  const trimmed = item.host.trim();
-  return trimmed.toLowerCase().includes("(host)") ? trimmed : `${trimmed} (Host)`;
+  let trimmed = item.host.trim();
+  trimmed = trimmed.replace(/\s*\(host\)\s*/gi, "").replace(/\s*\(finalist\)\s*/gi, "").trim();
+  return `${trimmed} (Finalist)`;
 }
 
 // Determine session title (e.g. "Sesi 1")

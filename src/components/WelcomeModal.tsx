@@ -69,8 +69,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
 
           {/* Description (12px regular #4E4E4E) */}
           <p className="text-[12px] font-normal text-[#4E4E4E] leading-relaxed">
-            Ikuti rangkaian acara Morinaga, dapatkan pengalaman menarik, serta hadiah
-            eksklusif Morinaga.
+            Ikuti rangkaian activity Morinaga, perluas wawasan melalui sesi ilmiah,
+            nikmati pengalaman menarik, dan dapatkan hadiah eksklusif.
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { saveRegisteredUser, type User } from "../data/dummyUser";
-import { logout } from "../utils/auth";
+import { setAuthSession } from "../utils/auth";
 import { Toast, type ToastType } from "../components/Toast";
 import {
   formatPhoneE164,
@@ -179,42 +179,76 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
-      // Ensure any existing tokens are cleared so user is not falsely auto-logged-in
-      logout();
+      const token = json?.data?.access_token;
+      const respData = json?.data || {};
+
+      const finalFullName = (respData.fullname || fullName.trim()).trim();
+      const finalEmail = (respData.email || email.trim()).trim();
+      const finalPhone = (respData.phone_number || fullPhoneNumber).trim();
+
+      const authUserData = {
+        ...respData,
+        id: respData.id,
+        fullname: finalFullName,
+        fullName: finalFullName,
+        nama: finalFullName,
+        name: finalFullName,
+        email: finalEmail,
+        phone_number: finalPhone,
+        phoneNumber: finalPhone,
+        phone: finalPhone,
+        practicePlace: respData.practice_place || practicePlace.trim(),
+        practiceAddress: respData.practice_place_address || practiceAddress.trim(),
+        speciality: respData.speciality || speciality,
+        master_doctor_id: respData.master_doctor_id || "",
+        role: respData.role || "user",
+        avatar: "/assets/docter-avatar.webp",
+        registration_response: externalEventResponse || respData.registration_response,
+      };
+
+      if (token) {
+        setAuthSession(token, authUserData, true);
+      }
 
       const userData: User = {
-        id: json?.data?.id || `user-${Date.now()}`,
-        fullName: json?.data?.fullname || fullName.trim(),
-        phone: json?.data?.phone_number || fullPhoneNumber,
-        email: json?.data?.email || email.trim(),
-        speciality: json?.data?.speciality || speciality,
-        practicePlace: json?.data?.practice_place || practicePlace.trim(),
-        practiceAddress: json?.data?.practice_place_address || practiceAddress.trim(),
+        id: authUserData.id || `user-${Date.now()}`,
+        fullName: finalFullName,
+        phone: finalPhone,
+        email: finalEmail,
+        speciality: authUserData.speciality,
+        practicePlace: authUserData.practicePlace,
+        practiceAddress: authUserData.practiceAddress,
         avatar: "/assets/docter-avatar.webp",
-        registration_response: externalEventResponse || json?.data?.registration_response,
+        registration_response: authUserData.registration_response,
       };
       saveRegisteredUser(userData);
+
+      sessionStorage.removeItem("kalbe_welcome_shown");
+      sessionStorage.setItem("kalbe_welcome_pending", "true");
+      sessionStorage.removeItem("kalbe_poster_shown");
+      sessionStorage.setItem("kalbe_poster_pending", "true");
+      sessionStorage.setItem("kalbe_from_login", "true");
+
+      if (redirectUrl?.includes("sympo-checkin")) {
+        sessionStorage.setItem("kalbe_scanned_from_external_qr", "true");
+      }
+      sessionStorage.removeItem("kalbe_scanned_from_device");
+      sessionStorage.removeItem("kalbe_sympo_scanned");
 
       // Success Registration Toast
       showToast(
         "success",
-        "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda."
+        "Registrasi berhasil! Mengalihkan ke beranda..."
       );
 
-      // Tandai registrasi sukses di sessionStorage hanya saat seluruh proses benar-benar berhasil
-      sessionStorage.setItem("kalbe_just_registered", "true");
-
-      // Redirect to login after brief delay so user sees toast
-      const redirectParam = redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : "";
+      // Redirect to homepage after brief delay so user sees toast
       setTimeout(() => {
-        navigate(`/login${redirectParam}`, {
-          state: {
-            registrationSuccess: true,
-            toastMessage:
-              "Akun berhasil dibuat! Silakan masuk dengan email dan nomor telepon Anda.",
-          },
-        });
-      }, 1600);
+        if (redirectUrl && redirectUrl.startsWith("/")) {
+          navigate(redirectUrl, { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
+      }, 1000);
     } catch (err: unknown) {
       sessionStorage.removeItem("kalbe_just_registered");
       console.error("Registration request error:", err);

@@ -34,17 +34,6 @@ const UserFilledIcon = () => (
   </svg>
 );
 
-const PhoneFilledIcon = () => (
-  <svg
-    className="w-5 h-5 text-gray-500 shrink-0"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.44-5.15-3.75-6.59-6.59l1.97-1.57c.28-.27.36-.67.25-1.02A11.36 11.36 0 018.57 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-.99-1z" />
-  </svg>
-);
-
 const MailFilledIcon = () => (
   <svg
     className="w-5 h-5 text-gray-500 shrink-0"
@@ -74,7 +63,6 @@ export const LoginPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -229,17 +217,7 @@ export const LoginPage: React.FC = () => {
     setShowDropdown(false);
     if (errorMessage) setErrorMessage(null);
 
-    // Initial fallback if doctor already has phone/email
-    if (doctor.phone || doctor.phoneNumber) {
-      const rawPhone = doctor.phone || doctor.phoneNumber || "";
-      const cleanDigits = rawPhone.replace(/\D/g, "");
-      const normalizedPhone = cleanDigits.startsWith("62")
-        ? "0" + cleanDigits.slice(2)
-        : cleanDigits.startsWith("0")
-          ? cleanDigits
-          : "0" + cleanDigits;
-      setPhone(normalizedPhone);
-    }
+    // Initial fallback if doctor already has email
     if (doctor.email) {
       setEmail(doctor.email);
     }
@@ -296,16 +274,6 @@ export const LoginPage: React.FC = () => {
         if (detailData.fullName && typeof detailData.fullName === "string") {
           setFullName(detailData.fullName);
         }
-        if (detailData.phone) {
-          const rawPhone = String(detailData.phone);
-          const cleanDigits = rawPhone.replace(/\D/g, "");
-          const normalizedPhone = cleanDigits.startsWith("62")
-            ? "0" + cleanDigits.slice(2)
-            : cleanDigits.startsWith("0")
-              ? cleanDigits
-              : "0" + cleanDigits;
-          setPhone(normalizedPhone);
-        }
         if (detailData.email && typeof detailData.email === "string") {
           setEmail(detailData.email);
         }
@@ -333,7 +301,6 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
 
     const cleanFullName = fullName.trim();
-    const cleanPhone = phone.trim();
     const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanFullName) {
@@ -341,12 +308,12 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    if (!cleanPhone) {
-      setErrorMessage("Nomor telepon wajib diisi.");
+    if (!cleanEmail) {
+      setErrorMessage("Email wajib diisi.");
       return;
     }
 
-    if (cleanEmail && !cleanEmail.includes("@")) {
+    if (!cleanEmail.includes("@")) {
       setErrorMessage("Format email tidak valid.");
       return;
     }
@@ -360,19 +327,19 @@ export const LoginPage: React.FC = () => {
 
       const requestBody: {
         fullname: string;
-        phone_number: string;
-        email?: string;
+        email: string;
+        phone_number?: string;
         master_doctor_id?: string;
         microsite_id?: string;
         source?: string;
       } = {
         fullname: cleanFullName,
-        phone_number: cleanPhone,
+        email: cleanEmail,
         source: selectedDoctor ? "dropdown" : "manual",
       };
 
-      if (cleanEmail) {
-        requestBody.email = cleanEmail;
+      if (selectedDoctor?.phone || selectedDoctor?.phoneNumber) {
+        requestBody.phone_number = (selectedDoctor.phone || selectedDoctor.phoneNumber || "").trim();
       }
 
       if (selectedDoctor?.id) {
@@ -438,7 +405,7 @@ export const LoginPage: React.FC = () => {
         selectedDoctor?.fullName ||
         ""
       ).trim();
-      const finalPhone = (respData.phone_number || cleanPhone || "").trim();
+      const finalPhone = (respData.phone_number || selectedDoctor?.phone || selectedDoctor?.phoneNumber || "").trim();
       const finalEmail = (respData.email || cleanEmail || "").trim();
 
       const userData = {
@@ -646,24 +613,6 @@ export const LoginPage: React.FC = () => {
               )}
             </div>
 
-            {/* Input 2: Nomor Telepon */}
-            <div className="relative flex items-center h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30">
-              <PhoneFilledIcon />
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={phone}
-                onChange={(e) => {
-                  const numbersOnly = e.target.value.replace(/\D/g, "");
-                  setPhone(numbersOnly);
-                  if (errorMessage) setErrorMessage(null);
-                }}
-                placeholder="Masukan nomor telepon"
-                className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
-              />
-            </div>
-
             {/* Input 2: Email */}
             <div className="relative flex items-center h-[48px] px-3.5 border border-[#D1D5DB] rounded-[8px] bg-white transition-all focus-within:border-[#C70412] focus-within:ring-1 focus-within:ring-[#C70412]/30">
               <MailFilledIcon />
@@ -674,7 +623,7 @@ export const LoginPage: React.FC = () => {
                   setEmail(e.target.value);
                   if (errorMessage) setErrorMessage(null);
                 }}
-                placeholder="Masukan email (opsional)"
+                placeholder="Masukan email"
                 className="w-full pl-3 text-[14px] text-gray-800 placeholder-gray-400 bg-transparent outline-none font-normal"
               />
             </div>
