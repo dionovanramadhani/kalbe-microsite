@@ -524,16 +524,15 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                           >
                             JURI
                           </h3>
-                          <div className="flex flex-col items-center text-center gap-1 w-full px-1">
+                          <div className="flex flex-col items-center text-center gap-1 w-full">
                             {slideJudges.map((judge, jIdx) => (
                               <span
                                 key={jIdx}
                                 style={{
                                   color: "#555555",
-                                  fontSize: "11.5px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug font-normal w-full text-center tracking-tight sm:text-[12.5px]"
+                                className="leading-snug font-normal w-full text-center tracking-tight text-[13px] sm:text-[15px]"
                               >
                                 {judge}
                               </span>
@@ -566,10 +565,9 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               <span
                                 style={{
                                   color: "#555555",
-                                  fontSize: "11.5px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug font-normal w-full text-center tracking-tight sm:text-[12.5px]"
+                                className="leading-snug font-normal w-full text-center tracking-tight text-[13px] sm:text-[15px]"
                               >
                                 {sess.host}
                               </span>
