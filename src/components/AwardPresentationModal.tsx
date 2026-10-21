@@ -416,7 +416,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
         }`}
       >
         {/* Floating Red Circular Close Button right above the drawer top */}
-        <div className="w-full max-w-[450px] sm:max-w-[470px] flex justify-end px-4 sm:px-5 mb-2 pointer-events-none">
+        <div className="w-full max-w-[490px] sm:max-w-[520px] flex justify-end px-3 sm:px-5 mb-2 pointer-events-none">
           <button
             type="button"
             onClick={handleClose}
@@ -429,7 +429,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
 
         {/* Drawer Body Container */}
         {isPhotobooth ? (
-          <div className="w-full max-w-[450px] sm:max-w-[470px] bg-white rounded-t-[32px] px-5 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
+          <div className="w-full max-w-[490px] sm:max-w-[520px] bg-white rounded-t-[32px] px-4 pt-5 pb-8 flex flex-col items-center shadow-[0_-8px_30px_rgba(0,0,0,0.3)] select-none">
             {activityItem?.activity_image && (
               <div className="w-full rounded-[20px] overflow-hidden bg-black/5 mb-4 shadow-sm flex items-center justify-center border border-gray-100">
                 <img
@@ -463,7 +463,7 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
             )}
           </div>
         ) : (
-          <div className="w-full max-w-[450px] sm:max-w-[470px] bg-white rounded-t-[32px] pt-6 pb-5 px-3 sm:px-5 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
+          <div className="w-full max-w-[490px] sm:max-w-[520px] bg-white rounded-t-[32px] pt-6 pb-5 px-2.5 sm:px-4 flex flex-col items-center select-none shadow-[0_-8px_30px_rgba(0,0,0,0.3)] max-h-[85vh] overflow-hidden">
             {/* Top Header Graphic from response (fallback to MoriTalks Awards logo) */}
             {headerImage && (
               <div className="w-full flex justify-center shrink-0 mb-3.5">
@@ -530,10 +530,10 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                                 key={jIdx}
                                 style={{
                                   color: "#555555",
-                                  fontSize: "13px",
+                                  fontSize: "11.5px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug font-normal w-full text-center"
+                                className="leading-snug font-normal w-full text-center tracking-tight sm:text-[12.5px]"
                               >
                                 {judge}
                               </span>
@@ -566,10 +566,10 @@ export const AwardPresentationModal: React.FC<AwardPresentationModalProps> = ({
                               <span
                                 style={{
                                   color: "#555555",
-                                  fontSize: "13px",
+                                  fontSize: "11.5px",
                                   fontWeight: 400,
                                 }}
-                                className="leading-snug font-normal w-full text-center"
+                                className="leading-snug font-normal w-full text-center tracking-tight sm:text-[12.5px]"
                               >
                                 {sess.host}
                               </span>
