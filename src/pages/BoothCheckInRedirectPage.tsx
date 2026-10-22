@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getToken } from "../utils/auth";
-import {
-  insertKalbeBoothParticipant,
-  getKalbeBoothsList,
-} from "../utils/kalbeApi";
-import {
-  setBoothDetailingCompleted,
-  setEarlyLifeDetailingCompleted,
-  unlockReward,
-} from "../data/rewardStore";
+import { getKalbeBoothsList } from "../utils/kalbeApi";
 
 export const BoothCheckInRedirectPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -25,10 +17,24 @@ export const BoothCheckInRedirectPage: React.FC = () => {
       return;
     }
 
+    const typeParam = (searchParams.get("type") || "").toLowerCase();
+    const nameParam = (searchParams.get("name") || "").toLowerCase();
+    const isEarlyParam =
+      typeParam.includes("early") ||
+      typeParam.includes("life") ||
+      nameParam.includes("early") ||
+      nameParam.includes("life");
+
+    const defaultBoothType = isEarlyParam ? "early-life" : "morinaga-booth";
+
     const token = getToken();
     if (!token) {
-      // User belum login -> simpan redirect url
-      const currentUrl = `/booth-checkin?booth_id=${encodeURIComponent(boothId)}`;
+      // Simpan flag external scan di sessionStorage
+      sessionStorage.setItem("kalbe_external_scan_booth_id", boothId);
+      sessionStorage.setItem("kalbe_external_scan_booth_type", defaultBoothType);
+
+      // User belum login -> simpan redirect url lengkap
+      const currentUrl = `/booth-checkin${window.location.search}`;
       navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`, { replace: true });
       return;
     }
@@ -37,44 +43,35 @@ export const BoothCheckInRedirectPage: React.FC = () => {
 
     (async () => {
       try {
-        // Panggil endpoint insert booth participant
-        await insertKalbeBoothParticipant(boothId).catch((err: unknown) => {
-          // Jika error 409 (sudah pernah check in), biarkan lanjut tanpa block user
-          const msg = err instanceof Error ? err.message : "";
-          if (!msg.toLowerCase().includes("already")) {
-            console.warn("Insert booth participant warning:", err);
-          }
-        });
+        let isEarly = isEarlyParam;
 
-        // Cari tahu apakah booth ini Morinaga Booth atau Kalbe Early Life Solutions
-        const booths = await getKalbeBoothsList().catch(() => []);
-        const matchedBooth = booths.find((b) => b.id === boothId);
-        const typeParam = (searchParams.get("type") || "").toLowerCase();
-        const nameParam = (searchParams.get("name") || "").toLowerCase();
-        const nameLower = (matchedBooth?.name || nameParam).toLowerCase();
-        const isEarly =
-          typeParam.includes("early") ||
-          typeParam.includes("life") ||
-          nameLower.includes("early") ||
-          nameLower.includes("life");
+        // Jika param type & name tidak ada, verifikasi dari API daftar booth
+        if (!typeParam && !nameParam) {
+          const booths = await getKalbeBoothsList().catch(() => []);
+          const matchedBooth = booths.find((b) => b.id === boothId);
+          const nameLower = (matchedBooth?.name || "").toLowerCase();
+          isEarly = nameLower.includes("early") || nameLower.includes("life");
+        }
 
-        if (isEarly) {
-          setEarlyLifeDetailingCompleted(true);
-          if (isMounted) {
-            navigate("/home", { replace: true, state: { showEarlyLifeSuccessModal: true } });
-          }
-        } else {
-          setBoothDetailingCompleted(true);
-          unlockReward("morinaga-booth");
-          if (isMounted) {
-            navigate("/home", { replace: true, state: { showBoothSuccessModal: true } });
-          }
+        const boothType = isEarly ? "early-life" : "morinaga-booth";
+
+        // Simpan flag external scan di sessionStorage
+        sessionStorage.setItem("kalbe_external_scan_booth_id", boothId);
+        sessionStorage.setItem("kalbe_external_scan_booth_type", boothType);
+
+        if (isMounted) {
+          navigate("/home", {
+            replace: true,
+            state: {
+              openBoothFromExternalScan: boothType,
+              externalBoothId: boothId,
+            },
+          });
         }
       } catch (err: unknown) {
-        console.error("Failed to process booth check-in:", err);
+        console.error("Failed to process booth check-in redirect:", err);
         if (isMounted) {
-          setErrorMessage("Gagal memproses check-in booth. Mengalihkan ke Beranda...");
-          setTimeout(() => navigate("/home", { replace: true }), 2500);
+          navigate("/home", { replace: true });
         }
       }
     })();
@@ -98,15 +95,13 @@ export const BoothCheckInRedirectPage: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3">
               <span className="text-xl font-bold">!</span>
             </div>
-            <h2 className="text-[16px] font-bold text-gray-800 mb-1">Check-In Gagal</h2>
-            <p className="text-[12px] text-gray-500 leading-relaxed mb-2">{errorMessage}</p>
+            <p className="text-[14px] text-gray-700">{errorMessage}</p>
           </>
         ) : (
           <>
-            <div className="w-10 h-10 border-3 border-[#C70412] border-t-transparent rounded-full animate-spin mb-4" />
-            <h2 className="text-[16px] font-bold text-[#C70412] mb-1">Check-In Booth</h2>
-            <p className="text-[12px] text-gray-500 leading-relaxed">
-              Sedang memproses kunjungan booth Anda...
+            <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-[15px] font-semibold text-gray-800">
+              Membuka Booth...
             </p>
           </>
         )}

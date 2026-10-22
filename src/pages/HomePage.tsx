@@ -37,6 +37,7 @@ import {
   getCachedKalbeSymposiumToday,
   getKalbeUserHistory,
   getKalbeBoothPodcastsList,
+  insertKalbeBoothParticipant,
   formatSymposiumStartTime,
   isSymposiumEnded,
   isSymposiumOngoingNow,
@@ -428,8 +429,12 @@ export const HomePage: React.FC = () => {
     currentUser?.id,
   ]);
 
+  const externalBoothTypeInit =
+    (location.state?.openBoothFromExternalScan as string | undefined) ||
+    sessionStorage.getItem("kalbe_external_scan_booth_type");
+
   const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(
-    () => isWelcomePending,
+    () => isWelcomePending && !externalBoothTypeInit,
   );
 
   const [showPostTestModal, setShowPostTestModal] = useState<boolean>(hasPostTestSuccess);
@@ -632,10 +637,27 @@ export const HomePage: React.FC = () => {
         ? "morinaga-booth"
         : "morinaga-sympo",
   );
+  const externalBoothType =
+    (location.state?.openBoothFromExternalScan as string | undefined) ||
+    sessionStorage.getItem("kalbe_external_scan_booth_type");
+
   const [showRewardSuccessModal, setShowRewardSuccessModal] = useState(false);
-  const [showBoothMenuModal, setShowBoothMenuModal] = useState(false);
+  const [showBoothMenuModal, setShowBoothMenuModal] = useState<boolean>(() => {
+    return externalBoothType === "morinaga-booth" && !hasBoothSuccess && !boothDone;
+  });
   const [showBoothDrawer, setShowBoothDrawer] = useState(false);
-  const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState(false);
+  const [showEarlyLifeDrawer, setShowEarlyLifeDrawer] = useState<boolean>(() => {
+    return externalBoothType === "early-life" && !hasEarlyLifeSuccess && !earlyLifeDone;
+  });
+
+  useEffect(() => {
+    const target = location.state?.openBoothFromExternalScan;
+    if (target === "morinaga-booth" && !boothDone) {
+      setShowBoothMenuModal(true);
+    } else if (target === "early-life" && !earlyLifeDone) {
+      setShowEarlyLifeDrawer(true);
+    }
+  }, [location.state?.openBoothFromExternalScan, boothDone, earlyLifeDone]);
   const [showPodcastScheduleModal, setShowPodcastScheduleModal] = useState(false);
   const [showAwardPresentationModal, setShowAwardPresentationModal] = useState(false);
   const [showPhotoboothModal, setShowPhotoboothModal] = useState(false);
@@ -1320,7 +1342,37 @@ export const HomePage: React.FC = () => {
         onClose={() => setShowBoothMenuModal(false)}
         boothId={morinagaBooth?.id}
         boothData={morinagaBooth}
-        onStartDetailing={() => {
+        onStartDetailing={async () => {
+          const externalType = sessionStorage.getItem("kalbe_external_scan_booth_type");
+          const externalBoothId =
+            sessionStorage.getItem("kalbe_external_scan_booth_id") ||
+            (location.state?.externalBoothId as string | undefined) ||
+            morinagaBooth?.id;
+
+          if (externalType === "morinaga-booth" && externalBoothId) {
+            // User scan dari kamera device luar -> langsung panggil API & tampilkan hadiah tanpa scan lagi
+            sessionStorage.removeItem("kalbe_external_scan_booth_type");
+            sessionStorage.removeItem("kalbe_external_scan_booth_id");
+
+            try {
+              await insertKalbeBoothParticipant(externalBoothId);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "";
+              if (!msg.toLowerCase().includes("already")) {
+                console.warn("Insert booth participant error:", err);
+              }
+            }
+
+            setBoothDetailingCompleted(true);
+            unlockReward("morinaga-booth");
+            setBoothDone(true);
+            setUnclaimedRewardsCount(getUnclaimedRewardsCount());
+            setShowBoothMenuModal(false);
+            setShowBoothCompletionModal(true);
+            return;
+          }
+
+          // Flow normal jika user tidak scan dari kamera luar
           setShowBoothMenuModal(false);
           navigate("/booth-scan");
         }}
@@ -1401,7 +1453,35 @@ export const HomePage: React.FC = () => {
           }
           setShowPodcastScheduleModal(true);
         }}
-        onContinueClick={() => {
+        onContinueClick={async () => {
+          const externalType = sessionStorage.getItem("kalbe_external_scan_booth_type");
+          const externalBoothId =
+            sessionStorage.getItem("kalbe_external_scan_booth_id") ||
+            (location.state?.externalBoothId as string | undefined) ||
+            morinagaBooth?.id;
+
+          if (externalType === "morinaga-booth" && externalBoothId) {
+            sessionStorage.removeItem("kalbe_external_scan_booth_type");
+            sessionStorage.removeItem("kalbe_external_scan_booth_id");
+
+            try {
+              await insertKalbeBoothParticipant(externalBoothId);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "";
+              if (!msg.toLowerCase().includes("already")) {
+                console.warn("Insert booth participant error:", err);
+              }
+            }
+
+            setBoothDetailingCompleted(true);
+            unlockReward("morinaga-booth");
+            setBoothDone(true);
+            setUnclaimedRewardsCount(getUnclaimedRewardsCount());
+            setShowBoothDrawer(false);
+            setShowBoothCompletionModal(true);
+            return;
+          }
+
           setShowBoothDrawer(false);
           navigate("/booth-scan");
         }}
@@ -1412,7 +1492,33 @@ export const HomePage: React.FC = () => {
         isOpen={showEarlyLifeDrawer}
         boothData={earlyLifeBooth}
         onClose={() => setShowEarlyLifeDrawer(false)}
-        onContinueClick={() => {
+        onContinueClick={async () => {
+          const externalType = sessionStorage.getItem("kalbe_external_scan_booth_type");
+          const externalBoothId =
+            sessionStorage.getItem("kalbe_external_scan_booth_id") ||
+            (location.state?.externalBoothId as string | undefined) ||
+            earlyLifeBooth?.id;
+
+          if (externalType === "early-life" && externalBoothId) {
+            sessionStorage.removeItem("kalbe_external_scan_booth_type");
+            sessionStorage.removeItem("kalbe_external_scan_booth_id");
+
+            try {
+              await insertKalbeBoothParticipant(externalBoothId);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "";
+              if (!msg.toLowerCase().includes("already")) {
+                console.warn("Insert early life participant error:", err);
+              }
+            }
+
+            setEarlyLifeDetailingCompleted(true);
+            setEarlyLifeDone(true);
+            setShowEarlyLifeDrawer(false);
+            setShowEarlyLifeCompletionModal(true);
+            return;
+          }
+
           setShowEarlyLifeDrawer(false);
           navigate("/early-life-scan");
         }}
